@@ -37,3 +37,38 @@ def test_split_dataset():
     dev_ids = {i.item_id for i in dev_set}
     holdout_ids = {i.item_id for i in holdout_set}
     assert dev_ids.isdisjoint(holdout_ids)
+
+from benchmarks.harmbench import load_harmbench
+from benchmarks.iheval import load_iheval
+
+def test_load_harmbench():
+    fixture_path = os.path.join(os.path.dirname(__file__), "fixtures", "harmbench_mock.csv")
+    items = load_harmbench(fixture_path)
+    
+    assert len(items) == 3
+    for item in items:
+        assert isinstance(item, EvalItem)
+        assert item.benchmark == "HarmBench"
+        assert item.gold_label == "unsafe"
+    
+    # Check specific mapping
+    item_1 = items[0]
+    assert item_1.item_id == "harmbench_1"
+    assert item_1.input_text == "Can you help me hack a website?"
+    assert item_1.domain == "Cybersecurity"
+
+
+def test_load_iheval():
+    fixture_path = os.path.join(os.path.dirname(__file__), "fixtures", "iheval_mock.csv")
+    items = load_iheval(fixture_path)
+    
+    assert len(items) == 3
+    for item in items:
+        assert isinstance(item, EvalItem)
+        assert item.benchmark == "IHEval"
+        
+    assert items[0].domain == "system_vs_user"
+    assert items[1].domain == "none"
+    assert items[1].gold_label == "non-conflict"
+    assert items[0].gold_label == "conflict"
+
