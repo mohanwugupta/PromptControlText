@@ -1,0 +1,7 @@
+pytest
+pytest-cov
+pydantic
+pandas
+pyyaml
+python-dotenv
+openai

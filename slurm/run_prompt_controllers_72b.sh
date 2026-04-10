@@ -1,0 +1,173 @@
+#!/bin/bash
+#SBATCH --job-name=prompt_controllers_72b
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=64G
+#SBATCH --gres=gpu:4
+#SBATCH --constraint=gpu80
+#SBATCH --mail-type=begin
+#SBATCH --mail-type=end
+#SBATCH --mail-user=mg9965@princeton.edu
+#SBATCH --time=6:00:00
+#SBATCH --output=logs/prompt_controllers_72b_%j.out
+#SBATCH --error=logs/prompt_controllers_72b_%j.err
+
+# =============================================================================
+# Prompt-Level Safety Controllers Pipeline — Qwen2.5-72B-Instruct variant
+#
+# Adapted from Contamination-Aware-Control-for-Retrieval-Augmented-Generation.
+# =============================================================================
+
+set -eo pipefail
+
+echo "=========================================="
+echo "Prompt Control Pipeline (Qwen2.5-72B)"
+echo "=========================================="
+echo "Job ID:   $SLURM_JOB_ID"
+echo "Node:     $SLURMD_NODENAME"
+echo "Time:     $(date)"
+echo "GPUs:     $CUDA_VISIBLE_DEVICES"
+echo ""
+
+# ------------------------------------------------------------------
+# 0. Configuration
+# ------------------------------------------------------------------
+PROJECT_DIR=/scratch/gpfs/JORDANAT/mg9965/promptControlText
+MODEL_PATH=/scratch/gpfs/JORDANAT/mg9965/models/Qwen--Qwen2.5-72B-Instruct
+SERVED_MODEL_NAME=$(basename "$MODEL_PATH")
+CONDA_ENV=promptControlText
+VLLM_PORT=8000
+TENSOR_PARALLEL_SIZE=4
+MAX_MODEL_LEN=32768
+GPU_MEMORY_UTILIZATION=0.9
+
+# ------------------------------------------------------------------
+# 1. Environment setup
+# ------------------------------------------------------------------
+cd "$PROJECT_DIR"
+
+module load anaconda3/2025.6
+
+if command -v conda &> /dev/null; then
+    eval "$(conda shell.bash hook)"
+    conda activate "$CONDA_ENV"
+elif [ -f "$HOME/.conda/envs/$CONDA_ENV/bin/activate" ]; then
+    source "$HOME/.conda/envs/$CONDA_ENV/bin/activate"
+else
+    source activate "$CONDA_ENV"
+fi
+
+export PYTHONPATH="$PROJECT_DIR${PYTHONPATH:+:$PYTHONPATH}"
+
+# ------------------------------------------------------------------
+# 2. Cache & offline
+# ------------------------------------------------------------------
+export HF_HOME=/scratch/gpfs/JORDANAT/mg9965/hf_cache
+export HF_DATASETS_CACHE=/scratch/gpfs/JORDANAT/mg9965/hf_cache/datasets
+export TRANSFORMERS_CACHE=/scratch/gpfs/JORDANAT/mg9965/hf_cache
+export HF_DATASETS_DISK_DIR=$HF_DATASETS_CACHE
+export VLLM_CACHE_DIR=/scratch/gpfs/JORDANAT/mg9965/vLLM-cache
+export VLLM_USAGE_STATS_DIR=/scratch/gpfs/JORDANAT/mg9965/vLLM-cache/usage_stats
+export TRITON_CACHE_DIR=/scratch/gpfs/JORDANAT/mg9965/vLLM-cache/triton
+export XDG_CACHE_HOME=/scratch/gpfs/JORDANAT/mg9965/vLLM-cache/xdg
+export TIKTOKEN_CACHE_DIR=$HOME/.tiktoken_cache
+
+mkdir -p "$HF_HOME" "$HF_DATASETS_CACHE" "$TRANSFORMERS_CACHE"
+mkdir -p "$VLLM_CACHE_DIR" "$VLLM_USAGE_STATS_DIR" "$TRITON_CACHE_DIR" "$XDG_CACHE_HOME"
+
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+
+# ------------------------------------------------------------------
+# 3. GPU / Memory optimization
+# ------------------------------------------------------------------
+export CUDA_VISIBLE_DEVICES=0,1,2,3
+export OMP_NUM_THREADS=8
+export TOKENIZERS_PARALLELISM=true
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export NCCL_P2P_LEVEL=NVL
+export CUDA_DEVICE_MAX_CONNECTIONS=1
+
+# ------------------------------------------------------------------
+# 4. Validate prerequisites
+# ------------------------------------------------------------------
+if [ -d "$MODEL_PATH" ]; then
+    echo "✅ Qwen2.5-72B model found at: $MODEL_PATH"
+else
+    echo "❌ ERROR: Model not found at: $MODEL_PATH"
+    exit 1
+fi
+
+mkdir -p logs artifacts
+
+# ------------------------------------------------------------------
+# 5. Start vLLM server
+# ------------------------------------------------------------------
+echo "Starting vLLM server (Qwen2.5-72B, TP=$TENSOR_PARALLEL_SIZE)..."
+
+python -m vllm.entrypoints.openai.api_server \
+    --model "$MODEL_PATH" \
+    --served-model-name "$SERVED_MODEL_NAME" \
+    --port "$VLLM_PORT" \
+    --tensor-parallel-size "$TENSOR_PARALLEL_SIZE" \
+    --dtype auto \
+    --trust-remote-code \
+    --max-model-len "$MAX_MODEL_LEN" \
+    --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
+    --max-num-seqs 256 \
+    --disable-custom-all-reduce \
+    --enforce-eager \
+    &
+
+VLLM_PID=$!
+echo "vLLM server started with PID: $VLLM_PID"
+
+cleanup() {
+    echo "Cleaning up vLLM server (PID: $VLLM_PID)..."
+    if kill -0 "$VLLM_PID" 2>/dev/null; then
+        kill "$VLLM_PID"
+        wait "$VLLM_PID" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT INT TERM
+
+# ------------------------------------------------------------------
+# 6. Wait for server readiness
+# ------------------------------------------------------------------
+echo "Waiting for vLLM server..."
+MAX_WAIT=900
+WAIT_INTERVAL=15
+ELAPSED=0
+
+while [ $ELAPSED -lt $MAX_WAIT ]; do
+    if ! kill -0 "$VLLM_PID" 2>/dev/null; then
+        echo "❌ ERROR: vLLM server exited unexpectedly"
+        exit 1
+    fi
+
+    if curl -s "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
+        echo "✅ vLLM server ready after ${ELAPSED}s"
+        break
+    fi
+    sleep $WAIT_INTERVAL
+    ELAPSED=$((ELAPSED + WAIT_INTERVAL))
+done
+
+if [ $ELAPSED -ge $MAX_WAIT ]; then
+    echo "❌ ERROR: vLLM server timeout."
+    exit 1
+fi
+
+# ------------------------------------------------------------------
+# 7. Run Evaluation Pipeline
+# ------------------------------------------------------------------
+echo "=========================================="
+echo "Executing Phase 1 Entrypoint"
+echo "=========================================="
+
+# E.g., execute phase 1 over XSTest and HarmBench. This is a placeholder for the actual orchestration call.
+python -m experiments.run_phase1 \
+    --generator-model "$SERVED_MODEL_NAME"
+
+echo "✅ Job completed at $(date)"
