@@ -10,7 +10,7 @@ from models.vllm_client import VLLMClient
 from models.client import LLMClient
 from scoring.hierarchy_scorer import parse_hierarchy_response
 
-def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False):
+def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0):
     print("Loading Registry...")
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     registry_path = os.path.join(base_dir, "prompts", "registry.yaml")
@@ -30,6 +30,9 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
         
     if not items:
         raise ValueError("No benchmark items loaded for Phase 2.")
+        
+    if limit and limit > 0:
+        items = items[:limit]
 
     print(f"Loaded {len(items)} IHEval items. Setting up model...")
     if mock_mode:
@@ -77,10 +80,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--generator-model", type=str, default="Qwen2.5-72B-Instruct")
     parser.add_argument("--output-file", type=str, default="artifacts/phase2_results.csv")
+    parser.add_argument("--limit", type=int, default=0, help="Limit items for smoke test")
     parser.add_argument("--mock", action="store_true")
     
     args = parser.parse_args()
     
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     out = os.path.join(base, args.output_file)
-    run_experiment(out, args.generator_model, mock_mode=args.mock)
+    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit)
