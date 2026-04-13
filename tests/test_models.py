@@ -40,3 +40,22 @@ def test_llm_client_error_handling():
     
     with pytest.raises(ModelError):
         client.generate("sys", "user", "mock", 0.0)
+
+from models.vllm_client import VLLMClient
+from unittest.mock import patch, MagicMock
+
+def test_vllm_client_retries_and_fails():
+    client = VLLMClient(max_retries=2, enable_cache=False, retry_delay=0.1)
+    
+    # Mock the internal property 'client' to raise an exception
+    mock_openai_client = MagicMock()
+    mock_openai_client.chat.completions.create.side_effect = Exception("Connection Timeout")
+    
+    # Inject it into local thread storage mimicking the property
+    client._thread_local.openai_client = mock_openai_client
+    
+    with pytest.raises(ModelError, match="vLLM generation failed after 2 attempts"):
+        client.generate("sys", "user", "mock", 0.0)
+        
+    assert mock_openai_client.chat.completions.create.call_count == 2
+

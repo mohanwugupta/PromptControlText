@@ -3,9 +3,7 @@ import hashlib
 import threading
 import logging
 from typing import Dict, Tuple, Any
-
-class ModelError(Exception):
-    pass
+from models.client import ModelError
 
 logger = logging.getLogger(__name__)
 

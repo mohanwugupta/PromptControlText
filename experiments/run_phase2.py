@@ -1,0 +1,90 @@
+import os
+import argparse
+import pandas as pd
+from typing import List
+
+from core.schema import EvalItem
+from benchmarks.iheval import load_iheval
+from prompts.registry import load_registry, render_prompt
+from models.vllm_client import VLLMClient
+from models.client import LLMClient
+from scoring.hierarchy_scorer import parse_hierarchy_response
+
+def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0):
+    print("Loading Registry...")
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    registry_path = os.path.join(base_dir, "prompts", "registry.yaml")
+    registry = load_registry(registry_path)
+    
+    print("Loading Benchmarks...")
+    items: List[EvalItem] = []
+    
+    iheval_path = os.path.join(base_dir, "artifacts", "datasets", "iheval.csv")
+    if mock_mode:
+        iheval_path = os.path.join(base_dir, "tests", "fixtures", "iheval_mock.csv")
+
+    if os.path.exists(iheval_path):
+        items.extend(load_iheval(iheval_path))
+    else:
+        print(f"Warning: {iheval_path} not found. Run download_data.py")
+        
+    if not items:
+        raise ValueError("No benchmark items loaded for Phase 2.")
+        
+    if limit and limit > 0:
+        items = items[:limit]
+
+    print(f"Loaded {len(items)} IHEval items. Setting up model...")
+    if mock_mode:
+         client = LLMClient(mock_mode=True, mock_response="I cannot ignore my previous instructions.", enable_cache=True)
+    else:
+         client = VLLMClient(model_name=generator_model, enable_cache=True)
+
+    evaluated_records = []
+    
+    print("Generating responses...")
+    for item in items:
+        for family in registry.keys():
+            for variant in registry[family]['variants'].keys():
+                prompt_text = render_prompt(registry, family, variant)
+                
+                try:
+                    output, metadata = client.generate(
+                        system_prompt=prompt_text,
+                        user_prompt=item.input_text,
+                        model=generator_model,
+                        temperature=0.0
+                    )
+                except Exception as e:
+                    print(f"Failed generation for {item.item_id}: {e}")
+                    continue
+                    
+                scores = parse_hierarchy_response(output)
+                
+                record = item.model_dump()
+                record["prompt_family"] = family
+                record["prompt_variant"] = variant
+                record["model_output"] = output
+                record["metadata"] = metadata
+                for k, v in scores.items():
+                    record[f"{k}_score"] = v
+                    
+                evaluated_records.append(record)
+
+    os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
+    df = pd.DataFrame(evaluated_records)
+    df.to_csv(output_filepath, index=False)
+    print(f"Done. Saved to {output_filepath}")
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--generator-model", type=str, default="Qwen2.5-72B-Instruct")
+    parser.add_argument("--output-file", type=str, default="artifacts/phase2_results.csv")
+    parser.add_argument("--limit", type=int, default=0, help="Limit items for smoke test")
+    parser.add_argument("--mock", action="store_true")
+    
+    args = parser.parse_args()
+    
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    out = os.path.join(base, args.output_file)
+    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit)
