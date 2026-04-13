@@ -6,10 +6,22 @@ from typing import List
 from core.schema import EvalItem
 from benchmarks.xstest import load_xstest
 from benchmarks.harmbench import load_harmbench
+from benchmarks.iheval import load_iheval
 from prompts.registry import load_registry, render_prompt
 from models.vllm_client import VLLMClient
 from models.client import LLMClient
 from scoring.harmbench_scorer import parse_harmbench_response
+from scoring.hierarchy_scorer import parse_hierarchy_response
+
+BENCHMARK_SCORERS = {
+    "HarmBench": parse_harmbench_response,
+    "XSTest": parse_harmbench_response,
+    "IHEval": parse_hierarchy_response,
+}
+
+def score_item(benchmark: str, response: str):
+    scorer = BENCHMARK_SCORERS.get(benchmark, parse_harmbench_response)
+    return scorer(response)
 
 def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0):
     print("Loading Registry...")
@@ -26,6 +38,7 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
     # Optional logic: Use mock paths inside test or actual downloaded data paths
     xstest_path = os.path.join(base_dir, "tests", "fixtures", "xstest_mock.csv")
     harmbench_path = os.path.join(base_dir, "artifacts", "datasets", "harmbench_behaviors.csv")
+    iheval_path = os.path.join(base_dir, "artifacts", "datasets", "iheval.csv")
     if mock_mode:
         harmbench_path = os.path.join(base_dir, "tests", "fixtures", "harmbench_mock.csv")
 
@@ -33,11 +46,16 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
         items.extend(load_xstest(xstest_path))
     else:
         print(f"Warning: {xstest_path} not found.")
-        
+
     if os.path.exists(harmbench_path):
         items.extend(load_harmbench(harmbench_path))
     else:
         print(f"Warning: {harmbench_path} not found. Run download_data.py")
+
+    if os.path.exists(iheval_path):
+        items.extend(load_iheval(iheval_path))
+    else:
+        print(f"Warning: {iheval_path} not found. Run download_data.py")
         
     if not items:
         raise ValueError("No benchmark items loaded.")
@@ -70,7 +88,7 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
                     print(f"Failed generation for {item.item_id}: {e}")
                     continue
                     
-                scores = parse_harmbench_response(output)
+                scores = score_item(item.benchmark, output)
                 
                 record = item.model_dump()
                 record["prompt_family"] = family

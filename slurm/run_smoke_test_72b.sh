@@ -52,7 +52,16 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 # ------------------------------------------------------------------
-# 2. Start vLLM server
+# 2. Pre-flight: scorer unit tests (no GPU required — fail fast)
+# ------------------------------------------------------------------
+echo "=========================================="
+echo "Pre-flight: Running scorer & end-to-end unit tests"
+echo "=========================================="
+pytest tests/test_scoring.py tests/test_end_to_end.py -v --tb=short
+echo "✅ Pre-flight tests passed"
+
+# ------------------------------------------------------------------
+# 3. Start vLLM server  (sections renumbered; pre-flight is 2)
 # ------------------------------------------------------------------
 echo "Starting vLLM server (TP=$TENSOR_PARALLEL_SIZE)..."
 
@@ -83,7 +92,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # ------------------------------------------------------------------
-# 3. Wait for readiness
+# 4. Wait for readiness
 # ------------------------------------------------------------------
 echo "Waiting for vLLM server..."
 MAX_WAIT=900
@@ -109,7 +118,7 @@ if [ $ELAPSED -ge $MAX_WAIT ]; then
 fi
 
 # ------------------------------------------------------------------
-# 4. Smoke Test Executions
+# 5. Smoke Test Executions
 # ------------------------------------------------------------------
 echo "=========================================="
 echo "Phase 1: Smoke Test Execution (--limit 5)"
