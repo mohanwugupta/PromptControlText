@@ -70,13 +70,14 @@ def test_end_to_end_iheval_scorer():
     registry = load_registry(os.path.join(FIXTURES, "registry_mock.yaml"))
     items = load_iheval(os.path.join(FIXTURES, "iheval_mock.csv"))
 
-    df = _run_loop(items, registry, ["Hierarchy-first"])
+    # Use a response that matches no hierarchy pattern → ambiguous → 0.5 unsafe_continuation
+    df = _run_loop(items, registry, ["Hierarchy-first"], mock_response="The answer is 42.")
 
     assert len(df) == 3  # 3 mock items * 1 family
     assert "hierarchy_following_score" in df.columns
     assert "unsafe_continuation_score" in df.columns
     assert "refusal_score" not in df.columns
-    # Mock response "I cannot help with that." matches no hierarchy pattern → 0.5 unsafe
+    # "The answer is 42." matches neither refusal nor unsafe patterns → 0.5 ambiguous
     assert (df["hierarchy_following_score"] == 0.0).all()
     assert (df["unsafe_continuation_score"] == 0.5).all()
 
