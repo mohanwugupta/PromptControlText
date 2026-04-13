@@ -1,23 +1,38 @@
 import os
 import argparse
-from datasets import load_dataset
+import urllib.request
 import pandas as pd
+
+# HarmBench behaviors CSV hosted directly on GitHub
+HARMBENCH_URL = (
+    "https://raw.githubusercontent.com/centerforaisafety/HarmBench"
+    "/main/data/behavior_datasets/harmbench_behaviors_text_all.csv"
+)
 
 def download_datasets(cache_dir: str):
     os.makedirs(cache_dir, exist_ok=True)
     
     print("Downloading HarmBench...")
     try:
-        # cais/harmbench standard behaviors — no subset config needed
-        dataset = load_dataset("cais/harmbench", split="train")
-        df = dataset.to_pandas()
-        # Rename columns to match harmbench.py loader expectations
-        if "behavior" in df.columns and "BehaviorID" not in df.columns:
-            df = df.rename(columns={"behavior": "Behavior", "behavior_id": "BehaviorID",
-                                    "functional_category": "FunctionalCategory"})
         csv_path = os.path.join(cache_dir, "harmbench_behaviors.csv")
-        df.to_csv(csv_path, index=False)
-        print(f"Saved HarmBench to {csv_path}")
+        urllib.request.urlretrieve(HARMBENCH_URL, csv_path)
+        # Verify expected columns exist
+        df = pd.read_csv(csv_path)
+        # Normalize column names to match harmbench.py loader expectations
+        col_map = {}
+        if "Behavior" not in df.columns and "behavior" in df.columns:
+            col_map["behavior"] = "Behavior"
+        if "BehaviorID" not in df.columns and "BehaviorID_Original" in df.columns:
+            col_map["BehaviorID_Original"] = "BehaviorID"
+        elif "BehaviorID" not in df.columns and "SemanticCategory" in df.columns:
+            pass  # ID column may be index; handled by harmbench.py
+        if "FunctionalCategory" not in df.columns and "FunctionalCategory" not in df.columns:
+            if "SemanticCategory" in df.columns:
+                col_map["SemanticCategory"] = "FunctionalCategory"
+        if col_map:
+            df = df.rename(columns=col_map)
+            df.to_csv(csv_path, index=False)
+        print(f"Saved HarmBench ({len(df)} rows) to {csv_path}")
     except Exception as e:
         print(f"Failed to download HarmBench: {e}")
 
