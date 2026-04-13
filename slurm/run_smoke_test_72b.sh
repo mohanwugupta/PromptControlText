@@ -25,10 +25,10 @@ echo "Node:     $SLURMD_NODENAME"
 # ------------------------------------------------------------------
 # 0. Configuration
 # ------------------------------------------------------------------
-PROJECT_DIR=/scratch/gpfs/JORDANAT/mg9965/promptControlText
+PROJECT_DIR=/scratch/gpfs/JORDANAT/mg9965/PromptControlText
 MODEL_PATH=/scratch/gpfs/JORDANAT/mg9965/models/Qwen--Qwen2.5-72B-Instruct
 SERVED_MODEL_NAME=$(basename "$MODEL_PATH")
-CONDA_ENV=promptControlText
+CONDA_ENV=PromptControlText
 VLLM_PORT=8000
 TENSOR_PARALLEL_SIZE=4
 MAX_MODEL_LEN=32768
