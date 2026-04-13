@@ -5,3 +5,4 @@ pandas
 pyyaml
 python-dotenv
 openai
+scikit-learn
