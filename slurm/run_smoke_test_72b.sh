@@ -76,6 +76,7 @@ python -m vllm.entrypoints.openai.api_server \
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
     --max-num-seqs 512 \
     --enable-chunked-prefill \
+    --enforce-eager \
     --max-num-batched-tokens 32768 \
     --disable-custom-all-reduce \
     &
