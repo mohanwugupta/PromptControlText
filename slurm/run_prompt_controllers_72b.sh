@@ -39,8 +39,8 @@ SERVED_MODEL_NAME=$(basename "$MODEL_PATH")
 CONDA_ENV=PromptControlText
 VLLM_PORT=8000
 TENSOR_PARALLEL_SIZE=4
-MAX_MODEL_LEN=32768
-GPU_MEMORY_UTILIZATION=0.9
+MAX_MODEL_LEN=8192
+GPU_MEMORY_UTILIZATION=0.92
 
 # ------------------------------------------------------------------
 # 1. Environment setup
@@ -115,9 +115,11 @@ python -m vllm.entrypoints.openai.api_server \
     --trust-remote-code \
     --max-model-len "$MAX_MODEL_LEN" \
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
-    --max-num-seqs 256 \
-    --disable-custom-all-reduce \
+    --max-num-seqs 512 \
+    --enable-chunked-prefill \
     --enforce-eager \
+    --max-num-batched-tokens 32768 \
+    --disable-custom-all-reduce \
     &
 
 VLLM_PID=$!
@@ -168,6 +170,7 @@ echo "=========================================="
 
 # E.g., execute phase 1 over XSTest and HarmBench. This is a placeholder for the actual orchestration call.
 python -m experiments.run_phase1 \
-    --generator-model "$SERVED_MODEL_NAME"
+    --generator-model "$SERVED_MODEL_NAME" \
+    --max-workers 64
 
 echo "✅ Job completed at $(date)"

@@ -2,6 +2,7 @@ import os
 import argparse
 import pandas as pd
 from typing import List
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from core.schema import EvalItem
 from benchmarks.iheval import load_iheval
@@ -10,7 +11,32 @@ from models.vllm_client import VLLMClient
 from models.client import LLMClient
 from scoring.hierarchy_scorer import parse_hierarchy_response
 
-def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0):
+def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text: str, generator_model: str):
+    """Single unit of work: one (item, prompt_family, prompt_variant) triple."""
+    try:
+        output, metadata = client.generate(
+            system_prompt=prompt_text,
+            user_prompt=item.input_text,
+            model=generator_model,
+            temperature=0.0
+        )
+    except Exception as e:
+        print(f"Failed generation for {item.item_id} [{family}/{variant}]: {e}")
+        return None
+
+    scores = parse_hierarchy_response(output)
+
+    record = item.model_dump()
+    record["prompt_family"] = family
+    record["prompt_variant"] = variant
+    record["model_output"] = output
+    record["metadata"] = metadata
+    for k, v in scores.items():
+        record[f"{k}_score"] = v
+
+    return record
+
+def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0, max_workers: int = 32):
     print("Loading Registry...")
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     registry_path = os.path.join(base_dir, "prompts", "registry.yaml")
@@ -40,35 +66,31 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
     else:
          client = VLLMClient(model_name=generator_model, enable_cache=True)
 
-    evaluated_records = []
-    
-    print("Generating responses...")
+    # Build the full list of tasks upfront
+    tasks = []
     for item in items:
         for family in registry.keys():
             for variant in registry[family]['variants'].keys():
                 prompt_text = render_prompt(registry, family, variant)
-                
-                try:
-                    output, metadata = client.generate(
-                        system_prompt=prompt_text,
-                        user_prompt=item.input_text,
-                        model=generator_model,
-                        temperature=0.0
-                    )
-                except Exception as e:
-                    print(f"Failed generation for {item.item_id}: {e}")
-                    continue
-                    
-                scores = parse_hierarchy_response(output)
-                
-                record = item.model_dump()
-                record["prompt_family"] = family
-                record["prompt_variant"] = variant
-                record["model_output"] = output
-                record["metadata"] = metadata
-                for k, v in scores.items():
-                    record[f"{k}_score"] = v
-                    
+                tasks.append((item, family, variant, prompt_text))
+
+    total = len(tasks)
+    print(f"Submitting {total} generation tasks with max_workers={max_workers}...")
+
+    evaluated_records = []
+    completed = 0
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {
+            executor.submit(_generate_one, client, item, family, variant, prompt_text, generator_model): (item.item_id, family, variant)
+            for item, family, variant, prompt_text in tasks
+        }
+        for future in as_completed(futures):
+            completed += 1
+            if completed % 100 == 0 or completed == total:
+                print(f"  Progress: {completed}/{total}")
+            record = future.result()
+            if record is not None:
                 evaluated_records.append(record)
 
     os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
@@ -82,9 +104,11 @@ if __name__ == "__main__":
     parser.add_argument("--output-file", type=str, default="artifacts/phase2_results.csv")
     parser.add_argument("--limit", type=int, default=0, help="Limit items for smoke test")
     parser.add_argument("--mock", action="store_true")
+    parser.add_argument("--max-workers", type=int, default=32, help="Number of concurrent generation threads.")
     
     args = parser.parse_args()
     
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     out = os.path.join(base, args.output_file)
-    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit)
+    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit, max_workers=args.max_workers)
+
