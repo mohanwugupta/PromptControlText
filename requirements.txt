@@ -7,3 +7,4 @@ python-dotenv
 openai
 scikit-learn
 matplotlib
+statsmodels>=0.14.6

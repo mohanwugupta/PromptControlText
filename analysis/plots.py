@@ -1,5 +1,7 @@
-import pandas as pd
+import matplotlib
+matplotlib.use("Agg")  # headless backend — must precede pyplot import
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
 import os
 import argparse
@@ -60,6 +62,7 @@ def plot_safety_boundary(csv_path: str, output_path: str):
     
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
     print(f"Safety boundary plot saved to {output_path}")
 
 def plot_hierarchy_conflict(csv_path: str, output_path: str):
@@ -96,7 +99,86 @@ def plot_hierarchy_conflict(csv_path: str, output_path: str):
     
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
     print(f"Hierarchy conflict plot saved to {output_path}")
+
+
+# ---------------------------------------------------------------------------
+# PRD v2 plots
+# ---------------------------------------------------------------------------
+
+def plot_policy_distribution(csv_path: str, output_path: str):
+    """Heatmap of policy-label distribution per controller family.
+
+    PRD v2 §5 RQ1: Do prompt-level controllers induce distinct policy
+    selections on the same item?
+    """
+    if not os.path.exists(csv_path):
+        print(f"File {csv_path} not found.")
+        return
+
+    df = pd.read_csv(csv_path)
+
+    # Cross-tab: rows = prompt_family, cols = classified_policy
+    ct = pd.crosstab(df["prompt_family"], df["classified_policy"], normalize="index")
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    im = ax.imshow(ct.values, cmap="YlOrRd", aspect="auto", vmin=0, vmax=1)
+
+    ax.set_xticks(range(len(ct.columns)))
+    ax.set_xticklabels(ct.columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(ct.index)))
+    ax.set_yticklabels(ct.index)
+
+    # Annotate cells
+    for i in range(len(ct.index)):
+        for j in range(len(ct.columns)):
+            val = ct.values[i, j]
+            ax.text(j, i, f"{val:.2f}", ha="center", va="center",
+                    color="white" if val > 0.5 else "black", fontsize=9)
+
+    fig.colorbar(im, ax=ax, label="Proportion")
+    ax.set_title("Policy Distribution by Controller Family (PRD v2 RQ1)")
+    ax.set_xlabel("Classified Policy")
+    ax.set_ylabel("Controller Family")
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Policy distribution plot saved to {output_path}")
+
+
+def plot_routing_accuracy(csv_path: str, output_path: str):
+    """Grouped bar chart of routing accuracy by family × clarity level.
+
+    PRD v2 §5 RQ2: Does controller clarity improve routing under
+    ambiguity and conflict?
+    """
+    if not os.path.exists(csv_path):
+        print(f"File {csv_path} not found.")
+        return
+
+    df = pd.read_csv(csv_path)
+
+    agg = df.groupby(["prompt_family", "clarity_level"])["routing_correct"].mean().reset_index()
+    agg.rename(columns={"routing_correct": "Routing Accuracy"}, inplace=True)
+
+    pivot = agg.pivot(index="prompt_family", columns="clarity_level", values="Routing Accuracy").fillna(0)
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    pivot.plot(kind="bar", ax=ax)
+
+    ax.set_title("Routing Accuracy by Family × Clarity (PRD v2 RQ2)")
+    ax.set_xlabel("Controller Family")
+    ax.set_ylabel("Routing Accuracy")
+    ax.set_ylim(0, 1.1)
+    ax.legend(title="Clarity Level")
+    plt.xticks(rotation=45, ha="right")
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    fig.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Routing accuracy plot saved to {output_path}")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

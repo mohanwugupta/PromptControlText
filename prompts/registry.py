@@ -17,3 +17,16 @@ def render_prompt(registry: Dict[str, Any], family: str, variant: str) -> str:
 def get_prompt_hash(prompt_text: str) -> str:
     # Stable hash of the prompt text to lock prompt versions
     return hashlib.sha256(prompt_text.encode('utf-8')).hexdigest()
+
+
+def render_prompt_v2(registry: Dict[str, Any], family: str, clarity: str, variant: str) -> str:
+    """Render a v2 prompt: family × clarity_level × paraphrase variant."""
+    if family not in registry:
+        raise ValueError(f"Prompt family '{family}' not found in registry.")
+    clarity_levels = registry[family].get("clarity_levels", {})
+    if clarity not in clarity_levels:
+        raise ValueError(f"Clarity level '{clarity}' not found in family '{family}'.")
+    variants = clarity_levels[clarity]
+    if variant not in variants:
+        raise ValueError(f"Variant '{variant}' not found in {family}/{clarity}.")
+    return variants[variant]
