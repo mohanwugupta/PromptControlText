@@ -102,22 +102,16 @@ fi
 mkdir -p logs artifacts
 
 # ------------------------------------------------------------------
-# 5. Download benchmark datasets (CPU-only, skips if already cached)
+# 5. Validate datasets
 # ------------------------------------------------------------------
-echo "=========================================="
-echo "Downloading benchmark datasets"
-echo "=========================================="
-# Temporarily allow network access for downloads (override offline flags)
-HF_HUB_OFFLINE_SAVED=$HF_HUB_OFFLINE
-TRANSFORMERS_OFFLINE_SAVED=$TRANSFORMERS_OFFLINE
-unset HF_HUB_OFFLINE
-unset TRANSFORMERS_OFFLINE
-
-python -m benchmarks.download_data --cache_dir "$PROJECT_DIR/artifacts/datasets"
-
-export HF_HUB_OFFLINE=$HF_HUB_OFFLINE_SAVED
-export TRANSFORMERS_OFFLINE=$TRANSFORMERS_OFFLINE_SAVED
-echo "✅ Datasets ready"
+DATASETS_DIR="$PROJECT_DIR/benchmarks/artifacts/datasets"
+for f in harmbench_behaviors.csv iheval.csv xstest_prompts.csv; do
+    if [ ! -f "$DATASETS_DIR/$f" ]; then
+        echo "❌ ERROR: Expected dataset not found: $DATASETS_DIR/$f"
+        exit 1
+    fi
+done
+echo "✅ All datasets found in $DATASETS_DIR"
 
 # ------------------------------------------------------------------
 # 6. Start vLLM server
@@ -135,7 +129,6 @@ python -m vllm.entrypoints.openai.api_server \
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
     --max-num-seqs 512 \
     --enable-chunked-prefill \
-    --enforce-eager \
     --max-num-batched-tokens 32768 \
     --disable-custom-all-reduce \
     &
@@ -187,7 +180,7 @@ echo "Phase 1: XSTest + HarmBench (full dataset)"
 echo "=========================================="
 python -m experiments.run_phase1 \
     --generator-model "$SERVED_MODEL_NAME" \
-    --data-dir "$PROJECT_DIR/artifacts/datasets" \
+    --data-dir "$PROJECT_DIR/benchmarks/artifacts/datasets" \
     --max-workers 64
 
 echo "=========================================="
@@ -195,7 +188,7 @@ echo "Phase 2: IHEval hierarchy conflict (full dataset)"
 echo "=========================================="
 python -m experiments.run_phase2 \
     --generator-model "$SERVED_MODEL_NAME" \
-    --data-dir "$PROJECT_DIR/artifacts/datasets" \
+    --data-dir "$PROJECT_DIR/benchmarks/artifacts/datasets" \
     --max-workers 64
 
 echo "✅ Job completed at $(date)"

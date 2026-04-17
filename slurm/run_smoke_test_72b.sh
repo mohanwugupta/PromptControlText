@@ -52,17 +52,16 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 # ------------------------------------------------------------------
-# 2. Download benchmark datasets (CPU-only, skips if already cached)
+# 2. Validate datasets
 # ------------------------------------------------------------------
-echo "=========================================="
-echo "Downloading benchmark datasets"
-echo "=========================================="
-unset HF_HUB_OFFLINE
-unset TRANSFORMERS_OFFLINE
-python -m benchmarks.download_data --cache_dir "$PROJECT_DIR/artifacts/datasets"
-export HF_HUB_OFFLINE=1
-export TRANSFORMERS_OFFLINE=1
-echo "✅ Datasets ready"
+DATASETS_DIR="$PROJECT_DIR/benchmarks/artifacts/datasets"
+for f in harmbench_behaviors.csv iheval.csv xstest_prompts.csv; do
+    if [ ! -f "$DATASETS_DIR/$f" ]; then
+        echo "❌ ERROR: Expected dataset not found: $DATASETS_DIR/$f"
+        exit 1
+    fi
+done
+echo "✅ All datasets found in $DATASETS_DIR"
 
 # ------------------------------------------------------------------
 # 3. Pre-flight: scorer unit tests (no GPU required — fail fast)
@@ -137,13 +136,13 @@ fi
 echo "=========================================="
 echo "Phase 1: Smoke Test Execution (--limit 5)"
 echo "=========================================="
-python -m experiments.run_phase1 --generator-model "$SERVED_MODEL_NAME" --limit 5 --max-workers 16 --data-dir "$PROJECT_DIR/artifacts/datasets"
+python -m experiments.run_phase1 --generator-model "$SERVED_MODEL_NAME" --limit 5 --max-workers 16 --data-dir "$PROJECT_DIR/benchmarks/artifacts/datasets"
 python -m analysis.plots --phase 1
 
 echo "=========================================="
 echo "Phase 2: Smoke Test Execution (--limit 5)"
 echo "=========================================="
-python -m experiments.run_phase2 --generator-model "$SERVED_MODEL_NAME" --limit 5 --max-workers 16 --data-dir "$PROJECT_DIR/artifacts/datasets"
+python -m experiments.run_phase2 --generator-model "$SERVED_MODEL_NAME" --limit 5 --max-workers 16 --data-dir "$PROJECT_DIR/benchmarks/artifacts/datasets"
 python -m analysis.plots --phase 2
 
 echo "✅ Smoke test completed perfectly at $(date)"
