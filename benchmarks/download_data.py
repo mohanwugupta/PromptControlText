@@ -12,8 +12,52 @@ HARMBENCH_URL = (
     "/main/data/behavior_datasets/harmbench_behaviors_text_all.csv"
 )
 
+# XSTest prompts CSV — official repo (Röttger et al., NAACL 2024)
+# Columns: id, prompt, type, label, focus, note
+# 250 safe + 200 unsafe = 450 prompts total
+XSTEST_URL = (
+    "https://raw.githubusercontent.com/paul-rottger/xstest/main/xstest_prompts.csv"
+)
+
 # IHEval repo zip archive
 IHEVAL_ZIP_URL = "https://github.com/ytyz1307zzh/IHEval/archive/refs/heads/main.zip"
+
+
+def download_xstest(cache_dir: str) -> str:
+    """Download the official XSTest prompts CSV from GitHub.
+
+    The real schema is: id, prompt, type, label, focus, note
+      - label : 'safe' | 'unsafe'  (ground truth)
+      - type  : prompt-type category (homonyms, contrast_homonyms, …)
+    """
+    csv_path = os.path.join(cache_dir, "xstest_prompts.csv")
+    if os.path.exists(csv_path):
+        print(f"XSTest already present at {csv_path}, skipping download.")
+        return csv_path
+
+    print(f"Downloading XSTest from {XSTEST_URL} ...")
+    with urllib.request.urlopen(XSTEST_URL) as resp:
+        raw = resp.read().decode("utf-8")
+
+    # Parse with pandas to validate and normalise
+    from io import StringIO
+    df = pd.read_csv(StringIO(raw))
+
+    required = {"id", "prompt", "type", "label"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"XSTest CSV is missing expected columns: {missing}. "
+            f"Actual columns: {list(df.columns)}"
+        )
+
+    # Normalise label to lowercase
+    df["label"] = df["label"].str.strip().str.lower()
+    df.to_csv(csv_path, index=False)
+    safe_n   = (df["label"] == "safe").sum()
+    unsafe_n = (df["label"] == "unsafe").sum()
+    print(f"Saved XSTest ({len(df)} rows: {safe_n} safe, {unsafe_n} unsafe) to {csv_path}")
+    return csv_path
 
 
 def _extract_iheval_rows(json_obj, task: str, setting: str) -> list:
@@ -104,6 +148,12 @@ def download_iheval(cache_dir: str) -> str:
 
 def download_datasets(cache_dir: str):
     os.makedirs(cache_dir, exist_ok=True)
+
+    print("Downloading XSTest...")
+    try:
+        download_xstest(cache_dir)
+    except Exception as e:
+        print(f"Failed to download XSTest: {e}")
     
     print("Downloading HarmBench...")
     try:

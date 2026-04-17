@@ -52,7 +52,20 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
 # ------------------------------------------------------------------
-# 2. Pre-flight: scorer unit tests (no GPU required — fail fast)
+# 2. Download benchmark datasets (CPU-only, skips if already cached)
+# ------------------------------------------------------------------
+echo "=========================================="
+echo "Downloading benchmark datasets"
+echo "=========================================="
+unset HF_HUB_OFFLINE
+unset TRANSFORMERS_OFFLINE
+python -m benchmarks.download_data --cache_dir artifacts/datasets
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
+echo "✅ Datasets ready"
+
+# ------------------------------------------------------------------
+# 3. Pre-flight: scorer unit tests (no GPU required — fail fast)
 # ------------------------------------------------------------------
 echo "=========================================="
 echo "Pre-flight: Running scorer & end-to-end unit tests"
@@ -61,7 +74,7 @@ pytest tests/test_scoring.py tests/test_end_to_end.py -v --tb=short
 echo "✅ Pre-flight tests passed"
 
 # ------------------------------------------------------------------
-# 3. Start vLLM server  (sections renumbered; pre-flight is 2)
+# 4. Start vLLM server
 # ------------------------------------------------------------------
 echo "Starting vLLM server (TP=$TENSOR_PARALLEL_SIZE)..."
 
@@ -76,7 +89,6 @@ python -m vllm.entrypoints.openai.api_server \
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
     --max-num-seqs 512 \
     --enable-chunked-prefill \
-    --enforce-eager \
     --max-num-batched-tokens 32768 \
     --disable-custom-all-reduce \
     &

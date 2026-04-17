@@ -9,7 +9,7 @@
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mg9965@princeton.edu
-#SBATCH --time=6:00:00
+#SBATCH --time=1:00:00
 #SBATCH --output=logs/prompt_controllers_72b_%j.out
 #SBATCH --error=logs/prompt_controllers_72b_%j.err
 
@@ -102,7 +102,25 @@ fi
 mkdir -p logs artifacts
 
 # ------------------------------------------------------------------
-# 5. Start vLLM server
+# 5. Download benchmark datasets (CPU-only, skips if already cached)
+# ------------------------------------------------------------------
+echo "=========================================="
+echo "Downloading benchmark datasets"
+echo "=========================================="
+# Temporarily allow network access for downloads (override offline flags)
+HF_HUB_OFFLINE_SAVED=$HF_HUB_OFFLINE
+TRANSFORMERS_OFFLINE_SAVED=$TRANSFORMERS_OFFLINE
+unset HF_HUB_OFFLINE
+unset TRANSFORMERS_OFFLINE
+
+python -m benchmarks.download_data --cache_dir artifacts/datasets
+
+export HF_HUB_OFFLINE=$HF_HUB_OFFLINE_SAVED
+export TRANSFORMERS_OFFLINE=$TRANSFORMERS_OFFLINE_SAVED
+echo "✅ Datasets ready"
+
+# ------------------------------------------------------------------
+# 6. Start vLLM server
 # ------------------------------------------------------------------
 echo "Starting vLLM server (Qwen2.5-72B, TP=$TENSOR_PARALLEL_SIZE)..."
 
@@ -135,7 +153,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # ------------------------------------------------------------------
-# 6. Wait for server readiness
+# 7. Wait for server readiness
 # ------------------------------------------------------------------
 echo "Waiting for vLLM server..."
 MAX_WAIT=900
@@ -162,14 +180,19 @@ if [ $ELAPSED -ge $MAX_WAIT ]; then
 fi
 
 # ------------------------------------------------------------------
-# 7. Run Evaluation Pipeline
+# 8. Run Evaluation Pipeline (all items, no --limit)
 # ------------------------------------------------------------------
 echo "=========================================="
-echo "Executing Phase 1 Entrypoint"
+echo "Phase 1: XSTest + HarmBench (full dataset)"
 echo "=========================================="
-
-# E.g., execute phase 1 over XSTest and HarmBench. This is a placeholder for the actual orchestration call.
 python -m experiments.run_phase1 \
+    --generator-model "$SERVED_MODEL_NAME" \
+    --max-workers 64
+
+echo "=========================================="
+echo "Phase 2: IHEval hierarchy conflict (full dataset)"
+echo "=========================================="
+python -m experiments.run_phase2 \
     --generator-model "$SERVED_MODEL_NAME" \
     --max-workers 64
 

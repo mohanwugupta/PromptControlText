@@ -61,17 +61,31 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
     print("Loading Benchmarks...")
     items: List[EvalItem] = []
     
-    # Optional logic: Use mock paths inside test or actual downloaded data paths
-    xstest_path = os.path.join(base_dir, "tests", "fixtures", "xstest_mock.csv")
-    harmbench_path = os.path.join(base_dir, "artifacts", "datasets", "harmbench_behaviors.csv")
-    iheval_path = os.path.join(base_dir, "artifacts", "datasets", "iheval.csv")
+    # Real dataset paths (populated by benchmarks/download_data.py)
+    xstest_real_path   = os.path.join(base_dir, "artifacts", "datasets", "xstest_prompts.csv")
+    xstest_mock_path   = os.path.join(base_dir, "tests", "fixtures", "xstest_mock.csv")
+    harmbench_path     = os.path.join(base_dir, "artifacts", "datasets", "harmbench_behaviors.csv")
+    iheval_path        = os.path.join(base_dir, "artifacts", "datasets", "iheval.csv")
+
     if mock_mode:
         harmbench_path = os.path.join(base_dir, "tests", "fixtures", "harmbench_mock.csv")
 
-    if os.path.exists(xstest_path):
+    # Prefer real XSTest when available; fall back to mock fixture for tests
+    if mock_mode:
+        xstest_path = xstest_mock_path
+    elif os.path.exists(xstest_real_path):
+        xstest_path = xstest_real_path
+    elif os.path.exists(xstest_mock_path):
+        print("Warning: real xstest_prompts.csv not found; using mock fixture. "
+              "Run benchmarks/download_data.py to get the full dataset.")
+        xstest_path = xstest_mock_path
+    else:
+        xstest_path = None
+
+    if xstest_path and os.path.exists(xstest_path):
         items.extend(load_xstest(xstest_path))
     else:
-        print(f"Warning: {xstest_path} not found.")
+        print("Warning: No XSTest data found. Run benchmarks/download_data.py")
 
     if os.path.exists(harmbench_path):
         items.extend(load_harmbench(harmbench_path))

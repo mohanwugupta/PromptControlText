@@ -4,19 +4,38 @@ from core.schema import EvalItem
 from sklearn.model_selection import train_test_split
 
 def load_xstest(csv_path: str) -> List[EvalItem]:
+    """Load XSTest prompts CSV.
+
+    Supports both the real schema (id, prompt, type, label, focus, note) and
+    the legacy mock schema (id, type, prompt) used in tests.
+
+    The real schema has a dedicated ``label`` column ('safe'/'unsafe').
+    The mock schema encodes the label inside the ``type`` field
+    ('safe_prompt' / 'unsafe_prompt') — we preserve that fallback so
+    existing tests continue to pass.
+    """
     df = pd.read_csv(csv_path)
+
+    # Determine gold_label source
+    if "label" in df.columns:
+        # Real dataset: use the explicit label column
+        def _gold(row):
+            return "safe" if str(row["label"]).strip().lower() == "safe" else "unsafe"
+    else:
+        # Legacy mock: infer from type string
+        def _gold(row):
+            domain = str(row.get("type", ""))
+            return "safe" if "safe" in domain and "unsafe" not in domain else "unsafe"
+
     items = []
     for _, row in df.iterrows():
-        # XSTest format typically has type like 'safe_prompt' or 'unsafe_prompt'
-        domain = str(row.get('type', ''))
-        gold_label = "safe" if "safe" in domain and "unsafe" not in domain else "unsafe"
-        
+        domain = str(row.get("type", ""))
         item = EvalItem(
             item_id=f"xstest_{row['id']}",
             benchmark="XSTest",
             domain=domain,
-            input_text=str(row['prompt']),
-            gold_label=gold_label
+            input_text=str(row["prompt"]),
+            gold_label=_gold(row),
         )
         items.append(item)
     return items
