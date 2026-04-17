@@ -36,16 +36,20 @@ def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text
 
     return record
 
-def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0, max_workers: int = 32):
+def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0, max_workers: int = 32, data_dir: str = None):
     print("Loading Registry...")
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if data_dir is None:
+        data_dir = os.path.join(base_dir, "artifacts", "datasets")
+    data_dir = os.path.abspath(data_dir)
+    print(f"Dataset directory: {data_dir}")
     registry_path = os.path.join(base_dir, "prompts", "registry.yaml")
     registry = load_registry(registry_path)
     
     print("Loading Benchmarks...")
     items: List[EvalItem] = []
     
-    iheval_path = os.path.join(base_dir, "artifacts", "datasets", "iheval.csv")
+    iheval_path = os.path.join(data_dir, "iheval.csv")
     if mock_mode:
         iheval_path = os.path.join(base_dir, "tests", "fixtures", "iheval_mock.csv")
 
@@ -105,10 +109,11 @@ if __name__ == "__main__":
     parser.add_argument("--limit", type=int, default=0, help="Limit items for smoke test")
     parser.add_argument("--mock", action="store_true")
     parser.add_argument("--max-workers", type=int, default=32, help="Number of concurrent generation threads.")
+    parser.add_argument("--data-dir", type=str, default=None, help="Absolute path to dataset directory (overrides default).")
     
     args = parser.parse_args()
     
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     out = os.path.join(base, args.output_file)
-    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit, max_workers=args.max_workers)
+    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit, max_workers=args.max_workers, data_dir=args.data_dir)
 

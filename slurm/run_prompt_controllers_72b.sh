@@ -113,7 +113,7 @@ TRANSFORMERS_OFFLINE_SAVED=$TRANSFORMERS_OFFLINE
 unset HF_HUB_OFFLINE
 unset TRANSFORMERS_OFFLINE
 
-python -m benchmarks.download_data --cache_dir artifacts/datasets
+python -m benchmarks.download_data --cache_dir "$PROJECT_DIR/artifacts/datasets"
 
 export HF_HUB_OFFLINE=$HF_HUB_OFFLINE_SAVED
 export TRANSFORMERS_OFFLINE=$TRANSFORMERS_OFFLINE_SAVED
@@ -187,6 +187,7 @@ echo "Phase 1: XSTest + HarmBench (full dataset)"
 echo "=========================================="
 python -m experiments.run_phase1 \
     --generator-model "$SERVED_MODEL_NAME" \
+    --data-dir "$PROJECT_DIR/artifacts/datasets" \
     --max-workers 64
 
 echo "=========================================="
@@ -194,6 +195,7 @@ echo "Phase 2: IHEval hierarchy conflict (full dataset)"
 echo "=========================================="
 python -m experiments.run_phase2 \
     --generator-model "$SERVED_MODEL_NAME" \
+    --data-dir "$PROJECT_DIR/artifacts/datasets" \
     --max-workers 64
 
 echo "✅ Job completed at $(date)"
