@@ -9,7 +9,7 @@
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mg9965@princeton.edu
-#SBATCH --time=3:00:00
+#SBATCH --time=12:00:00
 #SBATCH --output=logs/prompt_controllers_72b_%j.out
 #SBATCH --error=logs/prompt_controllers_72b_%j.err
 
