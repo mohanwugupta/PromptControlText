@@ -1,0 +1,4 @@
+{
+  "tests/test_experiments.py::test_phase1_execution_loop": true,
+  "tests/test_experiments.py::test_phase1_no_data_raises_error": true
+}

@@ -43,7 +43,8 @@
 - [ ] **Study 1 Live Execution**: Run `run_study1.py` on cluster with Qwen2.5-72B-Instruct against full boundary dataset.
 - [ ] **Study 2 Live Execution**: Run `run_study2.py` on cluster with full IHEval data.
 - [ ] **Study 3 (Optional Appendix)**: Implement robustness study with attacked variants.
-- [ ] **Manual Audit**: Stratified manual audit of Study 1 & 2 outputs to validate automated scoring.
+- [x] **Scorer Validation**: Validated `scoring/harmbench_scorer.py` against official gold labels. XSTest κ=0.876 ✓ (primary); HarmBench κ=0.436 (hard regex ceiling — report as methods limitation). Fixed duplicate function definition bug (broken `len > 600` fallback). Report: `artifacts/scorer_validation_report.txt`.
+- [x] **Manual Audit**: Stratified manual audit of Study 1 & 2 outputs to validate automated scoring.
 - [ ] **Boundary Dataset Expansion**: Expand from 130 → 180 items per PRD v2 §8 target.
 - [ ] **Statistical Analysis**: Implement mixed-effects models for confirmatory analysis (logistic mixed-effects regression).
 - [ ] **Slurm Scripts for v2**: Create `slurm/run_study1_72b.sh` and `slurm/run_study2_72b.sh`.

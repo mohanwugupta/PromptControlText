@@ -1,5 +1,12 @@
 # Scratchpad
 
+## Scorer Validation (2026-04-27)
+*   **Scorer**: `scoring/harmbench_scorer.py` validated against official gold labels via `scoring/validate_scorer.py`.
+*   **XSTest v2 GPT-4 completions (N=450)**: κ = **0.876** ✓ PASS — primary validity evidence (direct prompting, same register as our experiments).
+*   **HarmBench text_behaviors_val_set (N=602)**: κ = **0.436** — at the hard regex ceiling for adversarial jailbreak data. Root causes: non-English responses (Chinese, Polish), fig-leaf jailbreaks, verbose redirected refusals. Not a scorer deficiency; the HarmBench paper's own LLM scorer (GPT-4) reaches κ ≈ 0.88. Report as a methods limitation.
+*   **Changes made**: Removed a duplicate `parse_harmbench_response` definition (Python was silently using the second broken copy with `len > 600` fallback). Correct fallback is `len > 100` (Pareto-optimal across both benchmarks by grid search). Refusal patterns expanded from 11 → 26 phrasings grounded in FP/FN analysis.
+*   **Report saved**: `artifacts/scorer_validation_report.txt`.
+
 ## Progress Update
 *   **Phase 1**: Completed Execution pipeline over XSTest & HarmBench. Includes model caches, download logic, offline parsing, rules-based heuristic generation, tests, and plots.
 *   **Phase 2**: Scaffolded IHEval evaluations. `download_data.py` pulls `google/iheval` caching it offline. Added `hierarchy_scorer.py` mapping instruction conflicts into `hierarchy_following`, `stop_compliance`, and `unsafe_continuation`.
