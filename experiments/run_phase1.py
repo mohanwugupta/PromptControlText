@@ -8,7 +8,7 @@ from core.schema import EvalItem
 from benchmarks.xstest import load_xstest
 from benchmarks.harmbench import load_harmbench
 from benchmarks.iheval import load_iheval
-from prompts.registry import load_registry, render_prompt
+from prompts.registry import load_registry, render_prompt, iter_prompt_triples
 from models.vllm_client import VLLMClient
 from models.client import LLMClient
 from scoring.harmbench_scorer import parse_harmbench_response
@@ -24,7 +24,7 @@ def score_item(benchmark: str, response: str):
     scorer = BENCHMARK_SCORERS.get(benchmark, parse_harmbench_response)
     return scorer(response)
 
-def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text: str, generator_model: str):
+def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text: str, generator_model: str, clarity: str = None):
     """Single unit of work: one (item, prompt_family, prompt_variant) triple."""
     try:
         output, metadata = client.generate(
@@ -42,6 +42,7 @@ def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text
     record = item.model_dump()
     record["prompt_family"] = family
     record["prompt_variant"] = variant
+    record["clarity_level"] = clarity
     record["model_output"] = output
     record["metadata"] = metadata
     for k, v in scores.items():
@@ -49,7 +50,7 @@ def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text
 
     return record
 
-def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0, max_workers: int = 32, data_dir: str = None):
+def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0, max_workers: int = 32, data_dir: str = None, registry_version: str = "v1"):
     print("Loading Registry...")
     # Setup Paths
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -57,8 +58,17 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
         data_dir = os.path.join(base_dir, "artifacts", "datasets")
     data_dir = os.path.abspath(data_dir)
     print(f"Dataset directory: {data_dir}")
-    registry_path = os.path.join(base_dir, "prompts", "registry.yaml")
-    
+
+    _REGISTRY_FILES = {
+        "v1": "registry.yaml",
+        "v2": "registry_v2.yaml",
+        "v3": "registry_v3.yaml",
+    }
+    if registry_version not in _REGISTRY_FILES:
+        raise ValueError(f"Unknown registry_version '{registry_version}'. Choose from: {list(_REGISTRY_FILES)}")
+    registry_path = os.path.join(base_dir, "prompts", _REGISTRY_FILES[registry_version])
+    print(f"Registry: {registry_path}")
+
     # Load registry
     registry = load_registry(registry_path)
     
@@ -113,13 +123,12 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
     else:
          client = VLLMClient(model_name=generator_model, enable_cache=True)
 
-    # Build the full list of (item, family, variant, prompt_text) tasks upfront
+    # Build the full list of (item, family, clarity, variant, prompt_text) tasks.
+    # iter_prompt_triples() handles both v1 (clarity=None) and v2/v3 schemas.
     tasks = []
     for item in items:
-        for family in registry.keys():
-            for variant in registry[family]['variants'].keys():
-                prompt_text = render_prompt(registry, family, variant)
-                tasks.append((item, family, variant, prompt_text))
+        for family, clarity, variant, prompt_text in iter_prompt_triples(registry):
+            tasks.append((item, family, clarity, variant, prompt_text))
 
     total = len(tasks)
     print(f"Submitting {total} generation tasks with max_workers={max_workers}...")
@@ -129,8 +138,8 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
-            executor.submit(_generate_one, client, item, family, variant, prompt_text, generator_model): (item.item_id, family, variant)
-            for item, family, variant, prompt_text in tasks
+            executor.submit(_generate_one, client, item, family, variant, prompt_text, generator_model, clarity): (item.item_id, family, variant)
+            for item, family, clarity, variant, prompt_text in tasks
         }
         for future in as_completed(futures):
             completed += 1
@@ -154,9 +163,11 @@ if __name__ == "__main__":
     parser.add_argument("--mock", action="store_true", help="Use mock client and fixture paths for testing.")
     parser.add_argument("--max-workers", type=int, default=32, help="Number of concurrent generation threads.")
     parser.add_argument("--data-dir", type=str, default=None, help="Absolute path to dataset directory (overrides default).")
+    parser.add_argument("--registry-version", type=str, default="v1", choices=["v1", "v2", "v3"],
+                        help="Prompt registry schema version to use (default: v1).")
     
     args = parser.parse_args()
     
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     out = os.path.join(base, args.output_file)
-    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit, max_workers=args.max_workers, data_dir=args.data_dir)
+    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit, max_workers=args.max_workers, data_dir=args.data_dir, registry_version=args.registry_version)

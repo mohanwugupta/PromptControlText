@@ -1,5 +1,29 @@
 # Scratchpad
 
+## PRD v3 Implementation (Mining LLM Responses for Emergent Policy Types)
+
+### Core objective
+Discovery pipeline to mine existing Phase 1 & 2 outputs for emergent behavioral policy types, identify routing-sensitive items, and validate the v2 policy taxonomy against data.
+
+### New Modules (`mining/`)
+*   **`response_table.py`**: Unified row-level table builder — loads Phase 1 + Phase 2 CSVs into a single 106,020-row DataFrame. Strict column contract; warns and drops rows with empty `model_output`.
+*   **`features.py`**: Deterministic feature extraction — 9 numeric features (length, punctuation, 4 phrase groups: refusal/hedging/apology/redirection) + language detection (`langdetect`). Same input → same output guaranteed.
+*   **`clustering.py`**: KMeans pipeline with text-only (TF-IDF) and hybrid (TF-IDF + scorer columns) modes. Deterministic seeds, silhouette diagnostics, `top_terms_per_cluster()`, `reduce_for_viz()` (t-SNE/UMAP).
+*   **`exemplars.py`**: Centroid-nearest and stratified-random exemplar selection per cluster. `build_exemplar_table()` combines both into an audit-ready CSV.
+*   **`routing_sensitivity.py`**: Per-item disagreement score = weighted average of normalised cluster entropy + policy entropy + length CV. `compute_routing_sensitivity()` ranks all items; `get_routing_sensitive_items()` filters to top-N.
+*   **`reports.py`**: Full pipeline CLI (`python -m mining.reports`). Outputs: mining_table.csv, exemplars CSV, routing_sensitivity.csv, fig1 cluster sizes, fig3 enrichment heatmap, cluster_report.txt, routing_sensitive_report.txt, taxonomy_memo.txt, manifest.json — all stamped under `artifacts/mining/<date>/`.
+
+### Test Coverage (TDD RED→GREEN)
+*   `test_response_table.py`: 12 tests — column contract, row preservation, NaN back-fill, error handling.
+*   `test_feature_extraction.py`: 17 tests — determinism, zero-vector for empty, all phrase groups, DataFrame helper.
+*   `test_clustering_pipeline.py`: 19 tests — determinism, toy separation, bad inputs fail loudly, top terms.
+*   `test_exemplar_selection.py`: 11 tests — centroid and random selection, no upsampling, reproducibility.
+*   `test_routing_sensitivity.py`: 13 tests — known cases rank correctly, tied cases broken by item_id, invalid inputs raise.
+*   `test_cluster_enrichment.py`: 6 tests — row sums to 1, values in [0,1], dominant family enriched, figure written.
+*   `test_mining_reports.py`: 9 tests — all artifact files written with correct content.
+*   `test_mining_end_to_end.py`: 6 tests — full pipeline on fixture produces all artifacts with correct schema.
+*   **Total new v3 tests: 93. All GREEN.**
+
 ## Scorer Validation (2026-04-27)
 *   **Scorer**: `scoring/harmbench_scorer.py` validated against official gold labels via `scoring/validate_scorer.py`.
 *   **XSTest v2 GPT-4 completions (N=450)**: κ = **0.876** ✓ PASS — primary validity evidence (direct prompting, same register as our experiments).

@@ -1,0 +1,73 @@
+========================================================================
+TAXONOMY REVISION MEMO  [DRAFT — pending manual exemplar review]
+Generated: 2026-04-28T19:12:03
+========================================================================
+
+Current v2 policy labels:
+  answer, refuse, clarify, minimal_safe_help, hierarchy_preserve
+
+Cluster → provisional label mapping
+(Fill in after manual exemplar inspection)
+----------------------------------------
+  Cluster 0  (n=22326)
+    Top terms    : you, to, or, if, if you, assist, can, and
+    Provisional label : [FILL IN]
+    Maps to v2   : [FILL IN or 'NEW']
+    Notes        : 
+
+  Cluster 1  (n=13439)
+    Top terms    : instructions, the, access, the instructions, denied, access denied, user, so far
+    Provisional label : [FILL IN]
+    Maps to v2   : [FILL IN or 'NEW']
+    Notes        : 
+
+  Cluster 2  (n=20938)
+    Top terms    : you, could you, you please, could, please, or, seems like, it seems
+    Provisional label : [FILL IN]
+    Maps to v2   : [FILL IN or 'NEW']
+    Notes        : 
+
+  Cluster 3  (n=33014)
+    Top terms    : the, and, of, in, to, is, that, or
+    Provisional label : [FILL IN]
+    Maps to v2   : [FILL IN or 'NEW']
+    Notes        : 
+
+  Cluster 4  (n=3575)
+    Top terms    : that doesn, string of, string, you, of characters, ve entered, characters that, entered
+    Provisional label : [FILL IN]
+    Maps to v2   : [FILL IN or 'NEW']
+    Notes        : 
+
+  Cluster 5  (n=9314)
+    Top terms    : granted, access granted, access, granted access, granted granted, access denied, denied, deny
+    Provisional label : [FILL IN]
+    Maps to v2   : [FILL IN or 'NEW']
+    Notes        : 
+
+  Cluster 6  (n=3410)
+    Top terms    : sure what, not sure, mean by, sure, you mean, mean, clarify your, what you
+    Provisional label : [FILL IN]
+    Maps to v2   : [FILL IN or 'NEW']
+    Notes        : 
+
+----------------------------------------
+
+Candidate labels (from PRD v3 §11):
+  direct refusal
+  hedged refusal
+  clarification
+  safe redirection
+  minimal-safe-help
+  hierarchy-preserving refusal
+  answer with safety preamble
+  direct compliance
+  mixed / ambiguous
+
+Assessment questions:
+  1. Are all v2 labels represented? Which are missing?
+  2. Are any clusters not covered by v2 labels?
+  3. Should any v2 labels be merged or split?
+  4. Are any clusters too heterogeneous to label?
+
+[END OF MEMO]

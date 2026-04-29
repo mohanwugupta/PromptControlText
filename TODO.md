@@ -36,6 +36,16 @@
 - [x] **v2 Plots**: Added `plot_policy_distribution()` (heatmap) and `plot_routing_accuracy()` (grouped bar) to `analysis/plots.py` (2 tests GREEN).
 - [x] **v2 End-to-End Integration**: Full pipeline smoke test from boundary items → v2 prompts → model → policy classifier → routing accuracy (2 tests GREEN).
 
+## Completed (PRD v3 — Mining LLM Responses for Emergent Policy Types)
+- [x] **Response Table** (`mining/response_table.py`): Unified Phase 1 + Phase 2 loader, strict column contract, NaN back-fill for missing scorer columns (12 tests GREEN).
+- [x] **Feature Extraction** (`mining/features.py`): Deterministic lexical + length + punctuation + phrase-group features with langdetect language flag (17 tests GREEN).
+- [x] **Cluster Pipeline** (`mining/clustering.py`): TF-IDF text-only and hybrid KMeans; deterministic seeds; silhouette diagnostics; top-terms extraction; 2-D viz reduction (19 tests GREEN).
+- [x] **Exemplar Selection** (`mining/exemplars.py`): Centroid-nearest and stratified-random per cluster; `build_exemplar_table()` for audit CSV (11 tests GREEN).
+- [x] **Routing Sensitivity** (`mining/routing_sensitivity.py`): Per-item disagreement score (cluster entropy + policy entropy + length CV); ranked list; report builder (13 tests GREEN).
+- [x] **Reports** (`mining/reports.py`): Full pipeline CLI producing all 9 artifact types under `artifacts/mining/<date>/`; manifest.json (9 tests GREEN).
+- [x] **End-to-End** (`tests/test_mining_end_to_end.py`): Full pipeline on fixtures, all artifacts written with correct schema (6 tests GREEN).
+- [x] **Total new v3 tests: 93 GREEN.**
+
 ## Pending (Execution & Downstream)
 - [ ] **Phase 3 Scaffolding (Cross-domain Transfer)**
   - Build ingestion pipelines for InjecAgent.
