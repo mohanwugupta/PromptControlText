@@ -1,6 +1,4 @@
 {
-  "tests/test_experiments.py::test_phase1_execution_loop": true,
-  "tests/test_experiments.py::test_phase1_no_data_raises_error": true,
   "tests/test_benchmarks.py::test_load_xstest": true,
   "tests/test_end_to_end.py::test_end_to_end_pipeline": true,
   "tests/test_stats.py::TestRunRoutingLMM::test_returns_dict_with_required_keys": true,

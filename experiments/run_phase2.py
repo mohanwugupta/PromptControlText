@@ -1,4 +1,5 @@
 import os
+import unicodedata
 import argparse
 import pandas as pd
 from typing import List
@@ -10,6 +11,29 @@ from prompts.registry import load_registry, render_prompt, iter_prompt_triples
 from models.vllm_client import VLLMClient
 from models.client import LLMClient
 from scoring.hierarchy_scorer import parse_hierarchy_response
+
+# ---------------------------------------------------------------------------
+# Output quality validation (shared logic with run_phase1)
+# ---------------------------------------------------------------------------
+
+def _is_valid_output(text: str) -> tuple[bool, str]:
+    """
+    Return (is_valid, reason) for a raw model output string.
+
+    Catches two known failure modes:
+      1. Literal ``<tool_call>`` tokens — the model serialised a function call
+         instead of producing a plain-text response.
+      2. Garbled Unicode — >10 % of characters carry combining diacritics,
+         which indicates the model hallucinated character substitutions on
+         adversarial / malformed inputs.
+    """
+    if "<tool_call>" in text:
+        return False, "tool_call_token"
+    nfd = unicodedata.normalize("NFD", text)
+    combining = sum(1 for c in nfd if unicodedata.category(c) == "Mn")
+    if len(text) > 0 and combining / len(nfd) > 0.10:
+        return False, "garbled_unicode"
+    return True, ""
 
 def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text: str, generator_model: str, clarity: str = None):
     """Single unit of work: one (item, prompt_family, prompt_variant) triple."""
@@ -24,13 +48,15 @@ def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text
         print(f"Failed generation for {item.item_id} [{family}/{variant}]: {e}")
         return None
 
-    scores = parse_hierarchy_response(output)
+    valid, invalid_reason = _is_valid_output(output)
+    scores = parse_hierarchy_response(output) if valid else {}
 
     record = item.model_dump()
     record["prompt_family"] = family
     record["prompt_variant"] = variant
     record["clarity_level"] = clarity
     record["model_output"] = output
+    record["malformed_output"] = "" if valid else invalid_reason
     record["metadata"] = metadata
     for k, v in scores.items():
         record[f"{k}_score"] = v

@@ -28,6 +28,7 @@ def test_phase1_execution_loop(tmp_path):
     # Mocking external calls
     with patch("experiments.run_phase1.load_xstest", return_value=mock_items[:1]), \
          patch("experiments.run_phase1.load_harmbench", return_value=mock_items[1:]), \
+         patch("experiments.run_phase1.load_iheval", return_value=[]), \
          patch("experiments.run_phase1.load_registry", return_value=mock_registry), \
          patch("experiments.run_phase1.VLLMClient", return_value=mock_client), \
          patch("experiments.run_phase1.os.path.exists", return_value=True):
@@ -74,6 +75,7 @@ def test_phase1_no_data_raises_error(tmp_path):
     
     with patch("experiments.run_phase1.load_xstest", return_value=[]), \
          patch("experiments.run_phase1.load_harmbench", return_value=[]), \
+         patch("experiments.run_phase1.load_iheval", return_value=[]), \
          patch("experiments.run_phase1.load_registry", return_value={"mock": {"variants": {"v1": "Prompt"}}}), \
          patch("experiments.run_phase1.os.path.exists", return_value=True):
          
@@ -90,3 +92,70 @@ def test_phase2_no_data_raises_error(tmp_path):
          with pytest.raises(ValueError, match="No benchmark items loaded for Phase 2"):
              experiments.run_phase2.run_experiment(output_filepath=str(output_csv), mock_mode=False)
 
+
+# ---------------------------------------------------------------------------
+# _is_valid_output tests
+# ---------------------------------------------------------------------------
+
+def test_valid_output_normal_text():
+    valid, reason = experiments.run_phase1._is_valid_output("I cannot help with that request.")
+    assert valid is True
+    assert reason == ""
+
+def test_invalid_output_tool_call_token():
+    valid, reason = experiments.run_phase1._is_valid_output("Sure! <tool_call>{'name': 'execute'}</tool_call>")
+    assert valid is False
+    assert reason == "tool_call_token"
+
+def test_invalid_output_garbled_unicode():
+    # Simulate text where >10% of chars carry combining diacritics
+    garbled = "tëying tëo äsk whät yöu'rë döing hërë ïn thïs plâcë ànd whÿ"
+    valid, reason = experiments.run_phase1._is_valid_output(garbled)
+    assert valid is False
+    assert reason == "garbled_unicode"
+
+def test_valid_output_empty_string():
+    # Empty string: no diacritics, no tool_call token — should pass validation
+    valid, reason = experiments.run_phase1._is_valid_output("")
+    assert valid is True
+
+def test_valid_output_accented_name():
+    # Normal text with a few accented characters (well below 10% threshold)
+    valid, reason = experiments.run_phase1._is_valid_output(
+        "The café in Zürich is run by François."
+    )
+    assert valid is True
+
+def test_malformed_output_column_written_for_invalid():
+    """Records with invalid output must have malformed_output set and no score columns."""
+    mock_items = [
+        MagicMock(input_text="test", benchmark="XSTest", domain="safe", gold_label="safe", item_id="x_1")
+    ]
+    for item in mock_items:
+        item.model_dump.return_value = {
+            "item_id": item.item_id, "input_text": item.input_text,
+            "benchmark": item.benchmark, "domain": item.domain, "gold_label": item.gold_label,
+        }
+    # mock_mode=True uses LLMClient, so patch LLMClient to return a tool_call output
+    mock_client = MagicMock()
+    mock_client.generate.return_value = ("<tool_call>dangerous()</tool_call>", {"model": "test"})
+    mock_registry = {"Refuse-first": {"variants": {"v1": "Prompt"}}}
+
+    with patch("experiments.run_phase1.load_xstest", return_value=mock_items), \
+         patch("experiments.run_phase1.load_harmbench", return_value=[]), \
+         patch("experiments.run_phase1.load_iheval", return_value=[]), \
+         patch("experiments.run_phase1.load_registry", return_value=mock_registry), \
+         patch("experiments.run_phase1.LLMClient", return_value=mock_client), \
+         patch("experiments.run_phase1.os.path.exists", return_value=True):
+        import tempfile, os as _os
+        with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as f:
+            tmp = f.name
+        try:
+            experiments.run_phase1.run_experiment(output_filepath=tmp, mock_mode=True)
+            df = pd.read_csv(tmp)
+            assert "malformed_output" in df.columns
+            assert df.loc[0, "malformed_output"] == "tool_call_token"
+            # Score columns should be absent (empty dict returned for invalid output)
+            assert "refusal_score" not in df.columns or pd.isna(df.loc[0, "refusal_score"])
+        finally:
+            _os.unlink(tmp)
