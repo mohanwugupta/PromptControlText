@@ -136,13 +136,23 @@ fi
 echo "=========================================="
 echo "Phase 1: Smoke Test Execution (--limit 5)"
 echo "=========================================="
-python -m experiments.run_phase1 --generator-model "$SERVED_MODEL_NAME" --limit 5 --max-workers 16 --data-dir "$PROJECT_DIR/benchmarks/artifacts/datasets"
+python -m experiments.run_phase1 \
+    --generator-model    "$SERVED_MODEL_NAME" \
+    --data-dir           "$PROJECT_DIR/benchmarks/artifacts/datasets" \
+    --registry-version   v3 \
+    --max-workers        16 \
+    --limit              5
 python -m analysis.plots --phase 1
 
 echo "=========================================="
 echo "Phase 2: Smoke Test Execution (--limit 5)"
 echo "=========================================="
-python -m experiments.run_phase2 --generator-model "$SERVED_MODEL_NAME" --limit 5 --max-workers 16 --data-dir "$PROJECT_DIR/benchmarks/artifacts/datasets"
+python -m experiments.run_phase2 \
+    --generator-model    "$SERVED_MODEL_NAME" \
+    --data-dir           "$PROJECT_DIR/benchmarks/artifacts/datasets" \
+    --registry-version   v3 \
+    --max-workers        16 \
+    --limit              5
 python -m analysis.plots --phase 2
 
 echo "✅ Smoke test completed perfectly at $(date)"

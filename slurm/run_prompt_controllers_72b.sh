@@ -179,16 +179,18 @@ echo "=========================================="
 echo "Phase 1: XSTest + HarmBench (full dataset)"
 echo "=========================================="
 python -m experiments.run_phase1 \
-    --generator-model "$SERVED_MODEL_NAME" \
-    --data-dir "$PROJECT_DIR/benchmarks/artifacts/datasets" \
-    --max-workers 64
+    --generator-model    "$SERVED_MODEL_NAME" \
+    --data-dir           "$PROJECT_DIR/benchmarks/artifacts/datasets" \
+    --registry-version   v3 \
+    --max-workers        64
 
 echo "=========================================="
 echo "Phase 2: IHEval hierarchy conflict (full dataset)"
 echo "=========================================="
 python -m experiments.run_phase2 \
-    --generator-model "$SERVED_MODEL_NAME" \
-    --data-dir "$PROJECT_DIR/benchmarks/artifacts/datasets" \
-    --max-workers 64
+    --generator-model    "$SERVED_MODEL_NAME" \
+    --data-dir           "$PROJECT_DIR/benchmarks/artifacts/datasets" \
+    --registry-version   v3 \
+    --max-workers        64
 
 echo "✅ Job completed at $(date)"
