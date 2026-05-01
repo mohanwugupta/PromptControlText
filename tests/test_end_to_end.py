@@ -46,7 +46,7 @@ def test_end_to_end_pipeline():
 
     assert len(df) == 8  # 4 items * 2 families
     agg = aggregate_scores(df, group_by=["prompt_family", "domain"])
-    assert len(agg) == 4  # 2 families * 2 domains
+    assert len(agg) == 8  # 2 families * 4 distinct domains
 
 
 def test_end_to_end_harmbench_scorer():
