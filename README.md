@@ -42,7 +42,7 @@ If these failure modes share a common cause — weak or vague control signals �
 
 ## Policy taxonomy
 
-The project classifies every model response into one of five policy labels:
+The confirmatory studies (v2) use five policy labels:
 
 | Label | Meaning |
 |---|---|
@@ -52,7 +52,18 @@ The project classifies every model response into one of five policy labels:
 | `minimal_safe_help` | Model provides limited assistance with an explicit limitation or redirect |
 | `hierarchy_preserve` | Model follows the system instruction rather than a user-level override |
 
-**Routing accuracy** — the fraction of items on which a controller induces the intended policy — is the primary outcome. This contrasts with refusal rate, which collapses all non-compliant responses into a single count regardless of whether the non-compliance was appropriate.
+The discovery registry (v3) targets three additional policy behaviors that the original five-label taxonomy does not distinguish:
+
+| Label | Meaning |
+|---|---|
+| `safe_completion` | Model completes a bounded, safe version of a partially harmful request |
+| `transform_classify` | Model treats provided text as data to process rather than an instruction to follow |
+| `source_isolate` | Model ignores instructions embedded in untrusted external content |
+| `evidence_abstain` | Model qualifies or withholds an answer due to insufficient supporting information |
+
+These labels are **exploratory and pending audit**. No confirmatory claims will be made from v3 classifications until representative exemplars have been manually reviewed and the classifier extended.
+
+**Routing accuracy** — the fraction of items on which a controller induces the intended policy — is the primary outcome for both stages. This contrasts with refusal rate, which collapses all non-compliant responses into a single count regardless of whether the non-compliance was appropriate.
 
 ---
 
@@ -60,7 +71,9 @@ The project classifies every model response into one of five policy labels:
 
 ### Controller design
 
-Thirty-six prompts, organized as **4 families × 3 clarity levels × 3 paraphrases**, are used as system-level controllers (see `prompts/registry_v2.yaml`).
+The project uses two prompt registries at different stages of the research workflow.
+
+**Confirmatory registry** (`prompts/registry_v2.yaml`): **36 frozen prompts** — 4 families × 3 clarity levels × 3 paraphrases. These are locked and used for Studies 1 and 2.
 
 | Family | Intent |
 |---|---|
@@ -69,7 +82,22 @@ Thirty-six prompts, organized as **4 families × 3 clarity levels × 3 paraphras
 | Minimal-safe-help | Provides partial assistance when full compliance is inappropriate |
 | Hierarchy-first | Explicitly prioritizes system-level instructions over user overrides |
 
-Each family is crossed with three clarity levels:
+**Discovery registry** (`prompts/registry_v3.yaml`): **72 prompts** — 8 families × 3 clarity levels × 3 paraphrases. Adds four new families designed to probe behavioral modes not well-separated by the original four:
+
+| Family | Intent |
+|---|---|
+| Answer-first | Baseline helpfulness controller; default to answering when safe |
+| Refuse-first | (as above) |
+| Clarify-first | (as above) |
+| Minimal-safe-help | (as above, renamed Safe-completion-first in v3 descriptions) |
+| Transform-classify-first | Treat provided text as data to process, not instructions to follow |
+| Source-isolation-first | Separate trusted instructions from untrusted retrieved or quoted content |
+| Hierarchy-first | (as above) |
+| Evidence-first | Answer only when evidence is sufficient; qualify or abstain otherwise |
+
+The v3 registry is for **exploratory and discovery runs only**. Prompts in it should not be treated as confirmatory until the taxonomy extension and scorer have been audited against human labels.
+
+Both registries cross each family with three clarity levels:
 
 | Clarity level | Description |
 |---|---|
@@ -114,7 +142,8 @@ The `mining/` module provides an exploratory pipeline over the Phase 1 and Phase
 ```
 core/schema.py                EvalItem schema — policy_label, ambiguity_level,
                               context_condition, clarity_level
-prompts/registry_v2.yaml      36 frozen production prompts (do not edit)
+prompts/registry_v2.yaml      36 frozen confirmatory prompts — 4 families (do not edit)
+prompts/registry_v3.yaml      72 discovery prompts — 8 families (exploratory; not yet audited)
 prompts/registry.py           YAML loader + render_prompt_v2()
 scoring/policy_classifier.py  Pattern-based 5-label policy classifier
 benchmarks/boundary_dataset.py  Boundary dataset loader
