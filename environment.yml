@@ -1,0 +1,24 @@
+name: prompt-controllers
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - pytest
+      - pytest-cov
+      - pydantic
+      - pandas
+      - numpy
+      - scipy
+      - pyyaml
+      - python-dotenv
+      - openai
+      - scikit-learn
+      - matplotlib
+      - seaborn
+      - statsmodels>=0.14.6
+      - langdetect
+      - black
+      - ruff

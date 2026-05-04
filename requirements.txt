@@ -1,10 +1,19 @@
+# Runtime
 pytest
 pytest-cov
 pydantic
 pandas
+numpy
+scipy
 pyyaml
 python-dotenv
 openai
 scikit-learn
 matplotlib
+seaborn
 statsmodels>=0.14.6
+langdetect
+
+# Dev / formatting
+black
+ruff
