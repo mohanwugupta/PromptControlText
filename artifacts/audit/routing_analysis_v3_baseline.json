@@ -1,0 +1,102 @@
+{
+  "n_rows": 106016,
+  "n_items": 3370,
+  "n_families": 6,
+  "cluster_distribution": {
+    "3": 0.3114,
+    "0": 0.2106,
+    "2": 0.1975,
+    "1": 0.1268,
+    "5": 0.0879,
+    "4": 0.0337,
+    "6": 0.0322
+  },
+  "within_item_cluster_switch_rate": 0.8157,
+  "mean_cluster_entropy_bits": 0.8667,
+  "mean_scorer_by_family": {
+    "refusal_score": {
+      "Clarify-first": 0.248,
+      "Developer-mode": 0.316,
+      "Helpful-baseline": 0.375,
+      "Hierarchy-first": 0.429,
+      "Refuse-first": 0.551,
+      "Roleplay-jailbreak": 0.302
+    },
+    "compliance_score": {
+      "Clarify-first": 0.655,
+      "Developer-mode": 0.676,
+      "Helpful-baseline": 0.621,
+      "Hierarchy-first": 0.56,
+      "Refuse-first": 0.437,
+      "Roleplay-jailbreak": 0.696
+    },
+    "clarification_score": {
+      "Clarify-first": 0.092,
+      "Developer-mode": 0.002,
+      "Helpful-baseline": 0.0,
+      "Hierarchy-first": 0.002,
+      "Refuse-first": 0.004,
+      "Roleplay-jailbreak": 0.0
+    },
+    "abstention_score": {
+      "Clarify-first": 0.005,
+      "Developer-mode": 0.007,
+      "Helpful-baseline": 0.004,
+      "Hierarchy-first": 0.009,
+      "Refuse-first": 0.008,
+      "Roleplay-jailbreak": 0.002
+    },
+    "hierarchy_following_score": {
+      "Clarify-first": 0.015,
+      "Developer-mode": 0.012,
+      "Helpful-baseline": 0.014,
+      "Hierarchy-first": 0.024,
+      "Refuse-first": 0.041,
+      "Roleplay-jailbreak": 0.014
+    },
+    "unsafe_continuation_score": {
+      "Clarify-first": 0.502,
+      "Developer-mode": 0.504,
+      "Helpful-baseline": 0.503,
+      "Hierarchy-first": 0.497,
+      "Refuse-first": 0.49,
+      "Roleplay-jailbreak": 0.504
+    },
+    "stop_compliance_score": {
+      "Clarify-first": 0.015,
+      "Developer-mode": 0.012,
+      "Helpful-baseline": 0.014,
+      "Hierarchy-first": 0.024,
+      "Refuse-first": 0.041,
+      "Roleplay-jailbreak": 0.014
+    }
+  },
+  "refusal_by_family_benchmark": {
+    "HarmBench": {
+      "Clarify-first": 0.365,
+      "Developer-mode": 0.474,
+      "Helpful-baseline": 0.554,
+      "Hierarchy-first": 0.638,
+      "Refuse-first": 0.753,
+      "Roleplay-jailbreak": 0.433
+    },
+    "XSTest": {
+      "Clarify-first": 0.144,
+      "Developer-mode": 0.175,
+      "Helpful-baseline": 0.215,
+      "Hierarchy-first": 0.243,
+      "Refuse-first": 0.371,
+      "Roleplay-jailbreak": 0.185
+    }
+  },
+  "routing_sensitivity_summary": {
+    "count": 3370.0,
+    "mean": 0.389,
+    "std": 0.1881,
+    "min": 0.0,
+    "25%": 0.2513,
+    "50%": 0.431,
+    "75%": 0.5453,
+    "max": 0.6667
+  }
+}

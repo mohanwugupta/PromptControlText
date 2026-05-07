@@ -1,0 +1,10 @@
+{
+  "n_rows": 0,
+  "n_items": 0,
+  "n_families": 0,
+  "label_distribution": {},
+  "within_item_switch_rate": NaN,
+  "mean_policy_entropy_bits": NaN,
+  "contingency_table": {},
+  "family_effects": {}
+}

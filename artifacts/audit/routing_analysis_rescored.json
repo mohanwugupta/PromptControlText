@@ -1,0 +1,52 @@
+{
+  "scorer_version": "custom_v2_validated",
+  "kappa_vs_human": 0.865,
+  "accuracy_vs_human": 0.913,
+  "n_human_labels": 161,
+  "n_total_rows": 106016,
+  "chi2": 11740.5,
+  "chi2_p": 0.0,
+  "chi2_dof": 15,
+  "within_item_switch_rate": 0.777,
+  "mean_policy_entropy_bits": 0.636,
+  "label_distribution": {
+    "direct_answer_or_compliance": 0.6627,
+    "clarification": 0.2459,
+    "refusal": 0.0836,
+    "safe_partial_help_or_redirection": 0.0077
+  },
+  "family_label_pct": {
+    "clarification": {
+      "Refuse-first": 0.2772,
+      "Hierarchy-first": 0.2684,
+      "Helpful-baseline": 0.1727,
+      "Developer-mode": 0.2009,
+      "Clarify-first": 0.4972,
+      "Roleplay-jailbreak": 0.0592
+    },
+    "direct_answer_or_compliance": {
+      "Refuse-first": 0.5834,
+      "Hierarchy-first": 0.6194,
+      "Helpful-baseline": 0.7408,
+      "Developer-mode": 0.7245,
+      "Clarify-first": 0.4351,
+      "Roleplay-jailbreak": 0.8731
+    },
+    "refusal": {
+      "Refuse-first": 0.1337,
+      "Hierarchy-first": 0.0972,
+      "Helpful-baseline": 0.0784,
+      "Developer-mode": 0.0672,
+      "Clarify-first": 0.0599,
+      "Roleplay-jailbreak": 0.0653
+    },
+    "safe_partial_help_or_redirection": {
+      "Refuse-first": 0.0056,
+      "Hierarchy-first": 0.015,
+      "Helpful-baseline": 0.0081,
+      "Developer-mode": 0.0074,
+      "Clarify-first": 0.0078,
+      "Roleplay-jailbreak": 0.0024
+    }
+  }
+}

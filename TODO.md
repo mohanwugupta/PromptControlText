@@ -46,7 +46,13 @@
 - [x] **End-to-End** (`tests/test_mining_end_to_end.py`): Full pipeline on fixtures, all artifacts written with correct schema (6 tests GREEN).
 - [x] **Total new v3 tests: 93 GREEN.**
 
-## Pending (Execution & Downstream)
+## Pending
+- [ ] Run primary routing analysis (compute_routing_contingency, switch_rate, entropy) on audited labels.
+- [ ] Compute inter-rater reliability (Cohen's kappa) after double-coding ≥20% of pilot.
+- [ ] Run pilot audit (100-150 responses), check mixed_or_unclear rate vs. stop/go rule.
+- [ ] Launch Streamlit dashboard for pilot audit: streamlit run audit/dashboard.py -- --audit-file artifacts/audit/audit_set_blinded.csv
+- [ ] Build pilot audit set (150 responses) with build_audit_set() and save blinded CSV.
+- [ ] Run freeze_artifacts on artifacts/mining/2026-04-28 to create v3_baseline snapshot. (Execution & Downstream)
 - [ ] **Phase 3 Scaffolding (Cross-domain Transfer)**
   - Build ingestion pipelines for InjecAgent.
   - (Optional) Build ingestion pipelines for RAGTruth / AgentDojo.
