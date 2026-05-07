@@ -1,0 +1,52 @@
+{
+  "timestamp": "2026-05-04T17:13:29.987167Z",
+  "source_dir": "artifacts/mining/2026-04-28",
+  "label": "v3_baseline",
+  "params": {
+    "n_clusters": 7,
+    "registry_version": "v1",
+    "run_date": "2026-04-28"
+  },
+  "files": [
+    {
+      "name": "mining_table.csv",
+      "sha256": "3fac9f7f6bdd4e7ac9fff7871592d2a401920a26451f84111dfa1ad857e6a61c",
+      "size_bytes": 95614678
+    },
+    {
+      "name": "exemplars_text_clustering.csv",
+      "sha256": "5fb13d3a8dc20ee3e4003854f4b40af166267e8acf41808fac57f06d2e06c855",
+      "size_bytes": 37493
+    },
+    {
+      "name": "routing_sensitivity.csv",
+      "sha256": "817a48595c68b6f552547802871034f355d06c20dc98d6ccabba9522a4d0b315",
+      "size_bytes": 194737
+    },
+    {
+      "name": "enrichment_table.csv",
+      "sha256": "967e1e56c9c25f9ae2a40717ac913fd5e4588862bc30330e2ff180815a099556",
+      "size_bytes": 961
+    },
+    {
+      "name": "cluster_report.txt",
+      "sha256": "c33b37ba4296dbbcd5801741dceb60c1bbdb78247ed701306ea7de1b278a559f",
+      "size_bytes": 5682
+    },
+    {
+      "name": "routing_sensitive_report.txt",
+      "sha256": "2ac35f5ea9484bd07c4212c18de3caf4c32d1073e3b9295d5b5a72d721755169",
+      "size_bytes": 181225
+    },
+    {
+      "name": "taxonomy_memo.txt",
+      "sha256": "882560d6d2438d6845f901bd771544bfcf02e61923afb76b0f784c0dc571804f",
+      "size_bytes": 2389
+    },
+    {
+      "name": "manifest.json",
+      "sha256": "979a4dd221172efad4370fe2785889cbe235555117e00717878bfb9715b5581b",
+      "size_bytes": 674
+    }
+  ]
+}

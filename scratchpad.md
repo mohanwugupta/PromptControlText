@@ -91,3 +91,17 @@ The unit of explanation is now which *policy* the model selects (answer, refuse,
 *   `test_v2_plots.py`: 2 tests — plot generation.
 *   `test_v2_end_to_end.py`: 2 tests — full pipeline integration.
 *   **Total new v2 tests: 88. All GREEN.**
+
+## Decision: PRD v4.1 implemented — Audited Policy-Routing Pipeline
+*2026-05-04 17:10 UTC*
+
+Implemented four new modules under audit/:
+  audit/freeze.py   — artifact freezer with SHA-256 manifest
+  audit/tracker.py  — scratchpad + TODO helpers
+  audit/audit_set.py — stratified audit-set builder (6 strata)
+  audit/analysis.py — routing analysis (contingency, switch rate, entropy, kappa)
+  audit/dashboard.py — Streamlit blinded labeling dashboard
+42 new tests all GREEN. Full suite: 300 passed.
+
+**Implication:** Next step: run freeze_artifacts on 2026-04-28 mining outputs, build audit set, launch dashboard for pilot audit.
+
