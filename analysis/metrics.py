@@ -1,5 +1,27 @@
 import pandas as pd
+import numpy as np
 from typing import List, Dict, Any, Optional, Union
+from analysis.statistical_model import remap_iheval_labels, routing_effect_table
+
+# ---------------------------------------------------------------------------
+# Default data source — always the validated, re-scored mining table
+# ---------------------------------------------------------------------------
+DEFAULT_MINING_TABLE = "artifacts/mining/2026-04-28/mining_table.csv"
+
+
+def load_mining_table(path: str = DEFAULT_MINING_TABLE) -> pd.DataFrame:
+    """Load the re-scored mining table and apply IHEval label remapping.
+
+    This is the single authoritative data-loading function for all analyses.
+    All downstream functions should call this rather than reading CSVs directly.
+    """
+    df = pd.read_csv(path)
+    # Normalise column name (mining table uses policy_label, analysis layer uses primary_policy_label)
+    if "policy_label" in df.columns and "primary_policy_label" not in df.columns:
+        df = df.rename(columns={"policy_label": "primary_policy_label"})
+    # Apply IHEval-specific label mapping
+    df = remap_iheval_labels(df)
+    return df
 
 
 def aggregate_scores(df: pd.DataFrame, group_by: List[str]) -> pd.DataFrame:
