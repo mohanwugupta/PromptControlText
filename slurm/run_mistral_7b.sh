@@ -1,28 +1,29 @@
 #!/bin/bash
-#SBATCH --job-name=prompt_controllers_72b
+#SBATCH --job-name=pct_mistral_7b
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=64G
-#SBATCH --gres=gpu:4
+#SBATCH --gres=gpu:1
 #SBATCH --constraint=gpu80
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mg9965@princeton.edu
 #SBATCH --time=14:00:00
-#SBATCH --output=logs/prompt_controllers_72b_%j.out
-#SBATCH --error=logs/prompt_controllers_72b_%j.err
+#SBATCH --output=logs/pct_mistral_7b_%j.out
+#SBATCH --error=logs/pct_mistral_7b_%j.err
 
 # =============================================================================
-# Prompt-Level Safety Controllers Pipeline — Qwen2.5-72B-Instruct variant
-#
-# Adapted from Contamination-Aware-Control-for-Retrieval-Augmented-Generation.
+# Prompt-Level Safety Controllers Pipeline — Mistral-7B-Instruct
 # =============================================================================
 
 set -eo pipefail
 
+MODEL_DIR_NAME=mistral-7b-instruct
+MODEL_SLUG=mistral_7b
+
 echo "=========================================="
-echo "Prompt Control Pipeline (Qwen2.5-72B)"
+echo "Prompt Control Pipeline ($MODEL_DIR_NAME)"
 echo "=========================================="
 echo "Job ID:   $SLURM_JOB_ID"
 echo "Node:     $SLURMD_NODENAME"
@@ -34,12 +35,11 @@ echo ""
 # 0. Configuration
 # ------------------------------------------------------------------
 PROJECT_DIR=/scratch/gpfs/JORDANAT/mg9965/PromptControlText
-MODEL_PATH=/scratch/gpfs/JORDANAT/mg9965/models/Qwen--Qwen2.5-72B-Instruct
+MODEL_PATH=/scratch/gpfs/JORDANAT/mg9965/models/$MODEL_DIR_NAME
 SERVED_MODEL_NAME=$(basename "$MODEL_PATH")
-MODEL_SLUG=qwen25_72b
 CONDA_ENV=PromptControlText
 VLLM_PORT=8000
-TENSOR_PARALLEL_SIZE=4
+TENSOR_PARALLEL_SIZE=1
 MAX_MODEL_LEN=8192
 GPU_MEMORY_UTILIZATION=0.92
 
@@ -83,7 +83,7 @@ export TRANSFORMERS_OFFLINE=1
 # ------------------------------------------------------------------
 # 3. GPU / Memory optimization
 # ------------------------------------------------------------------
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0
 export OMP_NUM_THREADS=8
 export TOKENIZERS_PARALLELISM=true
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
@@ -94,7 +94,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 # 4. Validate prerequisites
 # ------------------------------------------------------------------
 if [ -d "$MODEL_PATH" ]; then
-    echo "✅ Qwen2.5-72B model found at: $MODEL_PATH"
+    echo "✅ Model found at: $MODEL_PATH"
 else
     echo "❌ ERROR: Model not found at: $MODEL_PATH"
     exit 1
@@ -117,7 +117,7 @@ echo "✅ All datasets found in $DATASETS_DIR"
 # ------------------------------------------------------------------
 # 6. Start vLLM server
 # ------------------------------------------------------------------
-echo "Starting vLLM server (Qwen2.5-72B, TP=$TENSOR_PARALLEL_SIZE)..."
+echo "Starting vLLM server ($SERVED_MODEL_NAME, TP=$TENSOR_PARALLEL_SIZE)..."
 
 python -m vllm.entrypoints.openai.api_server \
     --model "$MODEL_PATH" \
@@ -150,7 +150,7 @@ trap cleanup EXIT INT TERM
 # 7. Wait for server readiness
 # ------------------------------------------------------------------
 echo "Waiting for vLLM server..."
-MAX_WAIT=900
+MAX_WAIT=600
 WAIT_INTERVAL=15
 ELAPSED=0
 
@@ -159,7 +159,6 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
         echo "❌ ERROR: vLLM server exited unexpectedly"
         exit 1
     fi
-
     if curl -s "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
         echo "✅ vLLM server ready after ${ELAPSED}s"
         break
@@ -174,10 +173,10 @@ if [ $ELAPSED -ge $MAX_WAIT ]; then
 fi
 
 # ------------------------------------------------------------------
-# 8. Run Evaluation Pipeline (all items, no --limit)
+# 8. Run Evaluation Pipeline
 # ------------------------------------------------------------------
 echo "=========================================="
-echo "Phase 1: XSTest + HarmBench (full dataset)"
+echo "Phase 1: XSTest + HarmBench"
 echo "=========================================="
 python -m experiments.run_phase1 \
     --generator-model    "$SERVED_MODEL_NAME" \
@@ -187,7 +186,7 @@ python -m experiments.run_phase1 \
     --max-workers        64
 
 echo "=========================================="
-echo "Phase 2: IHEval hierarchy conflict (full dataset)"
+echo "Phase 2: IHEval hierarchy conflict"
 echo "=========================================="
 python -m experiments.run_phase2 \
     --generator-model    "$SERVED_MODEL_NAME" \
