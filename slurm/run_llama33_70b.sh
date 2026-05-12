@@ -10,8 +10,8 @@
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mg9965@princeton.edu
 #SBATCH --time=14:00:00
-#SBATCH --output=logs/pct_llama33_70b_%j.out
-#SBATCH --error=logs/pct_llama33_70b_%j.err
+#SBATCH --output=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/pct_llama33_70b_%j.out
+#SBATCH --error=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/pct_llama33_70b_%j.err
 
 # =============================================================================
 # Prompt-Level Safety Controllers Pipeline — Llama-3.3-70B-Instruct

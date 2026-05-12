@@ -10,8 +10,8 @@
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mg9965@princeton.edu
 #SBATCH --time=14:00:00
-#SBATCH --output=logs/pct_olmo2_13b_%j.out
-#SBATCH --error=logs/pct_olmo2_13b_%j.err
+#SBATCH --output=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/pct_olmo2_13b_%j.out
+#SBATCH --error=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/pct_olmo2_13b_%j.err
 
 # =============================================================================
 # Prompt-Level Safety Controllers Pipeline — OLMo-2-1124-13B-Instruct

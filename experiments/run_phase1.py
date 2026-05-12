@@ -69,6 +69,7 @@ def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text
     record["prompt_family"] = family
     record["prompt_variant"] = variant
     record["clarity_level"] = clarity
+    record["model_name"] = generator_model
     record["model_output"] = output
     record["malformed_output"] = "" if valid else invalid_reason
     record["metadata"] = metadata
