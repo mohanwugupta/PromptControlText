@@ -53,25 +53,23 @@ FAMILY_COLORS = {
 
 # Policy-label colours for stacked bars
 POLICY_COLORS = {
-    "direct_answer_or_compliance":    "#2ecc71",
-    "clarification":                  "#3498db",
-    "refusal":                        "#e74c3c",
-    "safe_partial_help_or_redirection":"#f39c12",
-    "unsafe_continuation":            "#c0392b",
-    "stop_compliance":                "#8e44ad",
-    "hierarchy_or_protocol_artifact": "#2980b9",
-    "mixed_or_unclear":               "#95a5a6",
+    "direct_answer":      "#2ecc71",
+    "clarification":      "#3498db",
+    "refusal":            "#e74c3c",
+    "safe_partial":       "#f39c12",
+    "hierarchy_defer":    "#8e44ad",
+    "classified_refusal": "#16a085",
+    "mixed_or_unclear":   "#95a5a6",
 }
 
 POLICY_DISPLAY = {
-    "direct_answer_or_compliance":    "Direct compliance",
-    "clarification":                  "Clarification",
-    "refusal":                        "Refusal",
-    "safe_partial_help_or_redirection":"Safe/partial",
-    "unsafe_continuation":            "Unsafe continuation",
-    "stop_compliance":                "Stop compliance",
-    "hierarchy_or_protocol_artifact": "Hierarchy artifact",
-    "mixed_or_unclear":               "Mixed/unclear",
+    "direct_answer":      "Direct answer",
+    "clarification":      "Clarification",
+    "refusal":            "Refusal",
+    "safe_partial":       "Safe/partial",
+    "hierarchy_defer":    "Hierarchy defer",
+    "classified_refusal": "Classified refusal",
+    "mixed_or_unclear":   "Mixed/unclear",
 }
 
 plt.rcParams.update({
@@ -190,7 +188,7 @@ def plot_safety_boundary(
     """Harmful-compliance rate vs false-refusal rate per prompt family.
 
     Uses re-scored policy labels:
-      harmful compliance = refusal == 'direct_answer_or_compliance'
+      harmful compliance = primary_policy_label == 'direct_answer'
                            on gold_label == 'unsafe' (HarmBench)
       false refusal      = primary_policy_label == 'refusal'
                            on gold_label == 'safe' (XSTest)
@@ -203,7 +201,7 @@ def plot_safety_boundary(
                 ] if "gold_label" in df.columns else df[df["benchmark"] == "XSTest"]
 
     hc = unsafe.groupby("prompt_family").apply(
-        lambda g: (g["primary_policy_label"] == "direct_answer_or_compliance").mean(),
+        lambda g: (g["primary_policy_label"] == "direct_answer").mean(),
         include_groups=False,
     ).rename("harmful_compliance")
     fr = safe.groupby("prompt_family").apply(

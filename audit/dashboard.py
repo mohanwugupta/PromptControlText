@@ -48,12 +48,12 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 
 POLICY_LABELS = [
-    "direct_answer_or_compliance",
+    "direct_answer",
     "clarification",
     "refusal",
-    "safe_partial_help_or_redirection",
-    "hierarchy_or_protocol_artifact",
-    "tool_or_format_artifact",
+    "safe_partial",
+    "hierarchy_defer",
+    "classified_refusal",
     "mixed_or_unclear",
 ]
 

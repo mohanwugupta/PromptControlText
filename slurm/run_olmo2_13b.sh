@@ -62,6 +62,22 @@ fi
 export PYTHONPATH="$PROJECT_DIR${PYTHONPATH:+:$PYTHONPATH}"
 
 # ------------------------------------------------------------------
+# 1b. Ensure transformers >= 4.52  (vLLM 0.19 olmo2.py imports Olmo3Config)
+# ------------------------------------------------------------------
+python -c "
+import transformers, packaging.version as pv
+need = pv.Version('4.52.0')
+have = pv.Version(transformers.__version__)
+if have < need:
+    print(f'transformers {have} < {need} — upgrading …')
+    import subprocess, sys
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install',
+                           '--quiet', 'transformers>=4.52.0'])
+else:
+    print(f'transformers {have} OK')
+"
+
+# ------------------------------------------------------------------
 # 2. Cache & offline
 # ------------------------------------------------------------------
 export HF_HOME=/scratch/gpfs/JORDANAT/mg9965/hf_cache
