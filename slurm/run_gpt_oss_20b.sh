@@ -19,7 +19,7 @@
 
 set -eo pipefail
 
-MODEL_DIR_NAME=allenai--OLMo-2-1124-13B-Instruct
+MODEL_DIR_NAME=openai--gpt-oss-20b
 MODEL_SLUG=olmo2_13b
 
 echo "=========================================="

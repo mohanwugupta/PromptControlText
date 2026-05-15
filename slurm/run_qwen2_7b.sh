@@ -19,7 +19,7 @@
 
 set -eo pipefail
 
-MODEL_DIR_NAME=models--Qwen--Qwen2-7B-Instruct
+MODEL_DIR_NAME=models--Qwen--Qwen2-7B-Instruct/snapshots/f2826a00ceef68f0f2b946d945ecc0477ce4450c
 MODEL_SLUG=qwen2_7b
 
 echo "=========================================="
