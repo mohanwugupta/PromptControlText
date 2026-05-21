@@ -142,9 +142,11 @@ def validate_registry_schema(registry: Dict[str, Any]) -> None:
             if "variants" not in fdata:
                 raise ValueError(f"[{family}] missing 'variants' key.")
             for variant in fdata["variants"]:
-                if not isinstance(fdata["variants"][variant], str):
+                text = fdata["variants"][variant]
+                # None is allowed for the No-system-prompt control family
+                if text is not None and not isinstance(text, str):
                     raise ValueError(
-                        f"[{family}/{variant}] prompt text must be a string."
+                        f"[{family}/{variant}] prompt text must be a string or null."
                     )
     else:
         for family, fdata in registry.items():

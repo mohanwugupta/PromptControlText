@@ -1,0 +1,18 @@
+# =============================================================================
+# Control Prompt Registry — No-system-prompt baseline
+# =============================================================================
+# A single family with a single variant where no system prompt is provided.
+# This serves as the baseline control condition for Phase 1: model outputs
+# are generated with only the user message and no system-level instruction.
+#
+# Compared to Helpful-baseline (which adds an explicit "be helpful" system
+# prompt) and all policy-controller families, this condition measures the
+# model's raw default behaviour with zero system-prompt influence.
+#
+# Schema: v1 (family → variants).  prompt_text is null → no system message
+# is sent to the model (system role is omitted entirely from the chat template).
+# =============================================================================
+
+No-system-prompt:
+  variants:
+    v1: null   # No system prompt — omit system role from the chat template

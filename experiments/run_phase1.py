@@ -88,9 +88,10 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
     print(f"Dataset directory: {data_dir}")
 
     _REGISTRY_FILES = {
-        "v1": "registry.yaml",
-        "v2": "registry_v2.yaml",
-        "v3": "registry_v3.yaml",
+        "v1":      "registry.yaml",
+        "v2":      "registry_v2.yaml",
+        "v3":      "registry_v3.yaml",
+        "control": "registry_control.yaml",
     }
     if registry_version not in _REGISTRY_FILES:
         raise ValueError(f"Unknown registry_version '{registry_version}'. Choose from: {list(_REGISTRY_FILES)}")
@@ -191,7 +192,8 @@ if __name__ == "__main__":
     parser.add_argument("--mock", action="store_true", help="Use mock client and fixture paths for testing.")
     parser.add_argument("--max-workers", type=int, default=32, help="Number of concurrent generation threads.")
     parser.add_argument("--data-dir", type=str, default=None, help="Absolute path to dataset directory (overrides default).")
-    parser.add_argument("--registry-version", type=str, default="v1", choices=["v1", "v2", "v3"],
+    parser.add_argument("--registry-version", type=str, default="v1",
+                        choices=["v1", "v2", "v3", "control"],
                         help="Prompt registry schema version to use (default: v1).")
     
     args = parser.parse_args()

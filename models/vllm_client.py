@@ -49,7 +49,7 @@ class VLLMClient:
             )
         return self._thread_local.openai_client
 
-    def generate(self, system_prompt: str, user_prompt: str, model: str = None, temperature: float = 0.0, max_tokens: int = 512) -> Tuple[str, Dict[str, Any]]:
+    def generate(self, system_prompt, user_prompt: str, model: str = None, temperature: float = 0.0, max_tokens: int = 512) -> Tuple[str, Dict[str, Any]]:
         target_model = model or self.model_name
         metadata = {
             "model": target_model,
@@ -57,19 +57,23 @@ class VLLMClient:
             "timestamp": time.time(),
         }
 
-        cache_key = self._get_cache_key(system_prompt, user_prompt, target_model, temperature)
+        cache_key = self._get_cache_key(str(system_prompt), user_prompt, target_model, temperature)
         if self.enable_cache and cache_key in self.cache:
             return self.cache[cache_key], metadata
+
+        # Build messages — omit the system role entirely when no prompt is given.
+        # This is the true no-system-prompt control condition.
+        messages = []
+        if system_prompt is not None and system_prompt != "":
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": user_prompt})
 
         last_error = None
         for attempt in range(1, self.max_retries + 1):
             try:
                 response = self.client.chat.completions.create(
                     model=target_model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": user_prompt}
-                    ],
+                    messages=messages,
                     temperature=temperature,
                     max_tokens=max_tokens,
                     extra_body={"chat_template_kwargs": {"enable_thinking": False}},

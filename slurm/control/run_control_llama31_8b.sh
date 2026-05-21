@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=pct_olmo2_13b
+#SBATCH --job-name=pct_ctrl_llama31_8b
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -9,21 +9,21 @@
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mg9965@princeton.edu
-#SBATCH --time=14:00:00
-#SBATCH --output=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/gpt_oss_20b_%j.out
-#SBATCH --error=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/gpt_oss_20b_%j.err
+#SBATCH --time=2:00:00
+#SBATCH --output=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/pct_ctrl_llama31_8b_%j.out
+#SBATCH --error=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/pct_ctrl_llama31_8b_%j.err
 
 # =============================================================================
-# Prompt-Level Safety Controllers Pipeline — OLMo-2-1124-13B-Instruct
+# Phase 1 Control Condition — Llama-3.1-8B-Instruct (No system prompt)
 # =============================================================================
 
 set -eo pipefail
 
-MODEL_DIR_NAME=openai--gpt-oss-20b
-MODEL_SLUG=gpt_oss_20b
+MODEL_DIR_NAME=meta-llama--Llama-3.1-8B-Instruct
+MODEL_SLUG=llama31_8b
 
 echo "=========================================="
-echo "Prompt Control Pipeline ($MODEL_DIR_NAME)"
+echo "Phase 1 Control — No-system-prompt ($MODEL_DIR_NAME)"
 echo "=========================================="
 echo "Job ID:   $SLURM_JOB_ID"
 echo "Node:     $SLURMD_NODENAME"
@@ -39,7 +39,7 @@ MODEL_PATH=/scratch/gpfs/JORDANAT/mg9965/models/$MODEL_DIR_NAME
 SERVED_MODEL_NAME=$(basename "$MODEL_PATH")
 CONDA_ENV=PromptControlText
 VLLM_PORT=8000
-TENSOR_PARALLEL_SIZE=2
+TENSOR_PARALLEL_SIZE=1
 MAX_MODEL_LEN=8192
 GPU_MEMORY_UTILIZATION=0.92
 
@@ -60,22 +60,6 @@ else
 fi
 
 export PYTHONPATH="$PROJECT_DIR${PYTHONPATH:+:$PYTHONPATH}"
-
-# ------------------------------------------------------------------
-# 1b. Ensure transformers >= 4.52  (vLLM 0.19 olmo2.py imports Olmo3Config)
-# ------------------------------------------------------------------
-python -c "
-import transformers, packaging.version as pv
-need = pv.Version('4.52.0')
-have = pv.Version(transformers.__version__)
-if have < need:
-    print(f'transformers {have} < {need} — upgrading …')
-    import subprocess, sys
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install',
-                           '--quiet', 'transformers>=4.52.0'])
-else:
-    print(f'transformers {have} OK')
-"
 
 # ------------------------------------------------------------------
 # 2. Cache & offline
@@ -99,7 +83,7 @@ export TRANSFORMERS_OFFLINE=1
 # ------------------------------------------------------------------
 # 3. GPU / Memory optimization
 # ------------------------------------------------------------------
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=0
 export OMP_NUM_THREADS=8
 export TOKENIZERS_PARALLELISM=true
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
@@ -189,26 +173,16 @@ if [ $ELAPSED -ge $MAX_WAIT ]; then
 fi
 
 # ------------------------------------------------------------------
-# 8. Run Evaluation Pipeline
+# 8. Run Phase 1 — Control condition only
 # ------------------------------------------------------------------
 echo "=========================================="
-echo "Phase 1: XSTest + HarmBench"
+echo "Phase 1 Control: XSTest + HarmBench + IHEval (no system prompt)"
 echo "=========================================="
 python -m experiments.run_phase1 \
     --generator-model    "$SERVED_MODEL_NAME" \
-    --output-file        "artifacts/phase1_results_${MODEL_SLUG}.csv" \
+    --output-file        "artifacts/phase1_results_control_${MODEL_SLUG}.csv" \
     --data-dir           "$PROJECT_DIR/benchmarks/artifacts/datasets" \
-    --registry-version   v3 \
-    --max-workers        64
-
-echo "=========================================="
-echo "Phase 2: IHEval hierarchy conflict"
-echo "=========================================="
-python -m experiments.run_phase2 \
-    --generator-model    "$SERVED_MODEL_NAME" \
-    --output-file        "artifacts/phase2_results_${MODEL_SLUG}.csv" \
-    --data-dir           "$PROJECT_DIR/benchmarks/artifacts/datasets" \
-    --registry-version   v3 \
+    --registry-version   control \
     --max-workers        64
 
 echo "✅ Job completed at $(date)"
