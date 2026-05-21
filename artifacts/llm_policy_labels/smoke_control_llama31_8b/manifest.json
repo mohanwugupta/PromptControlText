@@ -1,0 +1,12 @@
+{
+  "job_id": "smoke_control_llama31_8b",
+  "input": "/scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_llama31_8b.csv",
+  "output_dir": "/scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/llm_policy_labels/smoke_control_llama31_8b",
+  "model": "meta-llama--Llama-3.1-8B-Instruct",
+  "schema_version": "v1",
+  "prompt_set_version": "v1",
+  "total_rows": 3370,
+  "processed_rows": 3370,
+  "parse_errors": 0,
+  "elapsed_seconds": 680.9
+}
