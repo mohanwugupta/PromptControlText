@@ -2,11 +2,11 @@
 #SBATCH --job-name=llm_judge
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=32
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=gpu80
-#SBATCH --array=0-3
+#SBATCH --array=0-5
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mg9965@princeton.edu
@@ -17,7 +17,7 @@
 # =============================================================================
 # LLM Policy Judge — output-only behavioral classifier (PRD §19 / §20)
 #
-# Runs as a 4-task SLURM array (--array=0-3).  Each task starts its own
+# Runs as a 6-task SLURM array (--array=0-5).  Each task starts its own
 # vLLM server and processes one phase1 CSV through the 3-pass judge pipeline.
 #
 # Judge model: Llama-3.1-8B-Instruct
@@ -29,7 +29,7 @@
 #
 # Submit: sbatch slurm/run_llm_judge.sh
 # Resubmit (resume): sbatch slurm/run_llm_judge.sh   (--resume skips done rows)
-# Single task only:  sbatch --array=2 slurm/run_llm_judge.sh
+# Single task only:  sbatch --array=4 slurm/run_llm_judge.sh   (0=qwen25_72b … 5=control_qwen2_7b)
 # =============================================================================
 
 set -eo pipefail
@@ -42,12 +42,16 @@ JOB_IDS=(
     "phase1_llama31_8b"
     "phase1_llama33_70b"
     "phase1_qwen2_7b"
+    "control_llama31_8b"
+    "control_qwen2_7b"
 )
 INPUT_CSVS=(
     "artifacts/phase1_results.csv"
     "artifacts/phase1_results_llama31_8b.csv"
     "artifacts/phase1_results_llama33_70b.csv"
     "artifacts/phase1_results_qwen2_7b.csv"
+    "artifacts/phase1_results_control_llama31_8b.csv"
+    "artifacts/phase1_results_control_qwen2_7b.csv"
 )
 
 TASK=${SLURM_ARRAY_TASK_ID}
@@ -84,7 +88,7 @@ GPU_MEMORY_UTILIZATION=0.90
 
 # Judge call settings
 BATCH_SIZE=512
-MAX_WORKERS=64
+MAX_WORKERS=256
 TEMPERATURE=0.0
 MAX_TOKENS=250
 
@@ -129,7 +133,7 @@ export TRANSFORMERS_OFFLINE=1
 # 4. GPU / Memory optimizations
 # ------------------------------------------------------------------
 export CUDA_VISIBLE_DEVICES=0
-export OMP_NUM_THREADS=16
+export OMP_NUM_THREADS=32
 export TOKENIZERS_PARALLELISM=true
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export NCCL_P2P_LEVEL=NVL
