@@ -69,6 +69,14 @@ class VLLMClient:
         messages.append({"role": "user", "content": user_prompt})
 
         last_error = None
+        # enable_thinking=False is a Qwen3-specific chat_template kwarg.
+        # Only send it when the served model is a Qwen3 variant to avoid
+        # confusing other models (e.g. gpt-oss, Llama, Mistral).
+        _is_qwen3 = "qwen" in target_model.lower() and (
+            "qwen2.5" in target_model.lower() or "qwen3" in target_model.lower()
+        )
+        extra = {"chat_template_kwargs": {"enable_thinking": False}} if _is_qwen3 else {}
+
         for attempt in range(1, self.max_retries + 1):
             try:
                 response = self.client.chat.completions.create(
@@ -76,7 +84,7 @@ class VLLMClient:
                     messages=messages,
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    extra_body={"chat_template_kwargs": {"enable_thinking": False}},
+                    **({"extra_body": extra} if extra else {}),
                 )
                 choice = response.choices[0]
                 text = choice.message.content or ""

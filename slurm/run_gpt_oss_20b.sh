@@ -142,6 +142,7 @@ python -m vllm.entrypoints.openai.api_server \
     --tensor-parallel-size "$TENSOR_PARALLEL_SIZE" \
     --dtype auto \
     --trust-remote-code \
+    --chat-template "$MODEL_PATH/chat_template.jinja" \
     --max-model-len "$MAX_MODEL_LEN" \
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
     --max-num-seqs 512 \
