@@ -27,8 +27,8 @@
 set -eo pipefail
 
 JOB_ID="smoke_control_llama31_8b"
-INPUT_CSV="/scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_llama31_8b.csv"
-OUTPUT_DIR="/scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/llm_policy_labels/${JOB_ID}"
+INPUT_CSV="artifacts/phase1_results_control_llama31_8b.csv"
+OUTPUT_DIR="artifacts/llm_policy_labels/${JOB_ID}"
 VLLM_PORT=8000
 
 echo "=========================================="
