@@ -1,5 +1,57 @@
 # Scratchpad
 
+## LLM Judge PRD Implementation (Output-Only Behavioral Classifier)
+
+### Status: COMPLETE — 76/76 tests GREEN (2026-05-21)
+
+### Modules implemented (`scoring/`)
+- **`llm_policy_schema.py`**: JSON schema validator for judge outputs. Strips markdown fences, validates against `llm_policy_schema_v1.json` (6 labels, 11 required fields, no extra properties), truncates evidence/reason to 280 chars.
+- **`llm_policy_prompts.py`**: Output-only prompt builder. `build_judge_user_message()` sends only `assistant_response:` text. `assert_no_forbidden_fields()` enforces that no metadata (benchmark, gold_label, prompt_family, etc.) can leak into judge input. `get_model_output()` handles `model_output`/`model_out` alias.
+- **`llm_policy_judge.py`**: Three-pass first-judge runner. Calls judge A/B/C independently with different system prompts, one retry per failure, returns structurally-complete vote dicts (sentinel values on parse error).
+- **`llm_policy_adjudicate.py`**: Disagreement detection + three-adjudicator panel. Triggers adjudication on: all-different labels, high-confidence dissent (≥0.80), sensitive labels (hierarchy_preservation/source_isolation/safe_redirection) with low confidence, any parse errors. Majority rule across adjudicators; flags unresolvable cases for human audit.
+- **`llm_policy_validate.py`**: Compares LLM labels vs human audit CSV. Outputs: `confusion_matrix.csv`, `per_label_metrics.csv`, `validation_summary.json` (Cohen's κ, accuracy, macro-F1, weighted-F1).
+- **`llm_policy_runner.py`**: Full pipeline CLI. Loads any phase1 CSV, batches rows with thread pool, resumes from checkpoint (skips row_hashes already in `judge_votes.csv`), writes `labeled.csv`, `judge_votes.csv`, `adjudication_votes.csv`.
+- **`llm_policy_prompts_{A,B,C}_v1.txt`**: Three distinct judge system prompts (same 6-label taxonomy, different wording/framing to maximise label diversity).
+- **`llm_policy_adjudicator_prompt_v1.txt`**: Adjudicator system prompt.
+- **`llm_policy_schema_v1.json`**: JSON Schema — 6 enum labels, 6 boolean signal fields, confidence ∈ [0,1], evidence/reason strings.
+
+### Modules implemented (`analysis/`)
+- **`llm_policy_compare.py`**: Compares rule-based (`classified_policy`) vs LLM (`llm_policy_label`) labels. Outputs: disagreement matrix CSV + heatmap PNG, per-family/clarity/benchmark bar charts for both label sets, family×clarity cross-tab CSV.
+
+### TDD Test Coverage (RED → GREEN)
+- **`tests/test_llm_policy_schema.py`** (pre-existing, 7 tests): schema validation, label enum, field requirements, confidence range. ✅ GREEN
+- **`tests/test_llm_policy_prompts.py`** (new, 20 tests):
+  - `build_judge_user_message`: contains output, no forbidden metadata
+  - `assert_no_forbidden_fields`: clean passes, raises on benchmark/gold_label/UPPERCASE
+  - `get_model_output`: canonical col, alias col, prefers canonical, raises on missing/empty/nan, strips whitespace
+  - `build_adjudicator_user_message`: contains output + all vote labels + confidences, no forbidden fields
+  - `load_default_prompts`: has A/B/C/adjudicator keys, non-empty, all 6 label names present
+- **`tests/test_llm_policy_judge.py`** (new, 14 tests):
+  - `_row_hash`: deterministic, differs for different inputs, is SHA-256
+  - `judge_row` happy path: 3 votes returned, required keys present, judge_ids A/B/C, consistent row_hash, job_id propagated, no parse error, correct primary_label, model name propagated
+  - Error handling: client exception → parse_error sentinels, invalid JSON → parse_error, retry on first failure recovers, sentinel vote structurally complete
+- **`tests/test_llm_policy_adjudicate.py`** (new, 19 tests):
+  - `_majority_label`: unanimous, 2/1, all-different→None
+  - `_needs_adjudication`: unanimous high-conf→no, all-different→yes, parse_error→yes, high-conf dissent→yes, soft dissent→no, sensitive low-conf→yes, sensitive high-conf→no
+  - `_resolve_votes`: unanimous method/dtype, majority soft_2_1, majority hard_2_1
+  - `resolve_first_pass`: unanimous→no adjudication, disagreement→adjudication called, required keys present, unanimous not flagged for human audit, all parse errors→adjudication
+- **`tests/test_llm_policy_validate.py`** (new, 9 tests):
+  - Perfect agreement (2-class fixture) → κ=1.0, accuracy=1.0
+  - Returns n_matched count, creates all 3 output files
+  - per_label_metrics has all 6 VALID_LABELS rows
+  - Inner join → only matched rows count
+  - Partial disagreement → κ<1.0
+  - Summary has all required keys
+- **Total LLM Judge tests: 69 new + 7 pre-existing = 76. All GREEN.**
+
+### Key design decisions recorded
+- **Output-only invariant**: Judge sees ONLY `assistant_response:` text. `assert_no_forbidden_fields()` is called before every LLM call to enforce this at runtime.
+- **Single-class κ fix**: `_perfect_data()` helper uses 2 label classes — `cohen_kappa_score` returns NaN for single-class input (sklearn known behaviour); test must use ≥2 classes.
+- **Retry logic**: One retry per judge call. On second failure, sentinel vote is inserted (parse_error label, all booleans False, confidence 0.0) so the row is structurally complete and can go through adjudication.
+- **Adjudication triggers**: 6 conditions — all-different (1_1_1), high-confidence dissent (≥0.80), parse errors, sensitive label + low confidence.
+
+---
+
 ## PRD v3 Implementation (Mining LLM Responses for Emergent Policy Types)
 
 ### Core objective
