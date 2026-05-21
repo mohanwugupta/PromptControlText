@@ -96,6 +96,11 @@ mkdir -p "$VLLM_CACHE_DIR" "$VLLM_USAGE_STATS_DIR" "$TRITON_CACHE_DIR" "$XDG_CAC
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 
+# Allow openai_harmony to locate its cached vocab file.
+# The cache was pre-populated on the login node (scripts/precache_harmony_vocab.py).
+# TIKTOKEN_CACHE_DIR is on $HOME which is shared NFS, so compute nodes can read it.
+mkdir -p "$TIKTOKEN_CACHE_DIR"
+
 # ------------------------------------------------------------------
 # 3. GPU / Memory optimization
 # ------------------------------------------------------------------
@@ -134,6 +139,13 @@ echo "✅ All datasets found in $DATASETS_DIR"
 # 6. Start vLLM server
 # ------------------------------------------------------------------
 echo "Starting vLLM server ($SERVED_MODEL_NAME, TP=$TENSOR_PARALLEL_SIZE)..."
+
+# Patch vLLM's harmony rendering to fall back gracefully when the vocab
+# file is unavailable (compute nodes have no internet).
+# Idempotent — safe to run every time.
+python "$PROJECT_DIR/scripts/patch_harmony_serving.py" || {
+    echo "⚠️  Harmony patch script failed — proceeding anyway (may error at runtime)."
+}
 
 python -m vllm.entrypoints.openai.api_server \
     --model "$MODEL_PATH" \
