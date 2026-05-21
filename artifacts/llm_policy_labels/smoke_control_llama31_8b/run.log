@@ -1,5 +1,0 @@
-2026-05-21 15:19:53,731 INFO: Job smoke_control_llama31_8b started.  Input: /scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_llama31_8b.csv
-2026-05-21 15:19:53,812 INFO: Loaded 3370 rows from /scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_llama31_8b.csv
-2026-05-21 15:19:53,813 INFO: Resuming: 0 rows already complete.
-2026-05-21 15:19:53,916 INFO: 3370 rows to process.
-2026-05-21 15:21:05,315 INFO: Progress: 500 / 3370 rows processed.

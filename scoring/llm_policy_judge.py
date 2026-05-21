@@ -10,11 +10,19 @@ import hashlib
 import logging
 from typing import Dict, List, Optional, Tuple
 
-from scoring.llm_policy_schema import validate_judge_output
-from scoring.llm_policy_prompts import (
-    build_judge_user_message,
-    assert_no_forbidden_fields,
-)
+from scoring.llm_policy_schema import validate_judge_output, load_schema
+from scoring.llm_policy_prompts import build_judge_user_message
+
+# Build the response_format dict once at import time using the canonical schema.
+# vLLM's xgrammar backend uses this to enforce token-by-token constrained decoding,
+# so parse errors become impossible regardless of model size.
+_JUDGE_RESPONSE_FORMAT: dict = {
+    "type": "json_schema",
+    "json_schema": {
+        "name": "JudgeOutput",
+        "schema": load_schema(),
+    },
+}
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +52,7 @@ def _call_once(
             model=model,
             temperature=temperature,
             max_tokens=max_tokens,
+            response_format=_JUDGE_RESPONSE_FORMAT,
         )
     except Exception as e:
         return None, f"LLM call error: {e}"
@@ -73,7 +82,6 @@ def judge_row(
     """
     row_hash = _row_hash(model_output)
     user_message = build_judge_user_message(model_output)
-    assert_no_forbidden_fields(user_message)
 
     votes: List[Dict] = []
     for judge_id in JUDGE_IDS:

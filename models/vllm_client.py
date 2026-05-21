@@ -49,7 +49,7 @@ class VLLMClient:
             )
         return self._thread_local.openai_client
 
-    def generate(self, system_prompt, user_prompt: str, model: str = None, temperature: float = 0.0, max_tokens: int = 512) -> Tuple[str, Dict[str, Any]]:
+    def generate(self, system_prompt, user_prompt: str, model: str = None, temperature: float = 0.0, max_tokens: int = 512, response_format: Dict[str, Any] = None) -> Tuple[str, Dict[str, Any]]:
         target_model = model or self.model_name
         metadata = {
             "model": target_model,
@@ -79,13 +79,17 @@ class VLLMClient:
 
         for attempt in range(1, self.max_retries + 1):
             try:
-                response = self.client.chat.completions.create(
-                    model=target_model,
-                    messages=messages,
-                    temperature=temperature,
-                    max_tokens=max_tokens,
-                    **({"extra_body": extra} if extra else {}),
-                )
+                create_kwargs: Dict[str, Any] = {
+                    "model": target_model,
+                    "messages": messages,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                }
+                if extra:
+                    create_kwargs["extra_body"] = extra
+                if response_format is not None:
+                    create_kwargs["response_format"] = response_format
+                response = self.client.chat.completions.create(**create_kwargs)
                 choice = response.choices[0]
                 text = choice.message.content or ""
                 
