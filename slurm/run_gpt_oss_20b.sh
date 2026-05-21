@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=pct_olmo2_13b
+#SBATCH --job-name=pct_gpt_oss_20b
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -14,7 +14,7 @@
 #SBATCH --error=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/gpt_oss_20b_%j.err
 
 # =============================================================================
-# Prompt-Level Safety Controllers Pipeline — OLMo-2-1124-13B-Instruct
+# Prompt-Level Safety Controllers Pipeline — gpt-oss-20b
 # =============================================================================
 
 set -eo pipefail
@@ -99,7 +99,7 @@ export TRANSFORMERS_OFFLINE=1
 # ------------------------------------------------------------------
 # 3. GPU / Memory optimization
 # ------------------------------------------------------------------
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=0
 export OMP_NUM_THREADS=8
 export TOKENIZERS_PARALLELISM=true
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
