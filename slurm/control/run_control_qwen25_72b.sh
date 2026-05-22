@@ -103,10 +103,11 @@ python -m vllm.entrypoints.openai.api_server \
     --trust-remote-code \
     --max-model-len "$MAX_MODEL_LEN" \
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION" \
-    --max-num-seqs 512 \
+    --max-num-seqs 256 \
     --enable-chunked-prefill \
-    --max-num-batched-tokens 32768 \
+    --max-num-batched-tokens 16384 \
     --disable-custom-all-reduce \
+    --enforce-eager \
     &
 
 VLLM_PID=$!
