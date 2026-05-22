@@ -5,8 +5,8 @@
   "model": "meta-llama--Llama-3.1-8B-Instruct",
   "schema_version": "v1",
   "prompt_set_version": "v1",
-  "total_rows": 90,
-  "processed_rows": 0,
+  "total_rows": 3370,
+  "processed_rows": 3346,
   "parse_errors": 0,
-  "elapsed_seconds": 0.1
+  "elapsed_seconds": 545.5
 }
