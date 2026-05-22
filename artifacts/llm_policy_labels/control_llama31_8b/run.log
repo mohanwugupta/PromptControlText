@@ -1,0 +1,13 @@
+2026-05-21 17:49:50,467 INFO: Job control_llama31_8b started.  Input: /scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_llama31_8b.csv
+2026-05-21 17:49:50,555 INFO: Loaded 3370 rows from /scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_llama31_8b.csv
+2026-05-21 17:49:50,555 INFO: Resuming: 0 rows already complete.
+2026-05-21 17:49:50,661 INFO: 3370 rows to process.
+2026-05-21 17:51:31,886 INFO: Progress: 500 / 3370 rows processed.
+2026-05-21 17:53:03,775 INFO: Progress: 1000 / 3370 rows processed.
+2026-05-21 17:54:34,914 INFO: Progress: 1500 / 3370 rows processed.
+2026-05-21 17:56:17,218 INFO: Progress: 2000 / 3370 rows processed.
+2026-05-21 17:57:39,384 INFO: Progress: 2500 / 3370 rows processed.
+2026-05-21 17:59:03,254 INFO: Progress: 3000 / 3370 rows processed.
+2026-05-21 18:00:02,388 INFO: Saved labeled.csv (3370 rows).
+2026-05-21 18:00:02,467 INFO: Audit sample: 412 rows.
+2026-05-21 18:00:02,467 INFO: Job control_llama31_8b complete in 612s.

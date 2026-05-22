@@ -1,0 +1,13 @@
+2026-05-21 17:51:32,475 INFO: Job control_qwen2_7b started.  Input: /scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_qwen2_7b.csv
+2026-05-21 17:51:32,533 INFO: Loaded 3370 rows from /scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_qwen2_7b.csv
+2026-05-21 17:51:32,533 INFO: Resuming: 0 rows already complete.
+2026-05-21 17:51:32,637 INFO: 3370 rows to process.
+2026-05-21 17:53:20,041 INFO: Progress: 500 / 3370 rows processed.
+2026-05-21 17:54:42,950 INFO: Progress: 1000 / 3370 rows processed.
+2026-05-21 17:55:56,726 INFO: Progress: 1500 / 3370 rows processed.
+2026-05-21 17:57:13,522 INFO: Progress: 2000 / 3370 rows processed.
+2026-05-21 17:58:16,549 INFO: Progress: 2500 / 3370 rows processed.
+2026-05-21 17:59:26,428 INFO: Progress: 3000 / 3370 rows processed.
+2026-05-21 18:00:28,605 INFO: Saved labeled.csv (3370 rows).
+2026-05-21 18:00:28,695 INFO: Audit sample: 423 rows.
+2026-05-21 18:00:28,696 INFO: Job control_qwen2_7b complete in 536s.

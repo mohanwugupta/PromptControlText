@@ -1,0 +1,12 @@
+{
+  "job_id": "phase1_qwen2_7b",
+  "input": "/scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_qwen2_7b.csv",
+  "output_dir": "/scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/llm_policy_labels/phase1_qwen2_7b",
+  "model": "meta-llama--Llama-3.1-8B-Instruct",
+  "schema_version": "v1",
+  "prompt_set_version": "v1",
+  "total_rows": 242640,
+  "processed_rows": 242640,
+  "parse_errors": 86,
+  "elapsed_seconds": 36604.7
+}
