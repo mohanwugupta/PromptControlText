@@ -44,7 +44,7 @@ JOB_IDS=(
     # "phase1_qwen2_7b"
     # "control_llama31_8b"
     # "control_qwen2_7b"
-    "control_llama33_70b"
+    # "control_llama33_70b"
     "control_qwen25_72b"
 )
 INPUT_CSVS=(
@@ -54,7 +54,7 @@ INPUT_CSVS=(
     # "artifacts/phase1_results_qwen2_7b.csv"
     # "artifacts/phase1_results_control_llama31_8b.csv"
     # "artifacts/phase1_results_control_qwen2_7b.csv"
-    "artifacts/phase1_results_control_llama33_70b.csv"
+    # "artifacts/phase1_results_control_llama33_70b.csv"
     "artifacts/phase1_results_control_qwen25_72b.csv"
 )
 
