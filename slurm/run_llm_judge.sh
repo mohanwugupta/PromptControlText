@@ -2,11 +2,11 @@
 #SBATCH --job-name=llm_judge
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=12
-#SBATCH --mem=64G
+#SBATCH --cpus-per-task=6
+#SBATCH --mem=32G
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=gpu80
-#SBATCH --array=0-5
+#SBATCH --array=0-1
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mg9965@princeton.edu
@@ -38,20 +38,24 @@ set -eo pipefail
 # 0. Per-task job registry  (index → job_id | input CSV | output dir)
 # ------------------------------------------------------------------
 JOB_IDS=(
-    "phase1_qwen25_72b"
-    "phase1_llama31_8b"
-    "phase1_llama33_70b"
-    "phase1_qwen2_7b"
-    "control_llama31_8b"
-    "control_qwen2_7b"
+    # "phase1_qwen25_72b"
+    # "phase1_llama31_8b"
+    # "phase1_llama33_70b"
+    # "phase1_qwen2_7b"
+    # "control_llama31_8b"
+    # "control_qwen2_7b"
+    "control_llama33_70b"
+    "control_qwen25_72b"
 )
 INPUT_CSVS=(
-    "artifacts/phase1_results.csv"
-    "artifacts/phase1_results_llama31_8b.csv"
-    "artifacts/phase1_results_llama33_70b.csv"
-    "artifacts/phase1_results_qwen2_7b.csv"
-    "artifacts/phase1_results_control_llama31_8b.csv"
-    "artifacts/phase1_results_control_qwen2_7b.csv"
+    # "artifacts/phase1_results.csv"
+    # "artifacts/phase1_results_llama31_8b.csv"
+    # "artifacts/phase1_results_llama33_70b.csv"
+    # "artifacts/phase1_results_qwen2_7b.csv"
+    # "artifacts/phase1_results_control_llama31_8b.csv"
+    # "artifacts/phase1_results_control_qwen2_7b.csv"
+    "artifacts/phase1_results_control_llama33_70b.csv"
+    "artifacts/phase1_results_control_qwen25_72b.csv"
 )
 
 TASK=${SLURM_ARRAY_TASK_ID}
