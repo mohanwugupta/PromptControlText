@@ -1,0 +1,12 @@
+{
+  "job_id": "control_llama33_70b",
+  "input": "/scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_llama33_70b.csv",
+  "output_dir": "/scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/llm_policy_labels/control_llama33_70b",
+  "model": "meta-llama--Llama-3.1-8B-Instruct",
+  "schema_version": "v1",
+  "prompt_set_version": "v1",
+  "total_rows": 3370,
+  "processed_rows": 3370,
+  "parse_errors": 1,
+  "elapsed_seconds": 610.4
+}
