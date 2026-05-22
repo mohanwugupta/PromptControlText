@@ -69,12 +69,11 @@ class VLLMClient:
         messages.append({"role": "user", "content": user_prompt})
 
         last_error = None
-        # enable_thinking=False is a Qwen3-specific chat_template kwarg.
-        # Only send it when the served model is a Qwen3 variant to avoid
-        # confusing other models (e.g. gpt-oss, Llama, Mistral).
-        _is_qwen3 = "qwen" in target_model.lower() and (
-            "qwen2.5" in target_model.lower() or "qwen3" in target_model.lower()
-        )
+        # enable_thinking=False is a Qwen3-specific chat_template kwarg that
+        # suppresses chain-of-thought reasoning tokens. Only send it for true
+        # Qwen3 variants (e.g. "Qwen3-", "QwQ-"); Qwen2.5 does NOT support
+        # this parameter and its Jinja2 template will raise an error if sent.
+        _is_qwen3 = "qwen3" in target_model.lower() or "qwq" in target_model.lower()
         extra = {"chat_template_kwargs": {"enable_thinking": False}} if _is_qwen3 else {}
 
         for attempt in range(1, self.max_retries + 1):

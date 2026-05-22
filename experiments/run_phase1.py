@@ -165,6 +165,15 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
     evaluated_records = []
     completed = 0
 
+    # Checkpoint every CHECKPOINT_EVERY completed futures (saves partial progress
+    # so a SLURM timeout doesn't lose everything).
+    CHECKPOINT_EVERY = 500
+    os.makedirs(os.path.dirname(os.path.abspath(output_filepath)), exist_ok=True)
+
+    def _checkpoint(records, filepath):
+        if records:
+            pd.DataFrame(records).to_csv(filepath, index=False)
+
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
             executor.submit(_generate_one, client, item, family, variant, prompt_text, generator_model, clarity): (item.item_id, family, variant)
@@ -172,16 +181,16 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
         }
         for future in as_completed(futures):
             completed += 1
-            if completed % 50 == 0 or completed == total:
-                print(f"  Progress: {completed}/{total}")
             record = future.result()
             if record is not None:
                 evaluated_records.append(record)
+            if completed % CHECKPOINT_EVERY == 0 or completed == total:
+                print(f"  Progress: {completed}/{total} — checkpointing {len(evaluated_records)} records")
+                _checkpoint(evaluated_records, output_filepath)
 
     print(f"Saving {len(evaluated_records)} evaluations to {output_filepath}")
-    os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
-    df = pd.DataFrame(evaluated_records)
-    df.to_csv(output_filepath, index=False)
+    os.makedirs(os.path.dirname(os.path.abspath(output_filepath)), exist_ok=True)
+    pd.DataFrame(evaluated_records).to_csv(output_filepath, index=False)
     print("Done.")
 
 if __name__ == "__main__":
