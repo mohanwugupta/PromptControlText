@@ -2,7 +2,7 @@
 #SBATCH --job-name=llm_judge_smoke
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=12
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=gpu80

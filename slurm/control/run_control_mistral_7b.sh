@@ -2,7 +2,7 @@
 #SBATCH --job-name=pct_ctrl_mistral_7b
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --cpus-per-task=12
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=gpu80
