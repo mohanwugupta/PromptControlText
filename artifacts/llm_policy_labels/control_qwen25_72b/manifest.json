@@ -6,7 +6,7 @@
   "schema_version": "v1",
   "prompt_set_version": "v1",
   "total_rows": 90,
-  "processed_rows": 90,
+  "processed_rows": 0,
   "parse_errors": 0,
-  "elapsed_seconds": 27.2
+  "elapsed_seconds": 0.1
 }

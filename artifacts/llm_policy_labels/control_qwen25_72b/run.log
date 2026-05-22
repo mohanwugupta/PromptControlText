@@ -5,3 +5,10 @@
 2026-05-22 13:34:03,453 INFO: Saved labeled.csv (90 rows).
 2026-05-22 13:34:03,482 INFO: Audit sample: 90 rows.
 2026-05-22 13:34:03,482 INFO: Job control_qwen25_72b complete in 27s.
+2026-05-22 17:49:34,639 INFO: Job control_qwen25_72b started.  Input: /scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_qwen25_72b.csv
+2026-05-22 17:49:34,657 INFO: Loaded 90 rows from /scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/phase1_results_control_qwen25_72b.csv
+2026-05-22 17:49:34,665 INFO: Resuming: 90 rows already complete.
+2026-05-22 17:49:34,669 INFO: 2 rows to process.
+2026-05-22 17:49:34,680 INFO: Saved labeled.csv (90 rows).
+2026-05-22 17:49:34,700 INFO: Audit sample: 90 rows.
+2026-05-22 17:49:34,702 INFO: Job control_qwen25_72b complete in 0s.
