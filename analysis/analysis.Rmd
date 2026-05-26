@@ -1,0 +1,2098 @@
+---
+title: "analysis"
+output: html_document
+date: "2026-05-21"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(lme4)
+library(car)
+library(emmeans)
+library(broom.mixed)
+library(scales)
+library(patchwork)
+
+all_data <- read_csv("/Users/mg9965/Library/CloudStorage/Box-Box/ResearchProjects/LLM/promptControlText/artifacts/phase1_results_combined_labeled.csv")
+```
+
+```{r, echo=FALSE}
+
+model_lookup <- c(
+  "f2826a00ceef68f0f2b946d945ecc0477ce4450c" = "Qwen2-7B"
+)
+
+# ------------------------------------------------------------
+# 2. Clean and derive useful variables
+# ------------------------------------------------------------
+
+score_cols <- c(
+  "refusal_score",
+  "compliance_score",
+  "clarification_score",
+  "abstention_score",
+  "hierarchy_following_score",
+  "unsafe_continuation_score",
+  "stop_compliance_score"
+)
+
+score_cols <- intersect(score_cols, names(raw))
+
+family_levels <- c(
+  "No-system-prompt",
+  "Answer-first",
+  "Clarify-first",
+  "Evidence-first",
+  "Hierarchy-first",
+  "Minimal-safe-help",
+  "Refuse-first",
+  "Source-isolation-first",
+  "Transform-classify-first"
+)
+
+family_short_levels <- c(
+  "No Prompt",
+  "Answer",
+  "Clarify",
+  "Evidence",
+  "Hierarchy",
+  "Safe Help",
+  "Refuse",
+  "Source",
+  "Transform"
+)
+
+clarity_levels <- c(
+  "none",
+  "vague",
+  "explicit",
+  "explicit-fallback"
+)
+
+policy_levels <- c(
+  "compliance",
+  "refusal",
+  "clarification",
+  "hierarchy_preservation",
+  "source_isolation",
+  "safe_redirection"
+)
+
+df <- all_data %>%
+  mutate(
+    across(all_of(score_cols), ~ suppressWarnings(as.numeric(.x))),
+
+# --------------------------------------------------------
+# Clean model names
+# --------------------------------------------------------
+
+model_name_raw = as.character(model_name),
+model_name_raw = na_if(model_name_raw, ""),
+model_name_clean = str_to_lower(model_name_raw),
+
+model_name = case_when(
+  # Main Qwen-2.5-72B run has missing model_name
+  is.na(model_name_raw) ~ "Qwen-2.5-72B",
+
+  # Qwen-2-7B hash
+  model_name_raw == "f2826a00ceef68f0f2b946d945ecc0477ce4450c" ~ "Qwen-2-7B",
+
+  # Llama models
+  str_detect(model_name_clean, "llama[-_\\.]*3\\.1[-_\\.]*8b") ~ "Llama-3.1-8B",
+  str_detect(model_name_clean, "llama[-_\\.]*3\\.3[-_\\.]*70b") ~ "Llama-3.3-70B",
+
+  # Qwen models
+  str_detect(model_name_clean, "qwen[-_\\.]*2[-_\\.]*5[-_\\.]*72b") ~ "Qwen-2.5-72B",
+  str_detect(model_name_clean, "qwen[-_\\.]*2[-_\\.]*7b") ~ "Qwen-2-7B",
+
+  TRUE ~ model_name_raw
+),
+
+    # --------------------------------------------------------
+    # Clean prompt family names
+    # --------------------------------------------------------
+    prompt_family = as.character(prompt_family),
+    prompt_family = if_else(
+      is.na(prompt_family) | prompt_family == "",
+      "No-system-prompt",
+      prompt_family
+    ),
+    prompt_family = str_replace_all(prompt_family, "_", "-"),
+    prompt_family = str_replace_all(prompt_family, "\\s+", "-"),
+
+    # Short prompt-family labels for plotting
+    prompt_family_short = case_when(
+      prompt_family == "No-system-prompt" ~ "No Prompt",
+      prompt_family == "Answer-first" ~ "Answer",
+      prompt_family == "Clarify-first" ~ "Clarify",
+      prompt_family == "Evidence-first" ~ "Evidence",
+      prompt_family == "Hierarchy-first" ~ "Hierarchy",
+      prompt_family == "Minimal-safe-help" ~ "Safe Help",
+      prompt_family == "Refuse-first" ~ "Refuse",
+      prompt_family == "Source-isolation-first" ~ "Source",
+      prompt_family == "Transform-classify-first" ~ "Transform",
+      TRUE ~ prompt_family
+    ),
+
+    # --------------------------------------------------------
+    # Clean clarity names
+    # --------------------------------------------------------
+    clarity_level = as.character(clarity_level),
+    clarity_level = if_else(
+      is.na(clarity_level) | clarity_level == "",
+      "none",
+      clarity_level
+    ),
+    clarity_level = str_replace_all(clarity_level, "_", "-"),
+    clarity_level = str_to_lower(clarity_level),
+# --------------------------------------------------------
+# Clean clarity names
+# --------------------------------------------------------
+clarity_level = as.character(clarity_level),
+clarity_level = if_else(
+  is.na(clarity_level) | clarity_level == "",
+  "none",
+  clarity_level
+),
+clarity_level = str_replace_all(clarity_level, "_", "-"),
+clarity_level = str_to_lower(clarity_level),
+
+# Short display labels for plotting
+clarity_short = case_when(
+  clarity_level == "none" ~ "None",
+  clarity_level == "explicit" ~ "Explicit",
+  clarity_level == "explicit-fallback" ~ "Fallback",
+  clarity_level == "vague" ~ "Vague",
+  TRUE ~ clarity_level),
+
+    # Safer than item_id if item_id changes across prompt variants
+    item_key = factor(paste(benchmark, input_text, sep = " :: ")),
+
+    item_safety = case_when(
+      gold_label == "safe" ~ "safe",
+      gold_label == "unsafe" ~ "unsafe",
+      TRUE ~ NA_character_
+    ),
+
+    malformed = !is.na(malformed_output)
+  ) %>%
+  mutate(
+    prompt_family = factor(
+      prompt_family,
+      levels = union(family_levels, unique(prompt_family))
+    ),
+    prompt_family_short = factor(
+      prompt_family_short,
+      levels = union(family_short_levels, unique(prompt_family_short))
+    ),
+    clarity_level = factor(
+  clarity_level,
+  levels = c("none", "vague", "explicit", "explicit-fallback")
+),
+
+clarity_short = factor(
+  clarity_short,
+  levels = c("None", "Vague", "Explicit", "Fallback")
+),
+    model_name = factor(
+      model_name,
+      levels = c("Llama-3.1-8B", "Llama-3.3-70B", "Qwen-2-7B", "Qwen-2.5-72B")
+    )
+  )
+
+# ------------------------------------------------------------
+# 3. Derive policy label if missing
+# ------------------------------------------------------------
+# Best case: use policy_label from the LLM judge.
+# Fallback: infer a rough policy from task-specific score columns.
+# Use the fallback only for diagnostics, not the final paper labels.
+
+df <- df %>%
+  mutate(
+    # --------------------------------------------------------
+    # Clean raw LLM policy label
+    # --------------------------------------------------------
+    policy = as.character(llm_policy_label),
+    policy = str_to_lower(str_trim(policy)),
+    policy = str_replace_all(policy, "-", "_"),
+    policy = str_replace_all(policy, "\\s+", "_"),
+
+    # --------------------------------------------------------
+    # Normalize possible variants into canonical policy labels
+    # --------------------------------------------------------
+    policy = case_when(
+      policy %in% c("compliance", "comply", "answer", "acceptance") ~ "compliance",
+      policy %in% c("refusal", "refuse") ~ "refusal",
+      policy %in% c("clarification", "clarify") ~ "clarification",
+      policy %in% c("hierarchy_preservation", "hierarchy_following", "hierarchy") ~ "hierarchy_preservation",
+      policy %in% c("source_isolation", "source", "source_isolating") ~ "source_isolation",
+      policy %in% c("safe_redirection", "safe_redirect", "minimal_safe_help", "safe_help") ~ "safe_redirection",
+      TRUE ~ NA_character_
+    ),
+
+    policy = factor(policy, levels = policy_levels),
+
+    # --------------------------------------------------------
+    # Short display labels
+    # --------------------------------------------------------
+    policy_short = case_when(
+      policy == "compliance" ~ "Compliance",
+      policy == "refusal" ~ "Refusal",
+      policy == "clarification" ~ "Clarification",
+      policy == "hierarchy_preservation" ~ "Hierarchy",
+      policy == "source_isolation" ~ "Source",
+      policy == "safe_redirection" ~ "Safe Help",
+      TRUE ~ NA_character_
+    ),
+
+    policy_short = factor(
+      policy_short,
+      levels = c(
+        "Compliance",
+        "Refusal",
+        "Clarification",
+        "Hierarchy",
+        "Source",
+        "Safe Help"
+      )
+    ),
+
+    # --------------------------------------------------------
+    # Make llm_policy_label match policy_short
+    # --------------------------------------------------------
+    llm_policy_label = policy_short
+  )
+
+# Quick design check
+design_check <- df %>%
+  summarise(
+    n_rows = n(),
+    n_models = n_distinct(model_name),
+    n_prompt_families = n_distinct(prompt_family),
+    n_clarity_levels = n_distinct(clarity_level),
+    n_policy_labels_nonmissing = sum(!is.na(policy)),
+    n_policy_labels_missing = sum(is.na(policy)),
+    n_malformed = sum(malformed, na.rm = TRUE)
+  )
+
+print(design_check)
+
+# ============================================================
+# 2. Aggregate safety-boundary rates
+# ============================================================
+
+boundary_rates <- df %>%
+  filter(item_safety %in% c("safe", "unsafe")) %>%
+  group_by(model_name, benchmark, prompt_family, clarity_level) %>%
+  summarise(
+    harmful_compliance_rate = mean(compliance_score[item_safety == "unsafe"] == 1, na.rm = TRUE),
+    unsafe_refusal_rate = mean(refusal_score[item_safety == "unsafe"] == 1, na.rm = TRUE),
+
+    false_refusal_rate = mean(refusal_score[item_safety == "safe"] == 1, na.rm = TRUE),
+    safe_compliance_rate = mean(compliance_score[item_safety == "safe"] == 1, na.rm = TRUE),
+
+    n_safe = sum(item_safety == "safe"),
+    n_unsafe = sum(item_safety == "unsafe"),
+
+    .groups = "drop"
+  )
+
+boundary_rates
+
+
+```
+```{r, echo=FALSE}
+# ============================================================
+# PLOT 1: Safety boundary
+# x = harmful compliance on unsafe items
+# y = false refusal on safe items
+# color = prompt family
+# shape = model
+# ============================================================
+# Main analysis dataset
+analysis_df <- df %>%
+  filter(!malformed)
+
+rate <- function(x) {
+  if (length(x) == 0 || all(is.na(x))) return(NA_real_)
+  mean(x, na.rm = TRUE)
+}
+
+boundary_df <- analysis_df %>%
+  filter(item_safety %in% c("safe", "unsafe")) %>%
+  group_by(model_name, prompt_family_short, clarity_level) %>%
+  summarise(
+    harmful_compliance_rate = rate(compliance_score[item_safety == "unsafe"] == 1),
+    false_refusal_rate      = rate(refusal_score[item_safety == "safe"] == 1),
+    safe_acceptance_rate    = rate(compliance_score[item_safety == "safe"] == 1),
+    unsafe_refusal_rate     = rate(refusal_score[item_safety == "unsafe"] == 1),
+    n_safe                  = sum(item_safety == "safe" & !is.na(refusal_score)),
+    n_unsafe                = sum(item_safety == "unsafe" & !is.na(compliance_score)),
+    .groups = "drop"
+  )
+
+shape_vals <- setNames(
+  c(16, 17, 15, 18, 8, 3, 4, 7, 9, 10)[seq_along(levels(analysis_df$model_name))],
+  levels(analysis_df$model_name)
+)
+
+
+frontier_df <- boundary_df %>%
+  filter(
+    !is.na(harmful_compliance_rate),
+    !is.na(false_refusal_rate)
+  ) %>%
+  mutate(
+    x = harmful_compliance_rate,
+    y = false_refusal_rate
+  )
+
+# ------------------------------------------------------------
+# 2. Fit nonlinear exponential decay
+# ------------------------------------------------------------
+
+fit_exp_nls <- nls(
+  y ~ c + a * exp(-b * x),
+  data = frontier_df,
+  start = list(
+    c = 0.005,  # lower asymptote
+    a = 0.20,   # initial height
+    b = 8       # steepness
+  ),
+  control = nls.control(
+    maxiter = 500,
+    warnOnly = TRUE
+  )
+)
+
+summary(fit_exp_nls)
+
+# ------------------------------------------------------------
+# 3. Generate predictions for observed points
+# ------------------------------------------------------------
+
+frontier_df <- frontier_df %>%
+  mutate(
+    exp_pred = predict(fit_exp_nls, newdata = frontier_df)
+  )
+
+# R2 for fitted curve on original scale
+exp_r2 <- cor(
+  frontier_df$y,
+  frontier_df$exp_pred,
+  use = "complete.obs"
+)^2
+
+exp_r2
+
+# ------------------------------------------------------------
+# 4. Generate smooth curve for plotting
+# ------------------------------------------------------------
+
+curve_df <- tibble(
+  x = seq(
+    min(frontier_df$x, na.rm = TRUE),
+    max(frontier_df$x, na.rm = TRUE),
+    length.out = 300
+  )
+) %>%
+  mutate(
+    pred_y = predict(fit_exp_nls, newdata = tibble(x = x))
+  )
+
+# ------------------------------------------------------------
+# 5. Plot safety boundary with fitted exponential curve
+# ------------------------------------------------------------
+
+p_boundary_family <- boundary_df %>%
+  filter(
+    !is.na(harmful_compliance_rate),
+    !is.na(false_refusal_rate)
+  ) %>%
+  ggplot(aes(
+    x = harmful_compliance_rate,
+    y = false_refusal_rate,
+    color = prompt_family_short,
+    shape = model_name
+  )) +
+
+  # fitted nonlinear exponential curve
+  geom_line(
+    data = curve_df,
+    aes(
+      x = x,
+      y = pred_y
+    ),
+    inherit.aes = FALSE,
+    color = "black",
+    linewidth = 3
+  ) +
+
+  # model x prompt-family points
+  geom_point(
+    size = 5,
+    alpha = 0.9
+  ) +
+
+ scale_x_continuous(
+  labels = percent_format(accuracy = 1),
+  limits = c(0, .6),
+  expand = expansion(mult = c(0.02, 0.02))
+) +
+scale_y_continuous(
+  labels = percent_format(accuracy = 1),
+  limits = c(0, .6),
+  expand = expansion(mult = c(0.02, 0.02))
+) +
+coord_fixed(ratio = 1) +
+
+  scale_shape_manual(values = shape_vals) +
+
+  labs(
+    x = "Harmful Compliance",
+    y = "False Refusal",
+    color = NULL,
+    shape = NULL
+  ) +
+
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(
+      colour = "black",
+      linewidth = 2,
+      linetype = "solid"
+    ),
+legend.position = c(0.72, 0.62),
+  legend.justification = c("left", "center"),
+  legend.box = "vertical",
+  legend.background = element_rect(
+    fill = scales::alpha("white", 0.80),
+    color = NA
+  ),
+  legend.key = element_rect(fill = NA, color = NA),
+  legend.key.size = unit(0.8, "cm"),
+  legend.text = element_text(size = 30),
+  legend.title = element_blank(),
+
+    axis.text = element_text(size = 30),
+    axis.title = element_text(size = 34),
+
+    plot.title = element_text(
+      size = 26,
+      face = "bold",
+      hjust = 0.5
+    )
+  ) +
+
+  guides(
+    color = guide_legend(
+      override.aes = list(
+        shape = 16,
+        size = 7,
+        alpha = 1,
+        linewidth = 0
+      )
+    ),
+    shape = guide_legend(
+      override.aes = list(
+        color = "black",
+        size = 5,
+        alpha = 1
+      )
+    )
+  )
+
+p_boundary_family
+
+# ============================================================
+# PLOT 2: How prompt family affects classified policy
+# stacked bars
+# ============================================================
+
+policy_family_df <- analysis_df %>%
+  filter(llm_policy_label != "parse_error") %>%
+  count(model_name, prompt_family_short, llm_policy_label, name = "n") %>%
+  group_by(model_name, prompt_family_short) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+p_policy_family <- policy_family_df %>%
+  ggplot(aes(x = prompt_family_short, y = prop, fill = llm_policy_label)) +
+  geom_col(width = 0.75) +
+  facet_wrap(~ model_name) +
+  coord_flip() +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    x = NULL,
+    y = "Share of responses",
+    fill = "Behavioral Policy"
+  ) +
+    theme_minimal() +
+    theme(
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      axis.line = element_line(
+        colour = "black",
+        linewidth = 2,
+        linetype = "solid"
+      ),
+      legend.key.size = unit(1.3, "cm"),
+      legend.text = element_text(size = 26),
+      axis.text = element_text(size = 26),
+      axis.title = element_text(size = 34),
+      plot.title = element_text(
+        size = 26,
+        face = "bold",
+        hjust = 0.5
+      ),
+      legend.title = element_blank(),
+       strip.text = element_text(
+    size = 28,
+    face = "bold"
+  )
+    ) +
+    guides(
+      color = guide_legend(
+        override.aes = list(
+          shape = 16,
+          size = 7,
+          alpha = 1,
+          linewidth = 0
+        )
+      ),
+      linetype = guide_legend(
+        override.aes = list(linewidth = 3)
+      )
+    )
+
+ p_policy_family
+
+# ============================================================
+# PLOT 3: Aggregate effect of clarity on the safety boundary
+# one point per clarity level
+# ============================================================
+
+library(grid)
+
+clarity_boundary_df <- analysis_df %>%
+  filter(item_safety %in% c("safe", "unsafe")) %>%
+  group_by(clarity_short) %>%
+  summarise(
+    harmful_compliance_rate = mean(
+      compliance_score[item_safety == "unsafe"] == 1,
+      na.rm = TRUE
+    ),
+    false_refusal_rate = mean(
+      refusal_score[item_safety == "safe"] == 1,
+      na.rm = TRUE
+    ),
+
+    n_unsafe = sum(item_safety == "unsafe" & !is.na(compliance_score)),
+    n_safe = sum(item_safety == "safe" & !is.na(refusal_score)),
+
+    hc_se = sqrt(harmful_compliance_rate * (1 - harmful_compliance_rate) / n_unsafe),
+    fr_se = sqrt(false_refusal_rate * (1 - false_refusal_rate) / n_safe),
+
+    .groups = "drop"
+  ) %>%
+  mutate(
+    hc_low = pmax(0, harmful_compliance_rate - 1.96 * hc_se),
+    hc_high = pmin(1, harmful_compliance_rate + 1.96 * hc_se),
+
+    fr_low = pmax(0, false_refusal_rate - 1.96 * fr_se),
+    fr_high = pmin(1, false_refusal_rate + 1.96 * fr_se)
+  )
+
+clarity_boundary_df
+
+# ============================================================
+# Individual condition points:
+# each grey point = model x prompt family x clarity level
+# ============================================================
+
+clarity_boundary_individual_df <- analysis_df %>%
+  filter(item_safety %in% c("safe", "unsafe")) %>%
+  group_by(model_name, prompt_family, clarity_short) %>%
+  summarise(
+    harmful_compliance_rate = mean(
+      compliance_score[item_safety == "unsafe"] == 1,
+      na.rm = TRUE
+    ),
+    false_refusal_rate = mean(
+      refusal_score[item_safety == "safe"] == 1,
+      na.rm = TRUE
+    ),
+    n_unsafe = sum(item_safety == "unsafe" & !is.na(compliance_score)),
+    n_safe = sum(item_safety == "safe" & !is.na(refusal_score)),
+    .groups = "drop"
+  ) %>%
+  filter(
+    !is.na(harmful_compliance_rate),
+    !is.na(false_refusal_rate),
+    n_unsafe > 0,
+    n_safe > 0
+  )
+
+x_max <- max(
+  c(
+    clarity_boundary_individual_df$harmful_compliance_rate,
+    clarity_boundary_df$hc_high
+  ),
+  na.rm = TRUE
+) * 1.15
+
+y_max <- max(
+  c(
+    clarity_boundary_individual_df$false_refusal_rate,
+    clarity_boundary_df$fr_high
+  ),
+  na.rm = TRUE
+) * 1.20
+
+
+p_boundary_clarity_agg <- ggplot() +
+
+  # ----------------------------------------------------------
+  # Background points: model x family cells
+  # ----------------------------------------------------------
+  geom_point(
+    data = clarity_boundary_individual_df,
+    aes(
+      x = harmful_compliance_rate,
+      y = false_refusal_rate
+    ),
+    color = "grey65",
+    size = 3.2,
+    alpha = 0.45,
+    position = position_jitter(width = 0.002, height = 0.002),
+    show.legend = FALSE
+  ) +
+
+  # ----------------------------------------------------------
+  # Aggregate uncertainty: harmful compliance
+  # ----------------------------------------------------------
+  geom_segment(
+    data = clarity_boundary_df,
+    aes(
+      x = hc_low,
+      xend = hc_high,
+      y = false_refusal_rate,
+      yend = false_refusal_rate,
+      color = clarity_short
+    ),
+    linewidth = 1.4,
+    alpha = 0.85
+  ) +
+
+  # ----------------------------------------------------------
+  # Aggregate uncertainty: false refusal
+  # ----------------------------------------------------------
+  geom_segment(
+    data = clarity_boundary_df,
+    aes(
+      x = harmful_compliance_rate,
+      xend = harmful_compliance_rate,
+      y = fr_low,
+      yend = fr_high,
+      color = clarity_short
+    ),
+    linewidth = 1.4,
+    alpha = 0.85
+  ) +
+
+  # ----------------------------------------------------------
+  # Aggregate clarity means
+  # ----------------------------------------------------------
+  geom_point(
+    data = clarity_boundary_df,
+    aes(
+      x = harmful_compliance_rate,
+      y = false_refusal_rate,
+      color = clarity_short
+    ),
+    size = 8,
+    alpha = 0.98
+  ) +
+
+  scale_x_continuous(
+    labels = percent_format(accuracy = 1),
+    limits = c(0, x_max)
+  ) +
+
+  scale_y_continuous(
+    labels = percent_format(accuracy = 1),
+    limits = c(0, y_max)
+  ) +
+
+  labs(
+    x = "Harmful Compliance",
+    y = "False Refusal",
+    color = "Clarity"
+  ) +
+
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(
+      colour = "black",
+      linewidth = 2,
+      linetype = "solid"
+    ),
+    legend.key.size = unit(1.3, "cm"),
+    legend.text = element_text(size = 26),
+    legend.title = element_text(size = 28),
+    axis.text = element_text(size = 30),
+    axis.title = element_text(size = 34),
+    plot.title = element_text(
+      size = 26,
+      face = "bold",
+      hjust = 0.5
+    ),
+    plot.subtitle = element_text(
+      size = 18,
+      hjust = 0.5
+    )
+  ) +
+
+  guides(
+    color = guide_legend(
+      override.aes = list(
+        shape = 16,
+        size = 7,
+        alpha = 1,
+        linewidth = 0
+      )
+    )
+  )
+
+p_boundary_clarity_agg
+# ============================================================
+# PLOT 4: How clarity affects classified policy
+# ============================================================
+
+policy_clarity_df <- analysis_df %>%
+  filter(llm_policy_label != "parse_error") %>%
+  count(model_name, clarity_short, llm_policy_label, name = "n") %>%
+  group_by(model_name, clarity_short) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup()
+
+p_policy_clarity <- policy_clarity_df %>%
+  ggplot(aes(x = clarity_short, y = prop, fill = llm_policy_label)) +
+  geom_col(width = 0.75) +
+  facet_wrap(~ model_name) +
+  coord_flip() +
+  scale_y_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    x = NULL,
+    y = "Share of responses",
+    fill = "Behavioral Policy"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+
+    axis.line = element_line(
+      colour = "black",
+      linewidth = 2,
+      linetype = "solid"
+    ),
+
+    legend.key.size = unit(1.3, "cm"),
+    legend.text = element_text(size = 26),
+    legend.title = element_blank(),
+
+    axis.text = element_text(size = 26),
+    axis.title = element_text(size = 34),
+
+    plot.title = element_text(
+      size = 26,
+      face = "bold",
+      hjust = 0.5
+    ),
+
+    strip.text = element_text(
+      size = 28,
+      face = "bold"
+    )
+  ) +
+  guides(
+    fill = guide_legend(
+      override.aes = list(
+        alpha = 1,
+        linewidth = 0
+      )
+    )
+  )
+
+p_policy_clarity
+```
+
+```{r, echo = FALSE}
+# ============================================================
+# Simple stats for Phase 1 prompt-routing analysis
+# ============================================================
+# ------------------------------------------------------------
+# 0. Load and clean
+# ------------------------------------------------------------
+
+df <- read_csv("/Users/mg9965/Library/CloudStorage/Box-Box/ResearchProjects/LLM/promptControlText/artifacts/phase1_results_combined_labeled.csv", show_col_types = FALSE) %>%
+  mutate(
+    prompt_family = if_else(
+      is.na(prompt_family) | prompt_family == "",
+      "No-system-prompt",
+      prompt_family
+    ),
+    clarity_level = if_else(
+      is.na(clarity_level) | clarity_level == "",
+      "none",
+      clarity_level
+    ),
+
+    model_name = case_when(
+      model_name == "f2826a00ceef68f0f2b946d945ecc0477ce4450c" ~ "Qwen2-7B",
+      TRUE ~ as.character(model_name)
+    ),
+
+    item_key = paste(benchmark, item_id, input_text, sep = " :: "),
+
+    item_safety = case_when(
+      gold_label == "safe" ~ "safe",
+      gold_label == "unsafe" ~ "unsafe",
+      TRUE ~ NA_character_
+    ),
+
+    malformed = !is.na(malformed_output),
+
+    policy = case_when(
+      !is.na(policy_label) ~ as.character(policy_label),
+      refusal_score == 1 ~ "Refusal",
+      compliance_score == 1 ~ "Compliance",
+      clarification_score == 1 ~ "Clarification",
+      hierarchy_following_score == 1 ~ "Hierarchy preservation",
+      stop_compliance_score == 1 ~ "Source isolation",
+      abstention_score == 1 ~ "Abstention",
+      unsafe_continuation_score == 1 ~ "Unsafe continuation",
+      TRUE ~ "Unclassified"
+    ),
+
+    prompt_family = factor(prompt_family),
+    clarity_level = factor(
+      clarity_level,
+      levels = c("none", "vague", "explicit", "explicit_fallback")
+    ),
+    model_name = factor(model_name),
+    benchmark = factor(benchmark),
+    item_safety = factor(item_safety, levels = c("safe", "unsafe")),
+    policy = factor(policy)
+  ) %>%
+  filter(!malformed)
+
+# ------------------------------------------------------------
+# 1. Simple design checks
+# ------------------------------------------------------------
+
+df %>%
+  summarise(
+    n = n(),
+    n_items = n_distinct(item_key),
+    n_models = n_distinct(model_name),
+    n_families = n_distinct(prompt_family),
+    n_clarity = n_distinct(clarity_level),
+    n_policies = n_distinct(policy)
+  )
+
+df %>%
+  count(model_name, prompt_family, clarity_level, benchmark)
+```
+```{r, echo=FALSE}
+# ============================================================
+# 1A. Does prompt family change classified policy?
+# Includes:
+#   1. Omnibus chi-square
+#   2. Standardized residuals
+#   3. Planned routing tests
+#   4. Largest unexpected cells
+#   5. Item-level switch rate from No Prompt baseline
+#   6. Compact summary table
+# ============================================================
+
+# ------------------------------------------------------------
+# 0. Create robust analysis labels
+# ------------------------------------------------------------
+# This makes the code work whether you are using prompt_family
+# or the original prompt_family column.
+
+policy_analysis_df <- df %>%
+  mutate(
+    analysis_family = case_when(
+      "prompt_family" %in% names(.) ~ as.character(prompt_family),
+      TRUE ~ as.character(prompt_family)
+    ),
+
+    analysis_family = case_when(
+      analysis_family %in% c("No-system-prompt", "No_system_prompt", "none", "No prompt") ~ "No Prompt",
+      analysis_family %in% c("Answer-first", "Answer_first") ~ "Answer",
+      analysis_family %in% c("Clarify-first", "Clarify_first") ~ "Clarify",
+      analysis_family %in% c("Evidence-first", "Evidence_first") ~ "Evidence",
+      analysis_family %in% c("Hierarchy-first", "Hierarchy_first") ~ "Hierarchy",
+      analysis_family %in% c("Minimal-safe-help", "Minimal_safe_help") ~ "Safe Help",
+      analysis_family %in% c("Refuse-first", "Refuse_first") ~ "Refuse",
+      analysis_family %in% c("Source-isolation-first", "Source_isolation_first") ~ "Source",
+      analysis_family %in% c("Transform-classify-first", "Transform_classify_first") ~ "Transform",
+      TRUE ~ analysis_family
+    ),
+
+    analysis_policy = case_when(
+      "llm_policy_label" %in% names(.) ~ as.character(llm_policy_label),
+      "policy" %in% names(.) ~ as.character(policy),
+      TRUE ~ as.character(policy)
+    ),
+
+    analysis_policy = case_when(
+      analysis_policy %in% c("compliance", "Compliance") ~ "Compliance",
+      analysis_policy %in% c("refusal", "Refusal") ~ "Refusal",
+      analysis_policy %in% c("clarification", "Clarification") ~ "Clarification",
+      analysis_policy %in% c("hierarchy_preservation", "Hierarchy preservation", "Hierarchy") ~ "Hierarchy",
+      analysis_policy %in% c("source_isolation", "Source isolation", "Source") ~ "Source",
+      analysis_policy %in% c("safe_redirection", "Safe Redirection", "Safe Help") ~ "Safe Help",
+      TRUE ~ analysis_policy
+    ),
+
+    analysis_family = factor(
+      analysis_family,
+      levels = c(
+        "No Prompt",
+        "Answer",
+        "Clarify",
+        "Evidence",
+        "Hierarchy",
+        "Safe Help",
+        "Refuse",
+        "Source",
+        "Transform"
+      )
+    ),
+
+    analysis_policy = factor(
+      analysis_policy,
+      levels = c(
+        "Compliance",
+        "Refusal",
+        "Clarification",
+        "Hierarchy",
+        "Source",
+        "Safe Help"
+      )
+    )
+  )
+
+# ------------------------------------------------------------
+# 1. Omnibus chi-square: prompt family x output policy
+# ------------------------------------------------------------
+
+policy_family_df <- policy_analysis_df %>%
+  filter(
+    !is.na(analysis_family),
+    !is.na(analysis_policy)
+  )
+
+policy_family_tab <- policy_family_df %>%
+  count(analysis_family, analysis_policy, name = "n") %>%
+  tidyr::complete(
+    analysis_family,
+    analysis_policy,
+    fill = list(n = 0)
+  ) %>%
+  xtabs(n ~ analysis_family + analysis_policy, data = .)
+
+chisq_family_policy <- chisq.test(policy_family_tab)
+
+chisq_family_policy
+effectsize::cramers_v(policy_family_tab)
+
+# ------------------------------------------------------------
+# 2. Standardized residuals and cell-level effect description
+# ------------------------------------------------------------
+observed_df <- as.data.frame(as.table(policy_family_tab)) %>%
+  rename(
+    prompt_family = analysis_family,
+    policy = analysis_policy,
+    observed = Freq
+  )
+
+expected_df <- as.data.frame(as.table(chisq_family_policy$expected)) %>%
+  rename(
+    prompt_family = analysis_family,
+    policy = analysis_policy,
+    expected = Freq
+  )
+
+resid_df <- as.data.frame(as.table(chisq_family_policy$stdres)) %>%
+  rename(
+    prompt_family = analysis_family,
+    policy = analysis_policy,
+    std_resid = Freq
+  )
+
+family_policy_residuals <- observed_df %>%
+  left_join(expected_df, by = c("prompt_family", "policy")) %>%
+  left_join(resid_df, by = c("prompt_family", "policy")) %>%
+  group_by(prompt_family) %>%
+  mutate(
+    family_total = sum(observed),
+    observed_prop = observed / family_total,
+    expected_prop = expected / family_total,
+    pp_diff = observed_prop - expected_prop,
+    lift = observed / expected
+  ) %>%
+  ungroup() %>%
+  mutate(
+    cell_p = 2 * pnorm(-abs(std_resid)),
+    cell_p_bh = p.adjust(cell_p, method = "BH"),
+    chi_contribution = (observed - expected)^2 / expected
+  ) %>%
+  arrange(desc(abs(std_resid)))
+
+family_policy_residuals %>%
+  select(
+    prompt_family,
+    policy,
+    observed,
+    expected,
+    observed_prop,
+    expected_prop,
+    pp_diff,
+    lift,
+    std_resid,
+    cell_p_bh,
+    chi_contribution
+  ) %>%
+  print(n = 40)
+
+# ------------------------------------------------------------
+# 3. Planned routing tests
+# ------------------------------------------------------------
+# These test whether each prompt family increases its predicted policy
+# relative to all other prompt families.
+
+planned_cells <- tribble(
+  ~prompt_family, ~target_policy,
+  "Answer",       "Compliance",
+  "Clarify",      "Clarification",
+  "Refuse",       "Refusal",
+  "Hierarchy",    "Hierarchy",
+  "Source",       "Source",
+  "Safe Help",    "Safe Help"
+)
+
+run_planned_cell_test <- function(dat, fam, pol) {
+
+  d <- dat %>%
+    filter(
+      !is.na(analysis_family),
+      !is.na(analysis_policy),
+      analysis_family != "No Prompt"
+    ) %>%
+    mutate(
+      is_family = analysis_family == fam,
+      is_policy = analysis_policy == pol
+    )
+
+  tab <- matrix(
+    c(
+      sum(!d$is_family & !d$is_policy, na.rm = TRUE),
+      sum(!d$is_family &  d$is_policy, na.rm = TRUE),
+      sum( d$is_family & !d$is_policy, na.rm = TRUE),
+      sum( d$is_family &  d$is_policy, na.rm = TRUE)
+    ),
+    nrow = 2,
+    byrow = TRUE,
+    dimnames = list(
+      family = c("Other families", fam),
+      policy = c("Other policies", pol)
+    )
+  )
+
+  test <- chisq.test(tab, correct = FALSE)
+
+  a <- tab[2, 2]  # target family + target policy
+  b <- tab[2, 1]  # target family + other policies
+  c <- tab[1, 2]  # other families + target policy
+  d0 <- tab[1, 1] # other families + other policies
+
+  odds_ratio <- ((a + 0.5) * (d0 + 0.5)) / ((b + 0.5) * (c + 0.5))
+
+  prop_in_family <- a / (a + b)
+  prop_other_families <- c / (c + d0)
+
+  tibble(
+    prompt_family = fam,
+    target_policy = pol,
+    n_family = a + b,
+    n_other_families = c + d0,
+    target_n_in_family = a,
+    target_n_other_families = c,
+    prop_in_family = prop_in_family,
+    prop_other_families = prop_other_families,
+    pp_diff = prop_in_family - prop_other_families,
+    odds_ratio = odds_ratio,
+    chi_square = unname(test$statistic),
+    df = unname(test$parameter),
+    p = test$p.value
+  )
+}
+
+planned_routing_tests <- planned_cells %>%
+  pmap_dfr(~ run_planned_cell_test(policy_analysis_df, ..1, ..2)) %>%
+  mutate(
+    p_bh = p.adjust(p, method = "BH")
+  ) %>%
+  arrange(desc(abs(pp_diff)))
+
+planned_routing_tests
+
+# ------------------------------------------------------------
+# 4. Join planned tests with omnibus residuals
+# ------------------------------------------------------------
+
+planned_routing_with_residuals <- planned_routing_tests %>%
+  left_join(
+    family_policy_residuals %>%
+      select(
+        prompt_family,
+        policy,
+        observed,
+        expected,
+        observed_prop,
+        expected_prop,
+        std_resid,
+        lift,
+        chi_contribution
+      ),
+    by = c(
+      "prompt_family" = "prompt_family",
+      "target_policy" = "policy"
+    )
+  ) %>%
+  arrange(desc(abs(std_resid)))
+
+planned_routing_with_residuals
+
+# ------------------------------------------------------------
+# 5. Largest unexpected cells
+# ------------------------------------------------------------
+
+unexpected_cells <- family_policy_residuals %>%
+  anti_join(
+    planned_cells,
+    by = c(
+      "prompt_family" = "prompt_family",
+      "policy" = "target_policy"
+    )
+  ) %>%
+  mutate(
+    direction = if_else(
+      std_resid > 0,
+      "More than expected",
+      "Less than expected"
+    )
+  ) %>%
+  arrange(desc(abs(std_resid)))
+
+unexpected_cells %>%
+  select(
+    prompt_family,
+    policy,
+    direction,
+    observed,
+    expected,
+    observed_prop,
+    expected_prop,
+    pp_diff,
+    lift,
+    std_resid,
+    cell_p_bh,
+    chi_contribution
+  ) %>%
+  print(n = 30)
+
+# ------------------------------------------------------------
+# 6. Item-level change from No Prompt baseline
+# ------------------------------------------------------------
+
+baseline_df <- policy_analysis_df %>%
+  filter(
+    analysis_family == "No Prompt" |
+      prompt_family == "No-system-prompt" |
+      clarity_level == "none"
+  ) %>%
+  group_by(model_name, benchmark, item_key) %>%
+  summarise(
+    baseline_policy = first(as.character(analysis_policy)),
+    n_baseline_rows = n(),
+    .groups = "drop"
+  )
+
+# Quick check: should usually be one baseline row per model x benchmark x item
+baseline_check <- baseline_df %>%
+  count(n_baseline_rows, sort = TRUE)
+
+baseline_check
+
+item_change_df <- policy_analysis_df %>%
+  filter(
+    !(analysis_family == "No Prompt" |
+        prompt_family == "No-system-prompt" |
+        clarity_level == "none")
+  ) %>%
+  mutate(
+    current_policy = as.character(analysis_policy)
+  ) %>%
+  left_join(
+    baseline_df,
+    by = c("model_name", "benchmark", "item_key")
+  ) %>%
+  mutate(
+    policy_changed = current_policy != baseline_policy
+  )
+
+missing_baseline_check <- item_change_df %>%
+  summarise(
+    n_rows = n(),
+    n_missing_baseline = sum(is.na(baseline_policy)),
+    pct_missing_baseline = mean(is.na(baseline_policy)) * 100
+  )
+
+missing_baseline_check
+
+# ------------------------------------------------------------
+# 7. Switch rate by prompt family
+# ------------------------------------------------------------
+
+prompt_family_switch_rate <- item_change_df %>%
+  filter(!is.na(baseline_policy), !is.na(current_policy)) %>%
+  group_by(analysis_family) %>%
+  summarise(
+    n_prompt_item_rows = n(),
+    n_changed = sum(policy_changed, na.rm = TRUE),
+    pct_changed_from_baseline = mean(policy_changed, na.rm = TRUE) * 100,
+    .groups = "drop"
+  ) %>%
+  rename(prompt_family = analysis_family) %>%
+  arrange(desc(pct_changed_from_baseline))
+
+prompt_family_switch_rate
+
+# ------------------------------------------------------------
+# 8. Aggregate switch rate across all non-baseline prompts
+# ------------------------------------------------------------
+
+aggregate_switch_rate <- item_change_df %>%
+  filter(!is.na(baseline_policy), !is.na(current_policy)) %>%
+  summarise(
+    n_prompt_item_rows = n(),
+    n_changed = sum(policy_changed, na.rm = TRUE),
+    pct_changed_from_baseline = mean(policy_changed, na.rm = TRUE) * 100
+  )
+
+aggregate_switch_rate
+
+# ------------------------------------------------------------
+# 9. Policy transition table from baseline to prompt condition
+# ------------------------------------------------------------
+
+policy_transition_by_family <- item_change_df %>%
+  filter(!is.na(baseline_policy), !is.na(current_policy)) %>%
+  count(
+    analysis_family,
+    baseline_policy,
+    current_policy,
+    name = "n"
+  ) %>%
+  group_by(analysis_family, baseline_policy) %>%
+  mutate(
+    pct_within_baseline_policy = n / sum(n) * 100
+  ) %>%
+  ungroup() %>%
+  rename(prompt_family = analysis_family) %>%
+  arrange(prompt_family, baseline_policy, desc(n))
+
+policy_transition_by_family
+
+# ------------------------------------------------------------
+# 10. Compact table for writing the paper
+# ------------------------------------------------------------
+
+prompt_family_summary_table <- planned_routing_with_residuals %>%
+  left_join(
+    prompt_family_switch_rate,
+    by = "prompt_family"
+  ) %>%
+  transmute(
+    prompt_family,
+    target_policy,
+    pct_target_policy_in_family = prop_in_family * 100,
+    pct_target_policy_other_families = prop_other_families * 100,
+    pp_target_policy_diff = pp_diff * 100,
+    odds_ratio,
+    std_resid,
+    planned_test_p_bh = p_bh,
+    pct_changed_from_baseline
+  ) %>%
+  arrange(desc(pct_changed_from_baseline))
+
+prompt_family_summary_table
+
+```
+```{r, echo=FALSE}
+# clarity on the frontier tradeoff:
+
+# ============================================================
+# Prompt clarity and frontier position
+# ============================================================
+
+library(tidyverse)
+library(effectsize)
+library(emmeans)
+
+# ------------------------------------------------------------
+# 1. Build frontier-position dataframe
+# ------------------------------------------------------------
+
+clarity_frontier_df <- boundary_df %>%
+  filter(
+    !is.na(harmful_compliance_rate),
+    !is.na(false_refusal_rate)
+  ) %>%
+  mutate(
+    clarity_level = as.character(clarity_level),
+    clarity_level = str_replace_all(clarity_level, "_", "-"),
+    clarity_level = factor(
+      clarity_level,
+      levels = c("none", "vague", "explicit", "explicit-fallback")
+    ),
+
+    clarity_short = case_when(
+      clarity_level == "none" ~ "None",
+      clarity_level == "vague" ~ "Vague",
+      clarity_level == "explicit" ~ "Explicit",
+      clarity_level == "explicit-fallback" ~ "Fallback",
+      TRUE ~ as.character(clarity_level)
+    ),
+    clarity_short = factor(
+      clarity_short,
+      levels = c("None", "Vague", "Explicit", "Fallback")
+    ),
+
+    harmful_compliance_z = as.numeric(scale(harmful_compliance_rate)),
+    false_refusal_z = as.numeric(scale(false_refusal_rate)),
+
+    # Higher = more compliance-biased:
+    # higher harmful compliance and lower false refusal.
+    frontier_position = harmful_compliance_z - false_refusal_z,
+
+    # Lower = closer to ideal point.
+    boundary_error_distance = sqrt(
+      harmful_compliance_rate^2 + false_refusal_rate^2
+    )
+  )
+
+# ------------------------------------------------------------
+# 2. Aggregate clarity effect, including No Prompt / None
+# This matches Figure 4.
+# ------------------------------------------------------------
+
+clarity_frontier_lm_all <- lm(
+  frontier_position ~ clarity_short + model_name,
+  data = clarity_frontier_df
+)
+
+summary(clarity_frontier_lm_all)
+anova(clarity_frontier_lm_all)
+effectsize::eta_squared(clarity_frontier_lm_all, partial = TRUE)
+
+emmeans(clarity_frontier_lm_all, ~ clarity_short)
+
+pairs(
+  emmeans(clarity_frontier_lm_all, ~ clarity_short),
+  adjust = "BH"
+)
+
+# ------------------------------------------------------------
+# 3. Prompted-only clarity effect
+# This tests Vague vs Explicit vs Fallback while controlling
+# for prompt family and model.
+# ------------------------------------------------------------
+
+clarity_frontier_prompted_df <- clarity_frontier_df %>%
+  filter(
+    clarity_level != "none",
+    prompt_family_short != "No Prompt"
+  ) %>%
+  mutate(
+    clarity_short = droplevels(clarity_short),
+    prompt_family_short = droplevels(prompt_family_short),
+    model_name = droplevels(model_name)
+  )
+
+clarity_frontier_lm_prompted <- lm(
+  frontier_position ~ clarity_short + prompt_family_short + model_name,
+  data = clarity_frontier_prompted_df
+)
+
+summary(clarity_frontier_lm_prompted)
+anova(clarity_frontier_lm_prompted)
+effectsize::eta_squared(clarity_frontier_lm_prompted, partial = TRUE)
+
+emmeans(clarity_frontier_lm_prompted, ~ clarity_short)
+
+pairs(
+  emmeans(clarity_frontier_lm_prompted, ~ clarity_short),
+  adjust = "BH"
+)
+
+# ------------------------------------------------------------
+# 4. Does clarity affect prompt families differently?
+# This tests whether clarity interacts with prompt family.
+# ------------------------------------------------------------
+
+clarity_frontier_lm_prompted_interaction <- lm(
+  frontier_position ~ clarity_short * prompt_family_short + model_name,
+  data = clarity_frontier_prompted_df
+)
+
+anova(
+  clarity_frontier_lm_prompted,
+  clarity_frontier_lm_prompted_interaction
+)
+
+summary(clarity_frontier_lm_prompted_interaction)
+
+# ------------------------------------------------------------
+# 5. Optional: test the two frontier axes separately
+# ------------------------------------------------------------
+
+hc_clarity_lm <- lm(
+  harmful_compliance_rate ~ clarity_short + prompt_family_short + model_name,
+  data = clarity_frontier_prompted_df
+)
+
+fr_clarity_lm <- lm(
+  false_refusal_rate ~ clarity_short + prompt_family_short + model_name,
+  data = clarity_frontier_prompted_df
+)
+
+summary(hc_clarity_lm)
+anova(hc_clarity_lm)
+
+summary(fr_clarity_lm)
+anova(fr_clarity_lm)
+
+emmeans(hc_clarity_lm, ~ clarity_short)
+emmeans(fr_clarity_lm, ~ clarity_short)
+
+```
+
+```{r, echo=FALSE}
+
+# ============================================================
+# 1C. Family × clarity policy routing
+# ============================================================
+
+df_policy_fc <- df %>%
+  filter(policy != "Unclassified") %>%
+  mutate(family_clarity = interaction(prompt_family, clarity_level, drop = TRUE))
+
+policy_family_clarity_tab <- df_policy_fc %>%
+  count(family_clarity, policy) %>%
+  pivot_wider(
+    names_from = policy,
+    values_from = n,
+    values_fill = 0
+  ) %>%
+  column_to_rownames("family_clarity") %>%
+  as.matrix()
+
+chisq_family_clarity_policy <- chisq.test(policy_family_clarity_tab)
+
+chisq_family_clarity_policy
+effectsize::cramers_v(policy_family_clarity_tab)
+
+
+# ============================================================
+# 2A. ANOVA: harmful compliance on unsafe items
+# ============================================================
+
+aov_harmful_compliance <- aov(
+  harmful_compliance_rate ~ prompt_family + clarity_level + model_name,
+  data = boundary_rates
+)
+
+summary(aov_harmful_compliance)
+effectsize::eta_squared(aov_harmful_compliance, partial = TRUE)
+# ============================================================
+# 2B. ANOVA: false refusal on safe items
+# ============================================================
+
+aov_false_refusal <- aov(
+  false_refusal_rate ~ prompt_family + clarity_level + model_name,
+  data = boundary_rates
+)
+
+summary(aov_false_refusal)
+effectsize::eta_squared(aov_false_refusal, partial = TRUE)
+
+# ============================================================
+# 3A. LME: harmful compliance on unsafe items
+# ============================================================
+
+unsafe_df <- df %>%
+  filter(item_safety == "unsafe") %>%
+  mutate(
+    harmful_compliance = as.numeric(compliance_score == 1)
+  )
+
+lme_harmful_compliance <- lmer(
+  harmful_compliance ~ prompt_family + clarity_level * model_name +
+    (1 | item_key),
+  data = unsafe_df
+)
+
+anova(lme_harmful_compliance, type = 3)
+summary(lme_harmful_compliance)
+effectsize::eta_squared(lme_harmful_compliance, partial = TRUE)
+
+emmeans(lme_harmful_compliance, ~ prompt_family)
+emmeans(lme_harmful_compliance, ~ clarity_level)
+
+# ============================================================
+# 3B. LME: false refusal on safe items
+# ============================================================
+
+safe_df <- df %>%
+  filter(item_safety == "safe") %>%
+  mutate(
+    false_refusal = as.numeric(refusal_score == 1)
+  )
+
+lme_false_refusal <- lmer(
+  false_refusal ~ prompt_family * clarity_level * model_name +
+    (1 | item_key),
+  data = safe_df
+)
+
+anova(lme_false_refusal, type = 3)
+summary(lme_false_refusal)
+effectsize::eta_squared(lme_false_refusal, partial = TRUE)
+
+emmeans(lme_false_refusal, ~ prompt_family)
+emmeans(lme_false_refusal, ~ clarity_level)
+
+# ============================================================
+# 3C. One model for the acceptance-refusal boundary
+# ============================================================
+# This asks whether prompt family and clarity shift compliance differently
+# for safe versus unsafe items.
+
+boundary_item_df <- df %>%
+  filter(item_safety %in% c("safe", "unsafe")) %>%
+  mutate(
+    accepted = as.numeric(compliance_score == 1)
+  )
+
+lme_acceptance_boundary <- lmer(
+  accepted ~ item_safety * prompt_family * clarity_level * model_name +
+    (1 | item_key),
+  data = boundary_item_df
+)
+
+anova(lme_acceptance_boundary, type = 3)
+summary(lme_acceptance_boundary)
+effectsize::eta_squared(lme_acceptance_boundary, partial = TRUE)
+
+emmeans(
+  lme_acceptance_boundary,
+  ~ prompt_family | item_safety,
+  type = "response"
+)
+
+emmeans(
+  lme_acceptance_boundary,
+  ~ clarity_level | item_safety,
+  type = "response"
+)
+
+# ============================================================
+# 4. Benchmark-stratified chi-square tests
+# ============================================================
+
+chisq_by_benchmark <- df %>%
+  filter(policy != "Unclassified") %>%
+  group_by(benchmark) %>%
+  group_modify(~ {
+    tab <- .x %>%
+      count(prompt_family, policy) %>%
+      pivot_wider(
+        names_from = policy,
+        values_from = n,
+        values_fill = 0
+      ) %>%
+      column_to_rownames("prompt_family") %>%
+      as.matrix()
+
+    test <- chisq.test(tab)
+
+    tibble(
+      chisq = unname(test$statistic),
+      df = unname(test$parameter),
+      p = test$p.value,
+      cramers_v = effectsize::cramers_v(tab)$Cramers_v
+    )
+  }) %>%
+  ungroup()
+
+chisq_by_benchmark
+
+# ============================================================
+# 5. Within-item policy switching
+# ============================================================
+
+switch_df <- df %>%
+  filter(policy != "Unclassified") %>%
+  group_by(model_name, benchmark, item_key) %>%
+  summarise(
+    n_prompt_families = n_distinct(prompt_family),
+    n_clarity_levels = n_distinct(clarity_level),
+    n_policies = n_distinct(policy),
+    switched = n_policies > 1,
+    policies_seen = paste(sort(unique(as.character(policy))), collapse = "; "),
+    .groups = "drop"
+  )
+
+switch_summary <- switch_df %>%
+  group_by(model_name, benchmark) %>%
+  summarise(
+    n_items = n(),
+    n_switched = sum(switched),
+    switch_rate = mean(switched),
+    .groups = "drop"
+  )
+
+switch_summary
+```
+
+```{r, echo=FALSE}
+# testing tradeoff directly controlling for the model
+tradeoff_dat <- boundary_df %>%
+  filter(
+    !is.na(harmful_compliance_rate),
+    !is.na(false_refusal_rate)
+  )
+
+model_only <- lm(
+  false_refusal_rate ~ model_name,
+  data = tradeoff_dat
+)
+
+model_plus_compliance <- lm(
+  false_refusal_rate ~ model_name + harmful_compliance_rate,
+  data = tradeoff_dat
+)
+
+model_with_interaction <- lm(
+  false_refusal_rate ~ model_name * harmful_compliance_rate,
+  data = tradeoff_dat
+)
+
+# Does harmful compliance improve fit after controlling for model?
+anova(model_only, model_plus_compliance)
+
+# Do slopes differ across models?
+anova(model_plus_compliance, model_with_interaction)
+
+# Full model summary
+summary(model_with_interaction)
+
+# Compare exponential against simpler curves
+frontier_df <- boundary_df %>%
+  filter(
+    !is.na(harmful_compliance_rate),
+    !is.na(false_refusal_rate)
+  ) %>%
+  mutate(
+    x = harmful_compliance_rate,
+    y = false_refusal_rate,
+    x_adj = pmax(x, 0.001),
+    y_adj = pmax(y, 0.001)
+  )
+
+fit_linear <- lm(y ~ x, data = frontier_df)
+
+fit_log <- lm(y ~ log(x_adj), data = frontier_df)
+
+fit_exp_lm <- lm(log(y_adj) ~ x, data = frontier_df)
+
+fit_exp_nls <- nls(
+  y ~ c + a * exp(-b * x),
+  data = frontier_df,
+  start = list(c = 0.005, a = 0.20, b = 8),
+  control = nls.control(maxiter = 500, warnOnly = TRUE)
+)
+
+compare_fits <- tibble(
+  model = c("linear", "log", "exponential_lm", "exponential_nls"),
+  AIC = c(
+    AIC(fit_linear),
+    AIC(fit_log),
+    AIC(fit_exp_lm),
+    AIC(fit_exp_nls)
+  ),
+  RMSE = c(
+    sqrt(mean(residuals(fit_linear)^2)),
+    sqrt(mean(residuals(fit_log)^2)),
+    sqrt(mean((frontier_df$y - exp(predict(fit_exp_lm)))^2)),
+    sqrt(mean((frontier_df$y - predict(fit_exp_nls))^2))
+  )
+)
+
+compare_fits
+
+# Test distance from the ideal safety boundary
+# Want to know whether prompt family or clarity makes the model better overall, not just more accepting or more refusing.
+boundary_error_df <- boundary_df %>%
+  filter(
+    !is.na(harmful_compliance_rate),
+    !is.na(false_refusal_rate)
+  ) %>%
+  mutate(
+    boundary_error_sum = harmful_compliance_rate + false_refusal_rate,
+    boundary_error_distance = sqrt(
+      harmful_compliance_rate^2 + false_refusal_rate^2
+    )
+  )
+
+aov_boundary_error <- aov(
+  boundary_error_distance ~ prompt_family + clarity_level + model_name,
+  data = boundary_error_df
+)
+
+summary(aov_boundary_error)
+effectsize::eta_squared(aov_boundary_error, partial = TRUE)
+
+# ideal pareto efficient prompt conditions
+pareto_df <- boundary_df %>%
+  filter(
+    !is.na(harmful_compliance_rate),
+    !is.na(false_refusal_rate)
+  ) %>%
+  mutate(condition_id = row_number())
+
+is_dominated <- function(i, df) {
+  any(
+    df$harmful_compliance_rate <= df$harmful_compliance_rate[i] &
+      df$false_refusal_rate <= df$false_refusal_rate[i] &
+      (
+        df$harmful_compliance_rate < df$harmful_compliance_rate[i] |
+          df$false_refusal_rate < df$false_refusal_rate[i]
+      )
+  )
+}
+
+pareto_df <- pareto_df %>%
+  mutate(
+    dominated = map_lgl(condition_id, is_dominated, df = pareto_df),
+    pareto_efficient = !dominated
+  )
+
+pareto_df %>%
+  filter(pareto_efficient) %>%
+  arrange(harmful_compliance_rate, false_refusal_rate) %>%
+  select(model_name, prompt_family, clarity_level,
+         harmful_compliance_rate, false_refusal_rate)
+
+# paired item-level tests for the main prompt effects
+unsafe_lme <- lmer(
+  as.numeric(compliance_score == 1) ~ prompt_family * clarity_level * model_name +
+    (1 | item_key),
+  data = df %>% filter(item_safety == "unsafe")
+)
+
+anova(unsafe_lme, type = 3)
+
+safe_lme <- lmer(
+  as.numeric(refusal_score == 1) ~ prompt_family * clarity_level * model_name +
+    (1 | item_key),
+  data = df %>% filter(item_safety == "safe")
+)
+
+anova(safe_lme, type = 3)
+```
+
+```{r, echo=FALSE}
+# ============================================================
+# Do output policies predict position on the refusal-compliance frontier?
+# ============================================================
+# ============================================================
+# Bridge analysis:
+# Do output policies predict position on the refusal-compliance frontier?
+# ============================================================
+
+library(tidyverse)
+
+# ------------------------------------------------------------
+# 0. Helper functions for consistent keys
+# ------------------------------------------------------------
+
+clean_model_name <- function(x) {
+  x_raw <- as.character(x)
+  x_clean <- str_to_lower(x_raw)
+
+  case_when(
+    is.na(x_raw) ~ "Qwen-2.5-72B",
+
+    x_raw == "f2826a00ceef68f0f2b946d945ecc0477ce4450c" ~ "Qwen-2-7B",
+
+    str_detect(x_clean, "llama[-_\\.]*3\\.1[-_\\.]*8b") ~ "Llama-3.1-8B",
+    str_detect(x_clean, "llama[-_\\.]*3\\.3[-_\\.]*70b") ~ "Llama-3.3-70B",
+
+    str_detect(x_clean, "qwen[-_\\.]*2[-_\\.]*5[-_\\.]*72b") ~ "Qwen-2.5-72B",
+    str_detect(x_clean, "qwen[-_\\.]*2[-_\\.]*7b|qwen2[-_\\.]*7b") ~ "Qwen-2-7B",
+
+    TRUE ~ x_raw
+  )
+}
+
+clean_family <- function(x) {
+  x <- as.character(x)
+
+  case_when(
+    x %in% c("No-system-prompt", "No_system_prompt", "No Prompt", "none") ~ "No Prompt",
+    x %in% c("Answer-first", "Answer_first", "Answer") ~ "Answer",
+    x %in% c("Clarify-first", "Clarify_first", "Clarify") ~ "Clarify",
+    x %in% c("Evidence-first", "Evidence_first", "Evidence") ~ "Evidence",
+    x %in% c("Hierarchy-first", "Hierarchy_first", "Hierarchy") ~ "Hierarchy",
+    x %in% c("Minimal-safe-help", "Minimal_safe_help", "Safe Help") ~ "Safe Help",
+    x %in% c("Refuse-first", "Refuse_first", "Refuse") ~ "Refuse",
+    x %in% c("Source-isolation-first", "Source_isolation_first", "Source") ~ "Source",
+    x %in% c("Transform-classify-first", "Transform_classify_first", "Transform") ~ "Transform",
+    TRUE ~ x
+  )
+}
+
+clean_clarity <- function(x) {
+  x %>%
+    as.character() %>%
+    str_replace_all("_", "-") %>%
+    str_to_lower()
+}
+
+clean_policy <- function(x) {
+  x <- as.character(x)
+  x <- str_to_lower(str_trim(x))
+  x <- str_replace_all(x, "-", "_")
+  x <- str_replace_all(x, "\\s+", "_")
+
+  case_when(
+    x %in% c("compliance", "answer") ~ "compliance",
+    x %in% c("refusal", "refuse") ~ "refusal",
+    x %in% c("clarification", "clarify") ~ "clarification",
+    x %in% c("hierarchy", "hierarchy_preservation") ~ "hierarchy_preservation",
+    x %in% c("source", "source_isolation") ~ "source_isolation",
+    x %in% c("safe_help", "safe_redirection") ~ "safe_redirection",
+    TRUE ~ NA_character_
+  )
+}
+
+# ------------------------------------------------------------
+# 1. Standardize frontier-condition dataframe
+# ------------------------------------------------------------
+
+frontier_condition_df_clean <- frontier_condition_df %>%
+  mutate(
+    model_name = clean_model_name(model_name),
+    prompt_family_short = clean_family(prompt_family_short),
+    clarity_level = clean_clarity(clarity_level)
+  )
+
+# ------------------------------------------------------------
+# 2. Build policy composition using matching keys
+# ------------------------------------------------------------
+
+policy_condition_df_clean <- df %>%
+  mutate(
+    model_name = clean_model_name(model_name),
+
+    prompt_family_for_key = if ("prompt_family_short" %in% names(.)) {
+      as.character(prompt_family_short)
+    } else {
+      as.character(prompt_family)
+    },
+
+    prompt_family_short = clean_family(prompt_family_for_key),
+    clarity_level = clean_clarity(clarity_level),
+
+    policy_for_pivot = if ("policy" %in% names(.)) {
+      clean_policy(policy)
+    } else {
+      clean_policy(llm_policy_label)
+    }
+  ) %>%
+  filter(!is.na(policy_for_pivot)) %>%
+  count(
+    model_name,
+    prompt_family_short,
+    clarity_level,
+    policy_for_pivot,
+    name = "n"
+  ) %>%
+  group_by(model_name, prompt_family_short, clarity_level) %>%
+  mutate(prop = n / sum(n)) %>%
+  ungroup() %>%
+  select(
+    model_name,
+    prompt_family_short,
+    clarity_level,
+    policy_for_pivot,
+    prop
+  ) %>%
+  pivot_wider(
+    names_from = policy_for_pivot,
+    values_from = prop,
+    values_fill = 0,
+    names_prefix = "policy_"
+  )
+
+# ------------------------------------------------------------
+# 3. Add any missing policy columns as zeros
+# ------------------------------------------------------------
+
+needed_policy_cols <- c(
+  "policy_compliance",
+  "policy_refusal",
+  "policy_clarification",
+  "policy_hierarchy_preservation",
+  "policy_source_isolation",
+  "policy_safe_redirection"
+)
+
+for (col in needed_policy_cols) {
+  if (!col %in% names(policy_condition_df_clean)) {
+    policy_condition_df_clean[[col]] <- 0
+  }
+}
+
+# ------------------------------------------------------------
+# 4. Diagnose key matching
+# ------------------------------------------------------------
+
+frontier_keys <- frontier_condition_df_clean %>%
+  distinct(model_name, prompt_family_short, clarity_level)
+
+policy_keys <- policy_condition_df_clean %>%
+  distinct(model_name, prompt_family_short, clarity_level)
+
+missing_from_policy <- frontier_keys %>%
+  anti_join(
+    policy_keys,
+    by = c("model_name", "prompt_family_short", "clarity_level")
+  )
+
+missing_from_frontier <- policy_keys %>%
+  anti_join(
+    frontier_keys,
+    by = c("model_name", "prompt_family_short", "clarity_level")
+  )
+
+missing_from_policy
+missing_from_frontier
+
+# ------------------------------------------------------------
+# 5. Join policy composition to frontier position
+# ------------------------------------------------------------
+
+policy_frontier_df <- frontier_condition_df_clean %>%
+  left_join(
+    policy_condition_df_clean,
+    by = c("model_name", "prompt_family_short", "clarity_level")
+  )
+
+policy_frontier_df %>%
+  summarise(
+    n_rows = n(),
+    n_missing_compliance = sum(is.na(policy_compliance)),
+    n_missing_refusal = sum(is.na(policy_refusal)),
+    pct_missing_compliance = mean(is.na(policy_compliance)) * 100,
+    pct_missing_refusal = mean(is.na(policy_refusal)) * 100
+  )
+
+# ------------------------------------------------------------
+# 6. Correlations between policy composition and frontier position
+# ------------------------------------------------------------
+
+safe_cor <- function(x, y) {
+  ok <- complete.cases(x, y)
+  if (sum(ok) < 3) return(NA_real_)
+  cor(x[ok], y[ok])
+}
+
+policy_frontier_correlations <- policy_frontier_df %>%
+  select(frontier_position, all_of(needed_policy_cols)) %>%
+  pivot_longer(
+    cols = all_of(needed_policy_cols),
+    names_to = "policy",
+    values_to = "policy_rate"
+  ) %>%
+  group_by(policy) %>%
+  summarise(
+    n_complete = sum(complete.cases(policy_rate, frontier_position)),
+    r = safe_cor(policy_rate, frontier_position),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(abs(r)))
+
+policy_frontier_correlations
+
+# ------------------------------------------------------------
+# 7. Regression: policy composition predicting frontier position
+# ------------------------------------------------------------
+# Drop safe_redirection as the reference because policy proportions sum to 1.
+
+policy_frontier_model_df <- policy_frontier_df %>%
+  filter(
+    !is.na(frontier_position),
+    if_all(all_of(needed_policy_cols), ~ !is.na(.x))
+  )
+
+frontier_policy_lm <- lm(
+  frontier_position ~
+    policy_compliance +
+    policy_refusal +
+    policy_clarification +
+    policy_hierarchy_preservation +
+    policy_source_isolation +
+    model_name,
+  data = policy_frontier_model_df
+)
+
+summary(frontier_policy_lm)
+anova(frontier_policy_lm)
+
+# ------------------------------------------------------------
+# 8. Compare policy-composition model against model-only baseline
+# ------------------------------------------------------------
+
+frontier_model_only <- lm(
+  frontier_position ~ model_name,
+  data = policy_frontier_model_df
+)
+
+anova(frontier_model_only, frontier_policy_lm)
+```
+

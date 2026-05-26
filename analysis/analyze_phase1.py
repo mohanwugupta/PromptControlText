@@ -1,25 +1,32 @@
 """
 Phase 1 results analysis — PRD v2 hypotheses.
 
-Runs against artifacts/phase1_results.csv and prints:
-  1. Row counts / families present
-  2. Policy classification (via policy_classifier.py)
-  3. Per-family policy distribution  (RQ1 / H1)
-  4. Secondary metrics: harmful compliance, false refusal, clarification rate
-  5. Safety-boundary scatter (harmful_compliance vs false_refusal)
-  6. Jailbreak family effectiveness vs safety-first families
-  7. Saves artifacts/phase1_policy_distribution.png
-             artifacts/phase1_safety_boundary.png
+Loads ALL phase1_results*.csv files from the artifacts directory, merges
+them into a single tidy dataframe keyed by model_slug, then runs:
+  0. Merge + inventory
+  1. Policy classification (via policy_classifier.py)
+  2. Per-family policy distribution per model  (RQ1 / H1)
+  3. Secondary metrics per model: harmful compliance, false refusal, clarification rate
+  4. Cross-model comparison: policy distribution heatmap and safety-boundary scatter
+  5. Jailbreak family analysis (if applicable)
+  6. Saves artifacts/phase1_policy_distribution_{slug}.png   (one per model)
+             artifacts/phase1_safety_boundary_{slug}.png     (one per model)
+             artifacts/phase1_safety_boundary_all_models.png (cross-model)
+             artifacts/phase1_combined.csv                   (merged tidy data)
 
 Usage (from project root):
     python -m analysis.analyze_phase1
-    python -m analysis.analyze_phase1 --csv artifacts/phase1_results.csv
+    python -m analysis.analyze_phase1 --artifacts-dir artifacts
+    python -m analysis.analyze_phase1 --csv artifacts/phase1_results_llama31_8b.csv
 """
 from __future__ import annotations
 
 import argparse
+import glob
 import os
+import re
 import sys
+from typing import Optional
 
 import matplotlib
 matplotlib.use("Agg")
@@ -37,6 +44,92 @@ from scoring.policy_classifier import classify_policy
 from analysis.metrics import compute_secondary_metrics
 
 # ---------------------------------------------------------------------------
+# Model-name normalisation
+# ---------------------------------------------------------------------------
+
+# Canonical display names keyed by fragments that appear in model_name or slug
+_MODEL_DISPLAY = {
+    "qwen2.5-72b":        "Qwen2.5-72B",
+    "qwen25_72b":         "Qwen2.5-72B",
+    "qwen2-7b":           "Qwen2-7B",
+    "qwen2_7b":           "Qwen2-7B",
+    "llama-3.1-8b":       "Llama-3.1-8B",
+    "llama31_8b":         "Llama-3.1-8B",
+    "llama-3.3-70b":      "Llama-3.3-70B",
+    "llama33_70b":        "Llama-3.3-70B",
+    "mistral-7b":         "Mistral-7B",
+    "mistral_7b":         "Mistral-7B",
+    "olmo-2":             "OLMo-2-13B",
+    "olmo2_13b":          "OLMo-2-13B",
+}
+
+def _slug_from_path(path: str) -> str:
+    """Extract model slug from filename, e.g. phase1_results_llama31_8b.csv → llama31_8b."""
+    base = os.path.splitext(os.path.basename(path))[0]
+    # phase1_results_<slug>  OR  phase1_results  (baseline = qwen25_72b)
+    m = re.match(r"phase1_results_(.+)", base)
+    return m.group(1) if m else "qwen25_72b"
+
+def _display_name(slug: str, raw_model_name: Optional[str] = None) -> str:
+    """Return a clean human-readable model name."""
+    needle = (raw_model_name or "").lower()
+    for key, display in _MODEL_DISPLAY.items():
+        if key in needle:
+            return display
+    # Fall back to slug lookup
+    for key, display in _MODEL_DISPLAY.items():
+        if key in slug.lower():
+            return display
+    # Last resort: tidy up the slug
+    return slug.replace("_", "-").title()
+
+
+# ---------------------------------------------------------------------------
+# Loading & merging
+# ---------------------------------------------------------------------------
+
+def load_and_merge(artifacts_dir: str, single_csv: Optional[str] = None) -> pd.DataFrame:
+    """Load all valid phase1 CSVs, normalise model identity, return merged df."""
+    if single_csv:
+        paths = [single_csv]
+    else:
+        pattern = os.path.join(artifacts_dir, "phase1_results*.csv")
+        paths = sorted(glob.glob(pattern))
+
+    frames = []
+    for path in paths:
+        slug = _slug_from_path(path)
+        try:
+            df = pd.read_csv(path, low_memory=False)
+        except Exception as e:
+            print(f"  ⚠️  Skipping {os.path.basename(path)}: {e}")
+            continue
+        if df.empty or "model_output" not in df.columns:
+            print(f"  ⚠️  Skipping {os.path.basename(path)}: empty or missing model_output")
+            continue
+
+        # Normalise model_name
+        raw_name = df["model_name"].iloc[0] if "model_name" in df.columns else None
+        display = _display_name(slug, raw_name)
+
+        # If model_name is a git hash (40-char hex) or missing, overwrite with display name
+        if ("model_name" not in df.columns or
+                df["model_name"].iloc[0] != df["model_name"].iloc[0] or   # NaN
+                re.fullmatch(r"[0-9a-f]{40}", str(df["model_name"].iloc[0]))):
+            df["model_name"] = display
+
+        df["model_slug"]    = slug
+        df["model_display"] = display
+        frames.append(df)
+        print(f"  ✅ Loaded {os.path.basename(path):45s}  {len(df):>7,} rows  → {display}")
+
+    if not frames:
+        sys.exit("ERROR: No valid phase1 CSVs found.")
+
+    combined = pd.concat(frames, ignore_index=True)
+    return combined
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -48,64 +141,50 @@ def _sep(title: str = "") -> None:
     else:
         print(_SEP)
 
-
 def _pct(x: float) -> str:
     return f"{x * 100:.1f}%"
 
+POLICY_COLS = ["direct_answer", "clarification", "hierarchy_defer",
+               "classified_refusal", "safe_partial", "refusal"]
+
 
 # ---------------------------------------------------------------------------
-# Main
+# Per-model analysis
 # ---------------------------------------------------------------------------
 
-def run(csv_path: str) -> None:
-    if not os.path.exists(csv_path):
-        sys.exit(f"ERROR: {csv_path} not found.")
+def _run_one_model(df: pd.DataFrame, slug: str, display: str,
+                   artifacts_dir: str) -> Optional[pd.DataFrame]:
+    """Run all per-model sections. Returns secondary-metrics df (for cross-model plots)."""
 
-    df = pd.read_csv(csv_path)
-    artifacts_dir = os.path.dirname(csv_path)
+    _sep(f"MODEL: {display}  (slug={slug}, n={len(df):,})")
 
-    # ------------------------------------------------------------------
-    # 0. Basic inventory
-    # ------------------------------------------------------------------
-    _sep("0. Dataset Inventory")
-    print(f"  Rows             : {len(df)}")
-    print(f"  Unique items     : {df['item_id'].nunique()}")
-    print(f"  Benchmarks       : {sorted(df['benchmark'].unique())}")
-    print(f"  Prompt families  : {sorted(df['prompt_family'].unique())}")
-    print(f"  Gold-label split :")
-    for label, cnt in df["gold_label"].value_counts().items():
-        print(f"    {label:10s}  {cnt:4d}  ({_pct(cnt/len(df))})")
+    # -- 0. Inventory -------------------------------------------------------
+    print(f"  Benchmarks      : {sorted(df['benchmark'].dropna().unique())}")
+    print(f"  Prompt families : {sorted(df['prompt_family'].dropna().unique())}")
+    if "gold_label" in df.columns:
+        for label, cnt in df["gold_label"].value_counts().items():
+            print(f"    gold={label:8s}  {cnt:6,}  ({_pct(cnt/len(df))})")
 
-    # ------------------------------------------------------------------
-    # 1. Apply policy classifier to all rows
-    # ------------------------------------------------------------------
-    _sep("1. Applying Policy Classifier")
-    df["classified_policy"] = df["model_output"].astype(str).apply(classify_policy)
-    print("  Policy distribution (all rows):")
+    # -- 1. Policy classifier -----------------------------------------------
+    if "classified_policy" not in df.columns:
+        print("\n  Running policy classifier …")
+        df["classified_policy"] = df["model_output"].astype(str).apply(classify_policy)
+    print("\n  Policy distribution:")
     dist = df["classified_policy"].value_counts()
     for policy, cnt in dist.items():
-        print(f"    {policy:25s}  {cnt:5d}  ({_pct(cnt/len(df))})")
+        print(f"    {policy:25s}  {cnt:6,}  ({_pct(cnt/len(df))})")
 
-    # ------------------------------------------------------------------
-    # 2. Per-family policy distribution  —  RQ1 / H1
-    # ------------------------------------------------------------------
-    _sep("2. Per-Family Policy Distribution  (RQ1 — H1)")
-    print("  H1: Prompt families produce separable behavioral profiles.\n")
-
+    # -- 2. Per-family distribution -----------------------------------------
+    _sep(f"  {display} — Per-Family Policy Distribution")
     pivot = pd.crosstab(df["prompt_family"], df["classified_policy"], normalize="index")
     pivot.columns.name = None
     pivot.index.name = "prompt_family"
-
-    # Ensure all 5 policy columns present even if zero
-    for col in ["direct_answer", "clarification", "hierarchy_defer", "classified_refusal", "safe_partial", "refusal"]:
+    for col in POLICY_COLS:
         if col not in pivot.columns:
             pivot[col] = 0.0
-    pivot = pivot[["direct_answer", "clarification", "hierarchy_defer", "classified_refusal", "safe_partial", "refusal"]]
-
+    pivot = pivot[[c for c in POLICY_COLS if c in pivot.columns]]
     print(pivot.round(3).to_string())
 
-    # --- Quick separability check: does any family dominate >50 % in a policy
-    #     that other families don't? ---
     print("\n  Notable separations (≥ 20 pp above nearest family):")
     found_any = False
     for policy in pivot.columns:
@@ -115,102 +194,31 @@ def run(csv_path: str) -> None:
             print(f"    '{policy}': {col.index[0]} ({_pct(col.iloc[0])}) vs "
                   f"next {col.index[1]} ({_pct(col.iloc[1])})")
     if not found_any:
-        print("    None found — families may not be well-separated on this run.")
+        print("    None found.")
 
-    # ------------------------------------------------------------------
-    # 3. Secondary metrics  —  harmful compliance / false refusal
-    # ------------------------------------------------------------------
-    _sep("3. Secondary Metrics by Family")
+    # -- 3. Secondary metrics -----------------------------------------------
+    sec = pd.DataFrame()
     if "gold_label" in df.columns and df["gold_label"].notna().any():
+        _sep(f"  {display} — Secondary Metrics")
         sec = compute_secondary_metrics(df, group_by=["prompt_family"])
-        # Merge in total n per family
-        cols = ["prompt_family", "harmful_compliance_rate", "false_refusal_rate",
-                "clarification_rate", "n"]
+        cols = ["prompt_family", "harmful_compliance_rate",
+                "false_refusal_rate", "clarification_rate", "n"]
         available = [c for c in cols if c in sec.columns]
         print(sec[available].round(3).to_string(index=False))
 
-        # Safety-utility trade-off headline numbers
-        print("\n  PRD v2 H4 check: 'Refuse-first' raises false refusal rate.")
         if "Refuse-first" in sec["prompt_family"].values:
             rf_row = sec[sec["prompt_family"] == "Refuse-first"].iloc[0]
             baseline = sec["false_refusal_rate"].mean()
-            print(f"    Refuse-first false refusal : {_pct(rf_row['false_refusal_rate'])}")
-            print(f"    Dataset mean false refusal : {_pct(baseline)}")
-            direction = "✅ consistent with H4" if rf_row["false_refusal_rate"] >= baseline else "❌ inconsistent with H4"
-            print(f"    {direction}")
-    else:
-        print("  gold_label column missing or empty — skipping secondary metrics.")
-        sec = pd.DataFrame()
+            direction = "✅" if rf_row["false_refusal_rate"] >= baseline else "❌"
+            print(f"\n  H4 Refuse-first false refusal: "
+                  f"{_pct(rf_row['false_refusal_rate'])}  "
+                  f"(mean={_pct(baseline)})  {direction}")
+        sec["model_slug"]    = slug
+        sec["model_display"] = display
 
-    # ------------------------------------------------------------------
-    # 4. Jailbreak families vs safety-first families
-    # ------------------------------------------------------------------
-    _sep("4. Jailbreak / Adversarial Family Analysis")
-    jailbreak_families = {"Roleplay-jailbreak", "Developer-mode"}
-    safety_families    = {"Refuse-first", "Clarify-first", "Hierarchy-first"}
-    baseline_families  = {"Helpful-baseline"}
-    present = set(df["prompt_family"].unique())
-
-    jb_present = jailbreak_families & present
-    sf_present = safety_families & present
-    bl_present = baseline_families & present
-
-    if not jb_present:
-        print("  No jailbreak families present in this run — skipping.")
-    else:
-        unsafe_df = df[df["gold_label"] == "unsafe"] if "gold_label" in df.columns else df
-
-        print("  Harmful compliance rate (classified_policy == 'direct_answer') on unsafe items:")
-        for fam in sorted(jb_present | sf_present | bl_present):
-            sub = unsafe_df[unsafe_df["prompt_family"] == fam]
-            if len(sub) == 0:
-                continue
-            rate = (sub["classified_policy"] == "direct_answer").mean()
-            tag = ""
-            if fam in jailbreak_families:
-                tag = "  ← jailbreak"
-            elif fam in baseline_families:
-                tag = "  ← baseline"
-            print(f"    {fam:25s}  {_pct(rate)}  (n={len(sub)}){tag}")
-
-        # Are jailbreaks actually inducing compliance vs safety families?
-        jb_compliance = unsafe_df[unsafe_df["prompt_family"].isin(jb_present)]["classified_policy"].eq("direct_answer").mean() if jb_present else None
-        sf_compliance = unsafe_df[unsafe_df["prompt_family"].isin(sf_present)]["classified_policy"].eq("direct_answer").mean() if sf_present else None
-        if jb_compliance is not None and sf_compliance is not None:
-            print(f"\n  Aggregate jailbreak harmful compliance : {_pct(jb_compliance)}")
-            print(f"  Aggregate safety-first harmful compliance: {_pct(sf_compliance)}")
-            if jb_compliance > sf_compliance:
-                print("  ✅ Jailbreak families show higher compliance — contrast present.")
-            else:
-                print("  ❌ Jailbreak families are NOT breaking through — model is robust.")
-                print("     Consider stronger adversarial prompts or a less RLHF-tuned model.")
-
-    # ------------------------------------------------------------------
-    # 5. Safe-prompt false-refusal breakdown
-    # ------------------------------------------------------------------
-    _sep("5. Over-Refusal on Safe Prompts (XSTest)")
-    safe_df = df[(df["gold_label"] == "safe")] if "gold_label" in df.columns else pd.DataFrame()
-    if len(safe_df) > 0:
-        print(f"  Safe items in run: {len(safe_df)}")
-        fr = safe_df.groupby("prompt_family")["classified_policy"].apply(
-            lambda s: (s == "refusal").mean()
-        ).reset_index(name="false_refusal_rate")
-        print(fr.round(3).to_string(index=False))
-        print("\n  H4: 'Refuse-first' should show highest false refusal rate.")
-        if "Refuse-first" in fr["prompt_family"].values:
-            best = fr.sort_values("false_refusal_rate", ascending=False).iloc[0]
-            is_rf = best["prompt_family"] == "Refuse-first"
-            print(f"    Highest false-refusal family: {best['prompt_family']} ({_pct(best['false_refusal_rate'])})")
-            print(f"    {'✅ Consistent with H4' if is_rf else '❌ Inconsistent with H4'}")
-    else:
-        print("  No safe-label items found.")
-
-    # ------------------------------------------------------------------
-    # 6. Plot: Policy distribution heatmap
-    # ------------------------------------------------------------------
-    _sep("6. Generating Plots")
-
-    out_heatmap = os.path.join(artifacts_dir, "phase1_policy_distribution.png")
+    # -- 4. Per-model plots -------------------------------------------------
+    # Heatmap
+    out_hm = os.path.join(artifacts_dir, f"phase1_policy_distribution_{slug}.png")
     fig, ax = plt.subplots(figsize=(11, max(4, len(pivot) * 0.7 + 1)))
     im = ax.imshow(pivot.values, cmap="YlOrRd", aspect="auto", vmin=0, vmax=1)
     ax.set_xticks(range(len(pivot.columns)))
@@ -223,64 +231,234 @@ def run(csv_path: str) -> None:
             ax.text(j, i, f"{val:.2f}", ha="center", va="center",
                     color="white" if val > 0.55 else "black", fontsize=9)
     fig.colorbar(im, ax=ax, label="Proportion of responses")
-    ax.set_title("Phase 1 — Policy Distribution by Controller Family (RQ1 / H1)", pad=12)
+    ax.set_title(f"Phase 1 — Policy Distribution  [{display}]", pad=12)
     ax.set_xlabel("Classified Policy")
     ax.set_ylabel("Controller Family")
     fig.tight_layout()
-    fig.savefig(out_heatmap, dpi=200, bbox_inches="tight")
+    fig.savefig(out_hm, dpi=200, bbox_inches="tight")
     plt.close(fig)
-    print(f"  Saved: {out_heatmap}")
+    print(f"\n  Saved: {out_hm}")
 
-    # Plot: Safety-boundary scatter
-    if len(sec) > 0 and "harmful_compliance_rate" in sec.columns and "false_refusal_rate" in sec.columns:
-        out_scatter = os.path.join(artifacts_dir, "phase1_safety_boundary.png")
-        fig2, ax2 = plt.subplots(figsize=(9, 7))
-        colors = sns.color_palette("tab10", n_colors=len(sec))
-        for (_, row), color in zip(sec.iterrows(), colors):
-            ax2.scatter(row["harmful_compliance_rate"], row["false_refusal_rate"],
-                        s=180, color=color, zorder=3, label=row["prompt_family"])
-            ax2.annotate(row["prompt_family"],
-                         xy=(row["harmful_compliance_rate"], row["false_refusal_rate"]),
-                         xytext=(6, 3), textcoords="offset points", fontsize=8)
-        ax2.set_xlabel("Harmful Compliance Rate ↓ (lower=better)", fontsize=11)
-        ax2.set_ylabel("False Refusal Rate ↓ (lower=better)", fontsize=11)
-        ax2.set_title("Phase 1 — Safety Boundary: Harmful Compliance vs. False Refusal", fontsize=12)
-        ax2.set_xlim(-0.05, 1.05)
-        ax2.set_ylim(-0.05, 1.05)
-        # Ideal quadrant annotation
-        ax2.axvspan(-0.05, 0.2, alpha=0.04, color="green")
-        ax2.axhspan(-0.05, 0.2, alpha=0.04, color="green")
-        ax2.text(0.01, 0.01, "Ideal zone", fontsize=8, color="green", alpha=0.7)
-        ax2.grid(True, linestyle="--", alpha=0.5)
-        ax2.legend(title="Family", bbox_to_anchor=(1.01, 1), loc="upper left", fontsize=8)
-        fig2.tight_layout()
-        fig2.savefig(out_scatter, dpi=200, bbox_inches="tight")
-        plt.close(fig2)
-        print(f"  Saved: {out_scatter}")
+    # Safety-boundary scatter (per model)
+    if len(sec) > 0 and "harmful_compliance_rate" in sec.columns:
+        out_sc = os.path.join(artifacts_dir, f"phase1_safety_boundary_{slug}.png")
+        _plot_safety_boundary(sec, title=f"Safety Boundary  [{display}]",
+                              out_path=out_sc)
+        print(f"  Saved: {out_sc}")
+
+    return sec if len(sec) > 0 else None
+
+
+# ---------------------------------------------------------------------------
+# Cross-model plots
+# ---------------------------------------------------------------------------
+
+def _plot_safety_boundary(sec: pd.DataFrame, title: str, out_path: str) -> None:
+    fig, ax = plt.subplots(figsize=(9, 7))
+    families = sec["prompt_family"].unique()
+    palette  = sns.color_palette("tab10", n_colors=len(families))
+    fam_color = dict(zip(families, palette))
+    for _, row in sec.iterrows():
+        color = fam_color.get(row["prompt_family"], "grey")
+        marker = "o"
+        ax.scatter(row["harmful_compliance_rate"], row["false_refusal_rate"],
+                   s=180, color=color, zorder=3, marker=marker,
+                   label=row["prompt_family"])
+        ax.annotate(row["prompt_family"],
+                    xy=(row["harmful_compliance_rate"], row["false_refusal_rate"]),
+                    xytext=(6, 3), textcoords="offset points", fontsize=7)
+    ax.set_xlabel("Harmful Compliance Rate ↓ (lower=better)", fontsize=11)
+    ax.set_ylabel("False Refusal Rate ↓ (lower=better)", fontsize=11)
+    ax.set_title(title, fontsize=12)
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.05)
+    ax.axvspan(-0.05, 0.2, alpha=0.04, color="green")
+    ax.axhspan(-0.05, 0.2, alpha=0.04, color="green")
+    ax.text(0.01, 0.01, "Ideal zone", fontsize=8, color="green", alpha=0.7)
+    ax.grid(True, linestyle="--", alpha=0.5)
+    # De-duplicate legend
+    handles, labels = ax.get_legend_handles_labels()
+    seen = {}
+    for h, l in zip(handles, labels):
+        if l not in seen:
+            seen[l] = h
+    ax.legend(seen.values(), seen.keys(), title="Family",
+              bbox_to_anchor=(1.01, 1), loc="upper left", fontsize=8)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
+def _plot_cross_model_scatter(all_sec: pd.DataFrame, out_path: str) -> None:
+    """One scatter point per (model, family), coloured by model, shaped by family."""
+    models   = all_sec["model_display"].unique()
+    families = all_sec["prompt_family"].unique()
+    model_palette = sns.color_palette("tab10", n_colors=len(models))
+    model_color   = dict(zip(models, model_palette))
+    markers = ["o", "s", "^", "D", "v", "P", "*", "X"]
+    fam_marker = {f: markers[i % len(markers)] for i, f in enumerate(families)}
+
+    fig, ax = plt.subplots(figsize=(11, 8))
+    for _, row in all_sec.iterrows():
+        color  = model_color.get(row["model_display"], "grey")
+        marker = fam_marker.get(row["prompt_family"], "o")
+        ax.scatter(row["harmful_compliance_rate"], row["false_refusal_rate"],
+                   s=160, color=color, marker=marker, zorder=3, alpha=0.85)
+
+    # Model legend (colour)
+    for model, color in model_color.items():
+        ax.scatter([], [], color=color, s=80, label=model)
+    model_legend = ax.legend(title="Model", bbox_to_anchor=(1.01, 1),
+                             loc="upper left", fontsize=8)
+    ax.add_artist(model_legend)
+
+    # Family legend (marker shape)
+    for fam, mk in fam_marker.items():
+        ax.scatter([], [], color="grey", marker=mk, s=80, label=fam)
+    ax.legend(title="Family", bbox_to_anchor=(1.01, 0.45),
+              loc="upper left", fontsize=7)
+
+    ax.set_xlabel("Harmful Compliance Rate ↓", fontsize=11)
+    ax.set_ylabel("False Refusal Rate ↓", fontsize=11)
+    ax.set_title("Phase 1 — Safety Boundary: All Models × Families", fontsize=12)
+    ax.set_xlim(-0.05, 1.05)
+    ax.set_ylim(-0.05, 1.05)
+    ax.axvspan(-0.05, 0.2, alpha=0.04, color="green")
+    ax.axhspan(-0.05, 0.2, alpha=0.04, color="green")
+    ax.text(0.01, 0.01, "Ideal zone", fontsize=8, color="green", alpha=0.7)
+    ax.grid(True, linestyle="--", alpha=0.5)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
+def _plot_cross_model_heatmap(all_sec: pd.DataFrame, metric: str,
+                              title: str, out_path: str) -> None:
+    """Heatmap of metric values: rows=families, cols=models."""
+    pivot = all_sec.pivot_table(index="prompt_family", columns="model_display",
+                                values=metric, aggfunc="mean")
+    fig, ax = plt.subplots(figsize=(max(6, len(pivot.columns) * 1.5 + 2),
+                                    max(4, len(pivot.index) * 0.6 + 1)))
+    im = ax.imshow(pivot.values, cmap="YlOrRd", aspect="auto", vmin=0, vmax=1)
+    ax.set_xticks(range(len(pivot.columns)))
+    ax.set_xticklabels(pivot.columns, rotation=30, ha="right", fontsize=10)
+    ax.set_yticks(range(len(pivot.index)))
+    ax.set_yticklabels(pivot.index, fontsize=10)
+    for i in range(len(pivot.index)):
+        for j in range(len(pivot.columns)):
+            val = pivot.values[i, j]
+            if pd.notna(val):
+                ax.text(j, i, f"{val:.2f}", ha="center", va="center",
+                        color="white" if val > 0.55 else "black", fontsize=9)
+    fig.colorbar(im, ax=ax)
+    ax.set_title(title, pad=10)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=200, bbox_inches="tight")
+    plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Main entry point
+# ---------------------------------------------------------------------------
+
+def run(artifacts_dir: str, single_csv: Optional[str] = None) -> None:
+    _sep("0. Loading & Merging CSVs")
+    combined = load_and_merge(artifacts_dir, single_csv)
+
+    print(f"\n  Combined: {len(combined):,} rows across "
+          f"{combined['model_slug'].nunique()} model(s): "
+          f"{sorted(combined['model_display'].unique())}")
 
     # ------------------------------------------------------------------
-    # 7. Summary verdict
+    # Classify ALL rows now so the combined CSV is fully populated
     # ------------------------------------------------------------------
-    _sep("7. Hypothesis Summary")
-    print("  H1: Distinct behavioral profiles per family")
-    print("      → See Section 2 separability check above.")
-    print()
-    print("  H4: Refuse-first raises false refusal; Clarify/Hierarchy better calibrated")
-    print("      → See Section 3 & 5 above.")
-    print()
-    print("  Jailbreak robustness (new)")
-    print("      → See Section 4 above.")
-    print()
-    print("  NOTE: This is exploratory Phase 1 data (XSTest only, 5-item limit run).")
-    print("        Treat counts as directional only — confirm with full dataset run.")
-    _sep()
+    print("\n  Classifying all rows (this may take a few minutes) …")
+    combined["classified_policy"] = (
+        combined["model_output"].astype(str).apply(classify_policy)
+    )
+    dist_all = combined["classified_policy"].value_counts()
+    for policy, cnt in dist_all.items():
+        print(f"    {policy:25s}  {cnt:7,}  ({_pct(cnt/len(combined))})")
+
+    # Save tidy combined CSV (includes classified_policy for all models)
+    combined_path = os.path.join(artifacts_dir, "phase1_combined.csv")
+    combined.to_csv(combined_path, index=False)
+    print(f"  Saved: {combined_path}")
+
+    # ------------------------------------------------------------------
+    # Per-model analysis
+    # ------------------------------------------------------------------
+    all_sec_frames = []
+    for slug in sorted(combined["model_slug"].unique()):
+        sub = combined[combined["model_slug"] == slug].copy()
+        display = sub["model_display"].iloc[0]
+        sec = _run_one_model(sub, slug, display, artifacts_dir)
+        if sec is not None and len(sec) > 0:
+            all_sec_frames.append(sec)
+
+    # ------------------------------------------------------------------
+    # Cross-model comparison
+    # ------------------------------------------------------------------
+    if len(all_sec_frames) > 1:
+        all_sec = pd.concat(all_sec_frames, ignore_index=True)
+
+        _sep("CROSS-MODEL COMPARISON")
+
+        # Pivot table: harmful compliance
+        print("\n  Harmful Compliance Rate by (family × model):")
+        hc_piv = all_sec.pivot_table(index="prompt_family",
+                                     columns="model_display",
+                                     values="harmful_compliance_rate",
+                                     aggfunc="mean")
+        print(hc_piv.round(3).to_string())
+
+        print("\n  False Refusal Rate by (family × model):")
+        fr_piv = all_sec.pivot_table(index="prompt_family",
+                                     columns="model_display",
+                                     values="false_refusal_rate",
+                                     aggfunc="mean")
+        print(fr_piv.round(3).to_string())
+
+        # Cross-model scatter
+        out_scatter = os.path.join(artifacts_dir,
+                                   "phase1_safety_boundary_all_models.png")
+        _plot_cross_model_scatter(all_sec, out_scatter)
+        print(f"\n  Saved: {out_scatter}")
+
+        # Cross-model heatmaps
+        for metric, label in [("harmful_compliance_rate", "Harmful Compliance"),
+                               ("false_refusal_rate", "False Refusal")]:
+            out_hm = os.path.join(artifacts_dir,
+                                  f"phase1_cross_model_{metric}.png")
+            _plot_cross_model_heatmap(
+                all_sec, metric,
+                f"Phase 1 — {label} Rate: Family × Model",
+                out_hm,
+            )
+            print(f"  Saved: {out_hm}")
+
+        # Best model per family (lowest harmful compliance on unsafe items)
+        _sep("CROSS-MODEL: Best model per family (lowest harmful compliance)")
+        best = (all_sec.sort_values("harmful_compliance_rate")
+                       .groupby("prompt_family").first()
+                       [["model_display", "harmful_compliance_rate",
+                         "false_refusal_rate"]])
+        print(best.round(3).to_string())
+
+    _sep("Done")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--csv", default="", help="Path to phase1_results.csv")
+    parser.add_argument("--csv", default="",
+                        help="Single CSV path (skips glob; useful for one model)")
+    parser.add_argument("--artifacts-dir", default="",
+                        help="Directory to glob phase1_results*.csv from "
+                             "(default: <project_root>/artifacts)")
     args = parser.parse_args()
 
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    csv_path = args.csv or os.path.join(base, "artifacts", "phase1_results.csv")
-    run(csv_path)
+    artifacts_dir = args.artifacts_dir or os.path.join(base, "artifacts")
+    single_csv    = args.csv or None
+
+    run(artifacts_dir, single_csv)

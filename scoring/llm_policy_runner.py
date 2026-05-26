@@ -74,6 +74,87 @@ def _load_completed_hashes(judge_votes_path: pathlib.Path) -> Set[str]:
         return set()
 
 
+def _load_completed_resolutions(
+    judge_votes_path: pathlib.Path,
+    adj_path: pathlib.Path,
+    df: "pd.DataFrame",
+) -> "Dict[int, Dict]":
+    """
+    Re-derive resolutions for rows that are already complete in judge_votes.csv
+    so that resume mode doesn't leave those rows unlabeled in labeled.csv.
+
+    Returns a dict of {original_df_index: resolution_dict}.
+    """
+    from scoring.llm_policy_adjudicate import resolve_first_pass
+
+    if not judge_votes_path.exists():
+        return {}
+
+    try:
+        votes_df = pd.read_csv(judge_votes_path)
+    except Exception:
+        return {}
+
+    # Build hash → original df index map
+    hash_to_idx: Dict[str, int] = {}
+    for idx, row in df.iterrows():
+        raw = str(row.get("model_output", "") or row.get("model_out", "") or "")
+        h = _row_hash(raw.strip())
+        if h not in hash_to_idx:
+            hash_to_idx[h] = idx
+
+    completed: Dict[int, Dict] = {}
+    for row_hash, group in votes_df.groupby("row_hash"):
+        if len(group) < 3:
+            continue
+        orig_idx = hash_to_idx.get(row_hash)
+        if orig_idx is None:
+            continue
+
+        # Reconstruct vote dicts from the saved CSV columns
+        votes = group.to_dict(orient="records")
+
+        row_dict = df.loc[orig_idx].to_dict()
+        model_output = str(row_dict.get("model_output") or row_dict.get("model_out") or "").strip()
+
+        try:
+            resolution, _ = resolve_first_pass(
+                row_index=orig_idx,
+                job_id=group["job_id"].iloc[0] if "job_id" in group.columns else "",
+                model_output=model_output,
+                votes=votes,
+                prompts={},   # adjudication already done; won't be called again
+                client=None,  # won't be called
+                model="",
+                temperature=0.0,
+                max_tokens=0,
+                _skip_adjudication=True,  # sentinel to skip re-calling LLM
+            )
+        except Exception:
+            # Fall back to simple majority from saved votes
+            from collections import Counter
+            labels = [v.get("primary_label") for v in votes if v.get("primary_label")]
+            if not labels:
+                continue
+            majority = Counter(labels).most_common(1)[0][0]
+            resolution = {
+                "llm_policy_label": majority,
+                "llm_secondary_label": None,
+                "llm_confidence": float(group["confidence"].mean()) if "confidence" in group.columns else 0.0,
+                "llm_resolution_method": "resume_replay",
+                "llm_num_agree": labels.count(majority),
+                "llm_disagreement_type": "none" if len(set(labels)) == 1 else "minor",
+                "llm_needs_human_audit": False,
+                "llm_evidence": str(group["evidence"].iloc[0]) if "evidence" in group.columns else "",
+                "llm_reason": str(group["reason"].iloc[0]) if "reason" in group.columns else "",
+                "llm_parse_error": False,
+            }
+
+        completed[orig_idx] = resolution
+
+    return completed
+
+
 def _append_rows(path: pathlib.Path, rows: List[Dict], fieldnames: List[str]) -> None:
     if not rows:
         return
@@ -179,11 +260,15 @@ def run_job(
     elif limit:
         df = df.head(limit)
 
-    # Resume: skip completed rows
+    # Resume: skip completed rows and replay their resolutions into all_resolutions
     completed_hashes: Set[str] = set()
+    all_resolutions: Dict[int, Dict] = {}
     if resume:
         completed_hashes = _load_completed_hashes(votes_path)
         logger.info("Resuming: %d rows already complete.", len(completed_hashes))
+        if completed_hashes:
+            all_resolutions = _load_completed_resolutions(votes_path, adj_path, df)
+            logger.info("Replayed %d completed resolutions.", len(all_resolutions))
 
     # ── Client ────────────────────────────────────────────────────────────
     client = VLLMClient(
@@ -254,7 +339,6 @@ def run_job(
                        not in completed_hashes]
     logger.info("%d rows to process.", len(rows_to_process))
 
-    all_resolutions: Dict[int, Dict] = {}
     parse_error_rows: List[Dict] = []
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
