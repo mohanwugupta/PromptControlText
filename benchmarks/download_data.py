@@ -189,7 +189,12 @@ def download_datasets(cache_dir: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cache_dir", type=str, default="./artifacts/datasets", help="Directory to save datasets")
+    parser.add_argument(
+        "--cache_dir",
+        type=str,
+        default="./benchmarks/artifacts/datasets",
+        help="Directory to save the paper's benchmark snapshots",
+    )
     args = parser.parse_args()
     
     download_datasets(args.cache_dir)

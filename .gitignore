@@ -2,6 +2,11 @@
 *.pyc
 *.pyo
 __pycache__/
+.pytest_cache/
+.pytest_tmp/
+.DS_Store
+logs/
+slurm/logs/
 
 # Virtual environments
 .venv/

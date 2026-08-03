@@ -15,7 +15,17 @@ library(broom.mixed)
 library(scales)
 library(patchwork)
 
-all_data <- read_csv("/Users/mg9965/Library/CloudStorage/Box-Box/ResearchProjects/LLM/promptControlText/artifacts/phase1_results_combined_labeled.csv")
+data_candidates <- c(
+  Sys.getenv("PROMPT_CONTROL_RESULTS", unset = ""),
+  "artifacts/phase1_results_combined_labeled.csv",
+  "../artifacts/phase1_results_combined_labeled.csv"
+)
+data_candidates <- data_candidates[nzchar(data_candidates) & file.exists(data_candidates)]
+if (length(data_candidates) == 0) {
+  stop("Could not find phase1_results_combined_labeled.csv. Set PROMPT_CONTROL_RESULTS or run from the repository root.")
+}
+data_path <- data_candidates[[1]]
+all_data <- read_csv(data_path)
 ```
 
 ```{r, echo=FALSE}
@@ -38,7 +48,7 @@ score_cols <- c(
   "stop_compliance_score"
 )
 
-score_cols <- intersect(score_cols, names(raw))
+score_cols <- intersect(score_cols, names(all_data))
 
 family_levels <- c(
   "No-system-prompt",
@@ -842,7 +852,7 @@ p_policy_clarity
 # 0. Load and clean
 # ------------------------------------------------------------
 
-df <- read_csv("/Users/mg9965/Library/CloudStorage/Box-Box/ResearchProjects/LLM/promptControlText/artifacts/phase1_results_combined_labeled.csv", show_col_types = FALSE) %>%
+df <- read_csv(data_path, show_col_types = FALSE) %>%
   mutate(
     prompt_family = if_else(
       is.na(prompt_family) | prompt_family == "",

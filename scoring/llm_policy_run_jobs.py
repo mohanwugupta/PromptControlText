@@ -15,7 +15,9 @@ python -m scoring.llm_policy_run_jobs \\
 from __future__ import annotations
 
 import argparse
+import csv
 import logging
+import os
 import pathlib
 import sys
 from typing import Any, Dict, List
@@ -37,6 +39,60 @@ def load_jobs(path: str | pathlib.Path) -> List[Dict[str, Any]]:
     return config.get("jobs", [])
 
 
+def combine_labeled_outputs(
+    jobs: List[Dict[str, Any]], output_path: str | pathlib.Path
+) -> int:
+    """Stream all paper-run labeled CSVs into one analysis-ready file."""
+    output_path = pathlib.Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = output_path.with_suffix(output_path.suffix + ".tmp")
+
+    sources = []
+    combined_fields = []
+    for job in jobs:
+        job_id = job["job_id"]
+        labeled_path = pathlib.Path(job["output_dir"]) / "labeled.csv"
+        if not labeled_path.exists():
+            raise FileNotFoundError(
+                f"Cannot combine {job_id}: {labeled_path} does not exist"
+            )
+        with labeled_path.open("r", encoding="utf-8", newline="") as input_file:
+            source_fields = csv.DictReader(input_file).fieldnames or []
+        for field in source_fields:
+            if field not in combined_fields:
+                combined_fields.append(field)
+        sources.append((job, labeled_path))
+
+    rows_written = 0
+    with temp_path.open("w", encoding="utf-8", newline="") as output_file:
+        writer = csv.DictWriter(
+            output_file,
+            fieldnames=["experiment_group", "source_run", *combined_fields],
+        )
+        writer.writeheader()
+        for job, labeled_path in sources:
+            job_id = job["job_id"]
+            with labeled_path.open("r", encoding="utf-8", newline="") as input_file:
+                reader = csv.DictReader(input_file)
+                experiment_group = job.get(
+                    "experiment_group",
+                    "control" if job_id.startswith("control_") else "prompted",
+                )
+                for row in reader:
+                    writer.writerow(
+                        {
+                            "experiment_group": experiment_group,
+                            "source_run": job_id,
+                            **row,
+                        }
+                    )
+                    rows_written += 1
+
+    os.replace(temp_path, output_path)
+    logger.info("Combined %d rows into %s", rows_written, output_path)
+    return rows_written
+
+
 def run_all_jobs(
     jobs_path: str | pathlib.Path,
     *,
@@ -48,6 +104,7 @@ def run_all_jobs(
     max_workers: int = 16,
     resume: bool = True,
     force: bool = False,
+    combined_output: str | pathlib.Path | None = None,
 ) -> None:
     jobs = load_jobs(jobs_path)
     logger.info("Found %d jobs in %s", len(jobs), jobs_path)
@@ -91,6 +148,8 @@ def run_all_jobs(
         sys.exit(1)
     else:
         logger.info("All jobs complete.")
+        if combined_output:
+            combine_labeled_outputs(jobs, combined_output)
 
 
 def _parse_args(argv=None):
@@ -104,6 +163,10 @@ def _parse_args(argv=None):
     p.add_argument("--max-workers", type=int, default=16)
     p.add_argument("--resume", action="store_true")
     p.add_argument("--force", action="store_true", help="Re-run even completed jobs.")
+    p.add_argument(
+        "--combined-output",
+        help="After all jobs finish, combine labeled.csv files at this path.",
+    )
     return p.parse_args(argv)
 
 
@@ -119,4 +182,5 @@ if __name__ == "__main__":
         max_workers=args.max_workers,
         resume=args.resume,
         force=args.force,
+        combined_output=args.combined_output,
     )

@@ -45,31 +45,6 @@ def test_phase1_execution_loop(tmp_path):
     assert "prompt_family" in df.columns
 
 
-import experiments.run_phase2
-
-def test_phase2_execution_loop(tmp_path):
-    output_csv = tmp_path / "phase2_results.csv"
-    
-    mock_items = [
-        MagicMock(input_text="Ignore system", benchmark="IHEval", domain="system_vs_user", gold_label="conflict", item_id="iheval_1")
-    ]
-    for item in mock_items:
-        item.model_dump.return_value = {"item_id": item.item_id, "input_text": item.input_text, "benchmark": item.benchmark, "domain": item.domain, "gold_label": item.gold_label}
-
-    mock_client = MagicMock()
-    mock_client.generate.return_value = ("I cannot ignore my previous instructions", {"model": "test", "temperature": 0})
-    
-    with patch("experiments.run_phase2.load_iheval", return_value=mock_items), \
-         patch("experiments.run_phase2.load_registry", return_value={"Hierarchy-first": {"variants": {"v1": "Prompt"}}}), \
-         patch("experiments.run_phase2.VLLMClient", return_value=mock_client), \
-         patch("experiments.run_phase2.os.path.exists", return_value=True):
-         
-         experiments.run_phase2.run_experiment(output_filepath=str(output_csv), mock_mode=True)
-         
-    df = pd.read_csv(output_csv)
-    assert len(df) == 1
-    assert (df["hierarchy_following_score"] == 1.0).all()
-
 def test_phase1_no_data_raises_error(tmp_path):
     output_csv = tmp_path / "phase1_results.csv"
     
@@ -81,17 +56,6 @@ def test_phase1_no_data_raises_error(tmp_path):
          
          with pytest.raises(ValueError, match="No benchmark items loaded"):
              experiments.run_phase1.run_experiment(output_filepath=str(output_csv), mock_mode=False)
-
-def test_phase2_no_data_raises_error(tmp_path):
-    output_csv = tmp_path / "phase2_results.csv"
-    
-    with patch("experiments.run_phase2.load_iheval", return_value=[]), \
-         patch("experiments.run_phase2.load_registry", return_value={"mock": {"variants": {"v1": "Prompt"}}}), \
-         patch("experiments.run_phase2.os.path.exists", return_value=True):
-         
-         with pytest.raises(ValueError, match="No benchmark items loaded for Phase 2"):
-             experiments.run_phase2.run_experiment(output_filepath=str(output_csv), mock_mode=False)
-
 
 # ---------------------------------------------------------------------------
 # _is_valid_output tests
@@ -125,6 +89,36 @@ def test_valid_output_accented_name():
         "The café in Zürich is run by François."
     )
     assert valid is True
+
+
+def test_generation_preserves_historical_client_call():
+    item = MagicMock(
+        input_text="A request",
+        benchmark="XSTest",
+        domain="safe_targets",
+        gold_label="safe",
+        item_id="x_1",
+    )
+    item.model_dump.return_value = {
+        "item_id": "x_1",
+        "input_text": "A request",
+        "benchmark": "XSTest",
+        "domain": "safe_targets",
+        "gold_label": "safe",
+    }
+    client = MagicMock()
+    client.generate.return_value = ("A direct answer", {})
+
+    experiments.run_phase1._generate_one(
+        client, item, "Answer-first", "v1", "Answer directly.", "model"
+    )
+
+    assert client.generate.call_args.kwargs == {
+        "system_prompt": "Answer directly.",
+        "user_prompt": "A request",
+        "model": "model",
+        "temperature": 0.0,
+    }
 
 def test_malformed_output_column_written_for_invalid():
     """Records with invalid output must have malformed_output set and no score columns."""

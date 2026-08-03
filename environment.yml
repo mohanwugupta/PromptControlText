@@ -15,10 +15,12 @@ dependencies:
       - pyyaml
       - python-dotenv
       - openai
+      - vllm==0.19.0
       - scikit-learn
       - matplotlib
       - seaborn
       - statsmodels>=0.14.6
       - langdetect
+      - streamlit
       - black
       - ruff

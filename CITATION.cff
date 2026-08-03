@@ -2,14 +2,11 @@ cff-version: 1.2.0
 message: >
   If you use this software or build on this work, please cite it using
   the metadata below.
-title: "Prompt Controllers as Policy Routers"
+title: "Beyond Refusal: Prompt-Conditioned Task Selection in LLM Safety"
 abstract: >
-  Evaluation pipeline for testing whether prompt-level safety controllers
-  act as routing signals that steer LLMs into distinct behavioural policies
-  (answer, refuse, clarify, minimal-safe-help, hierarchy-preserve) near the
-  safety boundary. Measures policy-routing accuracy under controller-family
-  and controller-clarity manipulations using a 130-item boundary dataset,
-  XSTest, HarmBench, and IHEval.
+  Evaluation pipeline for measuring how eight system-prompt families at three
+  clarity levels route fixed HarmBench, XSTest, and IHEval items among six
+  behavioral policies across four instruction-tuned language models.
 type: software
 date-released: "2026-05-04"
 license: MIT
@@ -25,4 +22,4 @@ keywords:
   - xstest
   - harmbench
   - iheval
-repository-code: https://github.com/sheik/promptControlText
+repository-code: https://github.com/mohanwugupta/PromptControlText

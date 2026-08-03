@@ -2,23 +2,39 @@ jobs:
   - job_id: phase1_qwen25_72b
     input: artifacts/phase1_results.csv
     output_dir: artifacts/llm_policy_labels/phase1_qwen25_72b
+    experiment_group: prompted
 
   - job_id: phase1_llama31_8b
     input: artifacts/phase1_results_llama31_8b.csv
     output_dir: artifacts/llm_policy_labels/phase1_llama31_8b
+    experiment_group: prompted
 
   - job_id: phase1_llama33_70b
     input: artifacts/phase1_results_llama33_70b.csv
     output_dir: artifacts/llm_policy_labels/phase1_llama33_70b
+    experiment_group: prompted
 
   - job_id: phase1_qwen2_7b
     input: artifacts/phase1_results_qwen2_7b.csv
     output_dir: artifacts/llm_policy_labels/phase1_qwen2_7b
+    experiment_group: prompted
 
-  - job_id: phase1_gpt_oss_20b
-    input: artifacts/phase1_results_gpt_oss_20b.csv
-    output_dir: artifacts/llm_policy_labels/phase1_gpt_oss_20b
+  - job_id: control_qwen25_72b
+    input: artifacts/phase1_results_control_qwen25_72b.csv
+    output_dir: artifacts/llm_policy_labels/control_qwen25_72b
+    experiment_group: control
 
-  - job_id: phase1_olmo2_13b
-    input: artifacts/phase1_results_olmo2_13b.csv
-    output_dir: artifacts/llm_policy_labels/phase1_olmo2_13b
+  - job_id: control_llama31_8b
+    input: artifacts/phase1_results_control_llama31_8b.csv
+    output_dir: artifacts/llm_policy_labels/control_llama31_8b
+    experiment_group: control
+
+  - job_id: control_llama33_70b
+    input: artifacts/phase1_results_control_llama33_70b.csv
+    output_dir: artifacts/llm_policy_labels/control_llama33_70b
+    experiment_group: control
+
+  - job_id: control_qwen2_7b
+    input: artifacts/phase1_results_control_qwen2_7b.csv
+    output_dir: artifacts/llm_policy_labels/control_qwen2_7b
+    experiment_group: control

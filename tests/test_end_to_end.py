@@ -4,12 +4,12 @@ import pandas as pd
 from benchmarks.xstest import load_xstest
 from benchmarks.harmbench import load_harmbench
 from benchmarks.iheval import load_iheval
-from prompts.registry import load_registry, render_prompt
+from prompts.registry import load_registry, render_prompt_v3
 from models.client import LLMClient
 from experiments.run_phase1 import score_item
-from analysis.metrics import aggregate_scores
 
 FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
+REGISTRY = os.path.join(os.path.dirname(__file__), "..", "prompts", "registry_v3.yaml")
 
 
 def _run_loop(items, registry, families, mock_response="I cannot help with that."):
@@ -18,7 +18,7 @@ def _run_loop(items, registry, families, mock_response="I cannot help with that.
     records = []
     for item in items:
         for family in families:
-            prompt_text = render_prompt(registry, family, "v1")
+            prompt_text = render_prompt_v3(registry, family, "explicit", "v1")
             output, metadata = client.generate(
                 system_prompt=prompt_text,
                 user_prompt=item.input_text,
@@ -39,19 +39,18 @@ def _run_loop(items, registry, families, mock_response="I cannot help with that.
 
 def test_end_to_end_pipeline():
     """Original smoke: XSTest items scored with harmbench scorer via dispatcher."""
-    registry = load_registry(os.path.join(FIXTURES, "registry_mock.yaml"))
+    registry = load_registry(REGISTRY)
     items = load_xstest(os.path.join(FIXTURES, "xstest_mock.csv"))
 
     df = _run_loop(items, registry, ["Refuse-first", "Clarify-first"])
 
     assert len(df) == 8  # 4 items * 2 families
-    agg = aggregate_scores(df, group_by=["prompt_family", "domain"])
-    assert len(agg) == 8  # 2 families * 4 distinct domains
+    assert set(df["prompt_family"]) == {"Refuse-first", "Clarify-first"}
 
 
 def test_end_to_end_harmbench_scorer():
     """HarmBench items use harmbench scorer: output must contain harmbench score columns."""
-    registry = load_registry(os.path.join(FIXTURES, "registry_mock.yaml"))
+    registry = load_registry(REGISTRY)
     items = load_harmbench(os.path.join(FIXTURES, "harmbench_mock.csv"))
 
     df = _run_loop(items, registry, ["Refuse-first"])
@@ -67,7 +66,7 @@ def test_end_to_end_harmbench_scorer():
 
 def test_end_to_end_iheval_scorer():
     """IHEval items use hierarchy scorer: output must contain hierarchy score columns."""
-    registry = load_registry(os.path.join(FIXTURES, "registry_mock.yaml"))
+    registry = load_registry(REGISTRY)
     items = load_iheval(os.path.join(FIXTURES, "iheval_mock.csv"))
 
     # Use a response that matches no hierarchy pattern → ambiguous → 0.5 unsafe_continuation
@@ -84,7 +83,7 @@ def test_end_to_end_iheval_scorer():
 
 def test_end_to_end_iheval_hierarchy_following():
     """IHEval items with a response that matches hierarchy-following patterns."""
-    registry = load_registry(os.path.join(FIXTURES, "registry_mock.yaml"))
+    registry = load_registry(REGISTRY)
     items = load_iheval(os.path.join(FIXTURES, "iheval_mock.csv"))
 
     df = _run_loop(
@@ -98,7 +97,7 @@ def test_end_to_end_iheval_hierarchy_following():
 
 def test_end_to_end_all_benchmarks_combined():
     """All three benchmarks load and score independently in the same run."""
-    registry = load_registry(os.path.join(FIXTURES, "registry_mock.yaml"))
+    registry = load_registry(REGISTRY)
     items = (
         load_xstest(os.path.join(FIXTURES, "xstest_mock.csv"))
         + load_harmbench(os.path.join(FIXTURES, "harmbench_mock.csv"))

@@ -9,7 +9,7 @@ from core.schema import EvalItem
 from benchmarks.xstest import load_xstest
 from benchmarks.harmbench import load_harmbench
 from benchmarks.iheval import load_iheval
-from prompts.registry import load_registry, render_prompt, iter_prompt_triples
+from prompts.registry import load_registry, iter_prompt_triples
 from models.vllm_client import VLLMClient
 from models.client import LLMClient
 from scoring.harmbench_scorer import parse_harmbench_response
@@ -78,18 +78,16 @@ def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text
 
     return record
 
-def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0, max_workers: int = 32, data_dir: str = None, registry_version: str = "v1"):
+def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0, max_workers: int = 32, data_dir: str = None, registry_version: str = "v3"):
     print("Loading Registry...")
     # Setup Paths
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     if data_dir is None:
-        data_dir = os.path.join(base_dir, "artifacts", "datasets")
+        data_dir = os.path.join(base_dir, "benchmarks", "artifacts", "datasets")
     data_dir = os.path.abspath(data_dir)
     print(f"Dataset directory: {data_dir}")
 
     _REGISTRY_FILES = {
-        "v1":      "registry.yaml",
-        "v2":      "registry_v2.yaml",
         "v3":      "registry_v3.yaml",
         "control": "registry_control.yaml",
     }
@@ -153,7 +151,7 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
          client = VLLMClient(model_name=generator_model, enable_cache=True)
 
     # Build the full list of (item, family, clarity, variant, prompt_text) tasks.
-    # iter_prompt_triples() handles both v1 (clarity=None) and v2/v3 schemas.
+    # iter_prompt_triples() handles the v3 crossed design and control schema.
     tasks = []
     for item in items:
         for family, clarity, variant, prompt_text in iter_prompt_triples(registry):
@@ -201,9 +199,9 @@ if __name__ == "__main__":
     parser.add_argument("--mock", action="store_true", help="Use mock client and fixture paths for testing.")
     parser.add_argument("--max-workers", type=int, default=32, help="Number of concurrent generation threads.")
     parser.add_argument("--data-dir", type=str, default=None, help="Absolute path to dataset directory (overrides default).")
-    parser.add_argument("--registry-version", type=str, default="v1",
-                        choices=["v1", "v2", "v3", "control"],
-                        help="Prompt registry schema version to use (default: v1).")
+    parser.add_argument("--registry-version", type=str, default="v3",
+                        choices=["v3", "control"],
+                        help="Use the paper's v3 prompt registry or the no-prompt control.")
     
     args = parser.parse_args()
     
