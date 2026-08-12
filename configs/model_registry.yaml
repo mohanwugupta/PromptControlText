@@ -1,0 +1,87 @@
+# =============================================================================
+# Model registry for HuggingFace downloads + vLLM serving.
+#
+# NOTE: Some of these repo IDs (Gemma "4", Qwen "3.6", Nemotron "3.5"/"3") are
+# very recent / cutting-edge releases as of the model's knowledge cutoff.
+# Double-check the exact `repo_id` on https://huggingface.co before running
+# the download script — HF org/repo naming sometimes differs slightly from
+# marketing names (e.g. "Gemma 4 12B" might actually be published as
+# `google/gemma-4-12b-it`). Edit the `repo_id` fields below if a 404 occurs.
+# =============================================================================
+
+models:
+  - slug: gemma4_12b
+    repo_id: google/gemma-4-12b-it
+    revision: main
+    local_dir_name: google--gemma-4-12b-it
+    allow_patterns: null          # null = download everything (safetensors, tokenizer, config)
+    gated: true                   # Gemma models require accepting license on HF + a HF token
+    tensor_parallel_size: 1
+    gpus: 1
+    max_model_len: 8192
+
+  - slug: gemma4_31b
+    repo_id: google/gemma-4-31b-it
+    revision: main
+    local_dir_name: google--gemma-4-31b-it
+    allow_patterns: null
+    gated: true
+    tensor_parallel_size: 2
+    gpus: 2
+    max_model_len: 8192
+
+  - slug: qwen3_6_35b_a3b
+    repo_id: Qwen/Qwen3.6-35B-A3B-Instruct
+    revision: main
+    local_dir_name: Qwen--Qwen3.6-35B-A3B-Instruct
+    allow_patterns: null
+    gated: false
+    tensor_parallel_size: 2
+    gpus: 2
+    max_model_len: 8192
+    is_moe: true                  # A3B = ~3B active experts; needs vLLM MoE support
+
+  - slug: deepseek_r1_distill_qwen_32b
+    repo_id: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+    revision: main
+    local_dir_name: deepseek-ai--DeepSeek-R1-Distill-Qwen-32B
+    allow_patterns: null
+    gated: false
+    tensor_parallel_size: 2
+    gpus: 2
+    max_model_len: 8192
+
+  - slug: deepseek_r1_distill_llama_70b
+    repo_id: deepseek-ai/DeepSeek-R1-Distill-Llama-70B
+    revision: main
+    local_dir_name: deepseek-ai--DeepSeek-R1-Distill-Llama-70B
+    allow_patterns: null
+    gated: false
+    tensor_parallel_size: 4
+    gpus: 4
+    max_model_len: 8192
+
+  - slug: nemotron_3_5_lightning_30b_a3b
+    repo_id: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
+    revision: main
+    local_dir_name: nvidia--NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16
+    allow_patterns: null
+    gated: true                   # NVIDIA NGC/HF models are often gated
+    tensor_parallel_size: 2
+    gpus: 2
+    max_model_len: 8192
+    is_moe: true
+
+  - slug: nemotron_3_nano_4b_gguf
+    repo_id: nvidia/NVIDIA-Nemotron-3-Nano-4B-GGUF
+    revision: main
+    local_dir_name: nvidia--NVIDIA-Nemotron-3-Nano-4B-GGUF
+    allow_patterns:
+      - "*.gguf"
+      - "*.json"
+      - "tokenizer*"
+    gated: true
+    tensor_parallel_size: 1
+    gpus: 1
+    max_model_len: 8192
+    is_gguf: true                 # vLLM serves GGUF via --quantization gguf, single file passed as --model

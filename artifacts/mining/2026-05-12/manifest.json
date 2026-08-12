@@ -1,0 +1,11 @@
+{
+  "mining_table": "artifacts/mining/2026-05-12/mining_table.csv",
+  "exemplars": "artifacts/mining/2026-05-12/exemplars_text_clustering.csv",
+  "sensitivity": "artifacts/mining/2026-05-12/routing_sensitivity.csv",
+  "fig_cluster_sizes": "artifacts/mining/2026-05-12/fig1_cluster_sizes.png",
+  "enrichment_table": "artifacts/mining/2026-05-12/enrichment_table.csv",
+  "fig_enrichment": "artifacts/mining/2026-05-12/fig3_enrichment_heatmap.png",
+  "cluster_report": "artifacts/mining/2026-05-12/cluster_report.txt",
+  "routing_sensitive_report": "artifacts/mining/2026-05-12/routing_sensitive_report.txt",
+  "taxonomy_memo": "artifacts/mining/2026-05-12/taxonomy_memo.txt"
+}

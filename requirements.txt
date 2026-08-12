@@ -8,6 +8,7 @@ scipy
 pyyaml
 python-dotenv
 openai
+huggingface_hub[cli]>=0.24.0
 vllm==0.19.0; platform_system == "Linux"
 scikit-learn
 matplotlib
