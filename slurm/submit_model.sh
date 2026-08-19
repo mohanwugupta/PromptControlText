@@ -18,7 +18,10 @@
 #   deepseek_r1_distill_qwen_32b
 #   deepseek_r1_distill_llama_70b
 #   nemotron_3_5_lightning_30b_a3b
-#   nemotron_3_nano_4b_gguf
+#   nemotron_3_nano_4b          (native safetensors — use this one)
+#   nemotron_3_nano_4b_gguf     (BLOCKED: transformers/vLLM GGUF loader
+#                                doesn't support the nemotron_h architecture
+#                                yet — will always fail at startup)
 # =============================================================================
 
 set -eo pipefail
@@ -47,10 +50,14 @@ case "$SLUG" in
     MODEL_DIR_NAME="deepseek-ai--DeepSeek-R1-Distill-Llama-70B"; GPUS=4; TP=4; MAX_LEN=8192; MEM=0.92; MOE=0; GGUF=0; GGUF_FILE="" ;;
   nemotron_3_5_lightning_30b_a3b)
     MODEL_DIR_NAME="nvidia--NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"; GPUS=2; TP=2; MAX_LEN=8192; MEM=0.92; MOE=1; GGUF=0; GGUF_FILE="" ;;
+  nemotron_3_nano_4b)
+    MODEL_DIR_NAME="nvidia--NVIDIA-Nemotron-3-Nano-4B"; GPUS=1; TP=1; MAX_LEN=8192; MEM=0.92; MOE=0; GGUF=0; GGUF_FILE="" ;;
   nemotron_3_nano_4b_gguf)
-    MODEL_DIR_NAME="nvidia--NVIDIA-Nemotron-3-Nano-4B-GGUF"; GPUS=1; TP=1; MAX_LEN=8192; MEM=0.92; MOE=0; GGUF=1
-    # Adjust to the exact quant file you downloaded, e.g. *-Q4_K_M.gguf, *-Q8_0.gguf
-    GGUF_FILE="NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf" ;;
+    echo "❌ nemotron_3_nano_4b_gguf is currently unsupported: transformers'/vLLM's"
+    echo "   GGUF loader does not support the 'nemotron_h' architecture yet"
+    echo "   (ValueError: GGUF model with architecture nemotron_h is not supported yet.)."
+    echo "   Use 'nemotron_3_nano_4b' instead (native safetensors checkpoint)."
+    exit 1 ;;
   *)
     echo "❌ Unknown slug: $SLUG"
     echo "   See configs/model_registry.yaml for valid slugs."

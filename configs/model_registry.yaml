@@ -86,3 +86,19 @@ models:
     gpus: 1
     max_model_len: 8192
     is_gguf: true                 # vLLM serves GGUF via --quantization gguf, single file passed as --model
+    # NOTE: transformers'/vLLM's GGUF loader does not yet support the
+    # "nemotron_h" hybrid Mamba+attention architecture used by this model
+    # (raises `ValueError: GGUF model with architecture nemotron_h is not
+    # supported yet.`). Use the `nemotron_3_nano_4b` entry below (native
+    # safetensors checkpoint) instead until upstream GGUF support lands.
+
+  - slug: nemotron_3_nano_4b
+    repo_id: nvidia/NVIDIA-Nemotron-3-Nano-4B
+    revision: main
+    local_dir_name: nvidia--NVIDIA-Nemotron-3-Nano-4B
+    allow_patterns: null
+    gated: true
+    tensor_parallel_size: 1
+    gpus: 1
+    max_model_len: 8192
+    is_gguf: false                # native safetensors checkpoint; bypasses the broken GGUF loader path
