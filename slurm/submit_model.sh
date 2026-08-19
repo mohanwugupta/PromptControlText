@@ -50,7 +50,7 @@ case "$SLUG" in
   nemotron_3_nano_4b_gguf)
     MODEL_DIR_NAME="nvidia--NVIDIA-Nemotron-3-Nano-4B-GGUF"; GPUS=1; TP=1; MAX_LEN=8192; MEM=0.92; MOE=0; GGUF=1
     # Adjust to the exact quant file you downloaded, e.g. *-Q4_K_M.gguf, *-Q8_0.gguf
-    GGUF_FILE="nemotron-3-nano-4b-Q4_K_M.gguf" ;;
+    GGUF_FILE="NVIDIA-Nemotron3-Nano-4B-Q4_K_M.gguf" ;;
   *)
     echo "❌ Unknown slug: $SLUG"
     echo "   See configs/model_registry.yaml for valid slugs."
