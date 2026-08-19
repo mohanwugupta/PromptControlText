@@ -1,8 +1,12 @@
 #!/bin/bash
 # =============================================================================
-# Submit a vLLM serving + eval job for one of the new models via sbatch,
-# overriding --gres/--job-name and exporting the right vLLM settings into
-# slurm/run_model_generic.sh.
+# Submit a smoke test + full vLLM serving/eval job for one of the new models.
+#
+# The smoke test job boots vLLM and sends a single chat completion request.
+# The full job (run_model_generic.sh) is submitted immediately afterwards
+# with --dependency=afterok:<smoke_job_id>, so Slurm will only start it once
+# the smoke test has exited successfully (and will never start it — Slurm
+# auto-cancels dependents — if the smoke test fails).
 #
 # Usage:
 #   slurm/submit_model.sh <slug>
@@ -26,6 +30,7 @@ if [ -z "$SLUG" ]; then
 fi
 
 PROJECT_DIR=/scratch/gpfs/JORDANAT/mg9965/PromptControlText
+SMOKE_SCRIPT="$PROJECT_DIR/slurm/run_smoke_test.sh"
 GENERIC_SCRIPT="$PROJECT_DIR/slurm/run_model_generic.sh"
 
 # slug -> "MODEL_DIR_NAME|GPUS|TP|MAX_LEN|GPU_MEM_UTIL|IS_MOE|IS_GGUF|GGUF_FILE"
@@ -54,10 +59,21 @@ esac
 
 mkdir -p "$PROJECT_DIR/logs"
 
-echo "Submitting $SLUG (GPUs=$GPUS, TP=$TP)..."
+EXPORT_VARS="ALL,MODEL_DIR_NAME=$MODEL_DIR_NAME,MODEL_SLUG=$SLUG,TENSOR_PARALLEL_SIZE=$TP,MAX_MODEL_LEN=$MAX_LEN,GPU_MEMORY_UTILIZATION=$MEM,IS_MOE=$MOE,IS_GGUF=$GGUF,GGUF_FILE=$GGUF_FILE"
 
-sbatch \
+echo "Submitting smoke test for $SLUG (GPUs=$GPUS, TP=$TP)..."
+SMOKE_JOB_ID=$(sbatch --parsable \
+    --job-name="pct_smoke_${SLUG}" \
+    --gres="gpu:${GPUS}" \
+    --export="$EXPORT_VARS" \
+    "$SMOKE_SCRIPT")
+echo "  -> smoke test job id: $SMOKE_JOB_ID"
+
+echo "Submitting full job for $SLUG (dependent on smoke test succeeding)..."
+FULL_JOB_ID=$(sbatch --parsable \
     --job-name="pct_${SLUG}" \
     --gres="gpu:${GPUS}" \
-    --export=ALL,MODEL_DIR_NAME="$MODEL_DIR_NAME",MODEL_SLUG="$SLUG",TENSOR_PARALLEL_SIZE="$TP",MAX_MODEL_LEN="$MAX_LEN",GPU_MEMORY_UTILIZATION="$MEM",IS_MOE="$MOE",IS_GGUF="$GGUF",GGUF_FILE="$GGUF_FILE" \
-    "$GENERIC_SCRIPT"
+    --dependency="afterok:${SMOKE_JOB_ID}" \
+    --export="$EXPORT_VARS" \
+    "$GENERIC_SCRIPT")
+echo "  -> full job id: $FULL_JOB_ID (will run only if job $SMOKE_JOB_ID succeeds)"
