@@ -164,11 +164,8 @@ VLLM_ARGS=(
     --max-num-seqs 512
     --enable-chunked-prefill
     --max-num-batched-tokens 32768
+    --disable-custom-all-reduce
 )
-
-if [ "$TENSOR_PARALLEL_SIZE" -eq 1 ]; then
-    VLLM_ARGS+=(--disable-custom-all-reduce)
-fi
 
 if [ "${IS_GGUF:-0}" = "1" ]; then
     VLLM_ARGS+=(--quantization gguf --tokenizer "$MODELS_ROOT/$MODEL_DIR_NAME")

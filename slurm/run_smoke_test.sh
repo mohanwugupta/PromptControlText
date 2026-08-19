@@ -132,11 +132,8 @@ VLLM_ARGS=(
     --trust-remote-code
     --max-model-len "$MAX_MODEL_LEN"
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION"
+    --disable-custom-all-reduce
 )
-
-if [ "$TENSOR_PARALLEL_SIZE" -eq 1 ]; then
-    VLLM_ARGS+=(--disable-custom-all-reduce)
-fi
 
 if [ "${IS_GGUF:-0}" = "1" ]; then
     VLLM_ARGS+=(--quantization gguf --tokenizer "$MODELS_ROOT/$MODEL_DIR_NAME")
