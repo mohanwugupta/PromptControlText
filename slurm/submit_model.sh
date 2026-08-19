@@ -51,7 +51,7 @@ case "$SLUG" in
   nemotron_3_5_lightning_30b_a3b)
     MODEL_DIR_NAME="nvidia--NVIDIA-Nemotron-3.5-Lightning-30B-A3B-BF16"; GPUS=2; TP=2; MAX_LEN=8192; MEM=0.92; MOE=1; GGUF=0; GGUF_FILE="" ;;
   nemotron_3_nano_4b)
-    MODEL_DIR_NAME="nvidia--NVIDIA-Nemotron-3-Nano-4B"; GPUS=1; TP=1; MAX_LEN=8192; MEM=0.92; MOE=0; GGUF=0; GGUF_FILE="" ;;
+    MODEL_DIR_NAME="nvidia--NVIDIA-Nemotron-3-Nano-4B-BF16"; GPUS=1; TP=1; MAX_LEN=8192; MEM=0.92; MOE=0; GGUF=0; GGUF_FILE="" ;;
   nemotron_3_nano_4b_gguf)
     echo "❌ nemotron_3_nano_4b_gguf is currently unsupported: transformers'/vLLM's"
     echo "   GGUF loader does not support the 'nemotron_h' architecture yet"
