@@ -35,7 +35,7 @@ case "$SLUG" in
   gemma4_31b)
     MODEL_DIR_NAME="google--gemma-4-31b-it"; GPUS=2; TP=2; MAX_LEN=8192; MEM=0.92; MOE=0; GGUF=0; GGUF_FILE="" ;;
   qwen3_6_35b_a3b)
-    MODEL_DIR_NAME="Qwen--Qwen3.6-35B-A3B-Instruct"; GPUS=2; TP=2; MAX_LEN=8192; MEM=0.92; MOE=1; GGUF=0; GGUF_FILE="" ;;
+    MODEL_DIR_NAME="Qwen--Qwen3.6-35B-A3B-FP8"; GPUS=2; TP=2; MAX_LEN=8192; MEM=0.92; MOE=1; GGUF=0; GGUF_FILE="" ;;
   deepseek_r1_distill_qwen_32b)
     MODEL_DIR_NAME="deepseek-ai--DeepSeek-R1-Distill-Qwen-32B"; GPUS=2; TP=2; MAX_LEN=8192; MEM=0.92; MOE=0; GGUF=0; GGUF_FILE="" ;;
   deepseek_r1_distill_llama_70b)
