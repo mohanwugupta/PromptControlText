@@ -12,3 +12,4 @@ slurm/logs/
 .venv/
 venv/
 env/
+core.*
