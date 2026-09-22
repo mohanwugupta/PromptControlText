@@ -1,0 +1,61 @@
+{
+  "full_items_by_benchmark": {
+    "HarmBench": 400,
+    "XSTest": 450,
+    "IHEval": 2520
+  },
+  "conditions": 73,
+  "judge_assumptions": {
+    "model": "gpt-5.4-mini",
+    "input_tokens_per_call": 1200,
+    "output_tokens_per_call": 200,
+    "input_usd_per_million": 0.75,
+    "output_usd_per_million": 4.5,
+    "calls_per_response": 3.2,
+    "explanation": "Three judge prompts plus one adjudication for an assumed 20% of responses; unvalidated."
+  },
+  "scenarios": [
+    {
+      "model": "gpt-5.5-2026-04-23",
+      "planned_responses": 246010,
+      "generation_benchmark_weighted_usd": 995.9185026647966,
+      "generation_pooled_sensitivity_usd": 1549.1249699999998,
+      "assumed_judging_usd": 1417.0176000000001,
+      "total_with_25_percent_buffer_usd": [
+        3016.170128330996,
+        3707.6782125
+      ],
+      "batch_total_with_buffer_usd": [
+        1508.085064165498,
+        1853.83910625
+      ]
+    },
+    {
+      "model": "gpt-6-astra",
+      "planned_responses": 246010,
+      "generation_benchmark_weighted_usd": 996.7780632844574,
+      "generation_pooled_sensitivity_usd": 1552.945534939759,
+      "assumed_judging_usd": 1417.0176000000001,
+      "total_with_25_percent_buffer_usd": [
+        3017.244579105572,
+        3712.453918674699
+      ],
+      "batch_total_with_buffer_usd": [
+        1508.622289552786,
+        1856.2269593373494
+      ]
+    }
+  ],
+  "reduced_100_items_both_models": {
+    "planned_responses": 14600,
+    "generation_pooled_usd": 92.04956987951807,
+    "assumed_judging_usd": 84.096
+  },
+  "limitations": [
+    "These scenarios are not confidence intervals or price guarantees.",
+    "Correcting omitted dataset context may increase token use materially.",
+    "Policy blocks and transport failures bias observed response lengths.",
+    "Batch discount assumes eligible models and endpoints; runner does not implement Batch.",
+    "No human labor, storage, or self-hosted judge costs included."
+  ]
+}

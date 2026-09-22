@@ -1,0 +1,39 @@
+{
+  "planned": 192,
+  "attempted": 181,
+  "recorded": 184,
+  "budget_cap_usd": 10.0,
+  "accounted_usd": 2.422375,
+  "models": {
+    "gpt-5.5-2026-04-23": {
+      "attempted": 92,
+      "statuses": {
+        "http_error": 3,
+        "completed": 85,
+        "transport_or_parse_error": 4
+      },
+      "empty_final": 0,
+      "input_tokens": 3717,
+      "output_tokens": 17222,
+      "reasoning_tokens": 3333,
+      "estimated_cost_usd": 0.535245,
+      "mean_cost_usd": 0.006297,
+      "projected_600_items_73_conditions_usd": 275.8086
+    },
+    "gpt-6-astra": {
+      "attempted": 92,
+      "statuses": {
+        "http_error": 5,
+        "completed": 83,
+        "transport_or_parse_error": 4
+      },
+      "empty_final": 0,
+      "input_tokens": 3669,
+      "output_tokens": 9745,
+      "reasoning_tokens": 1202,
+      "estimated_cost_usd": 0.52394,
+      "mean_cost_usd": 0.006312530120481928,
+      "projected_600_items_73_conditions_usd": 276.4888192771084
+    }
+  }
+}

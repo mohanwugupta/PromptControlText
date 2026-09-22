@@ -13,3 +13,13 @@ slurm/logs/
 venv/
 env/
 core.*
+
+# Credentials and private frontier pilot records
+.env
+.env.*
+*.run.lock
+artifacts/frontier_pilot/.run.lock
+artifacts/frontier_pilot/responses.jsonl
+artifacts/frontier_pilot/ledger.jsonl
+artifacts/frontier_pilot/pilot_results.csv
+artifacts/frontier_pilot/pilot_metadata.csv
