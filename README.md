@@ -279,3 +279,8 @@ See [pilot instructions](experiments/API_PILOT.md), the
 Public artifacts include the frozen manifest, output-free usage metadata, and
 cost accounting. Raw completions and credentials remain local. No production
 run or validated frontier-model safety scores are included.
+
+A subsequent [cheap-judge micro-pilot](experiments/JUDGE_MICRO_PILOT.md) tests
+GPT-5.4 nano on 12 existing responses with the three original judge prompts.
+Its [report](artifacts/judge_micro_pilot/REPORT.md) measures format validity,
+prompt agreement, and cost; it does not establish judge accuracy.

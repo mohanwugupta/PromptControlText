@@ -23,3 +23,9 @@ artifacts/frontier_pilot/responses.jsonl
 artifacts/frontier_pilot/ledger.jsonl
 artifacts/frontier_pilot/pilot_results.csv
 artifacts/frontier_pilot/pilot_metadata.csv
+
+# Private cheap-judge inputs, evidence, and request ledger
+artifacts/judge_micro_pilot/*.private.json
+artifacts/judge_micro_pilot/responses.jsonl
+artifacts/judge_micro_pilot/ledger.jsonl
+artifacts/judge_micro_pilot/.run.lock
