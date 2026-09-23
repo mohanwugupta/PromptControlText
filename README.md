@@ -269,3 +269,23 @@ requirements file.
 
 The code is released under the MIT License. Citation metadata is in
 `CITATION.cff`.
+
+## Frontier API extension (feasibility only)
+
+The separate OpenAI pilot does not change the paper's four-model results.
+See [pilot instructions](experiments/API_PILOT.md), the
+[pilot report](artifacts/frontier_pilot/PILOT_REPORT.md), and the
+[production plan and budget](docs/FRONTIER_RUN_PLAN.md).
+Public artifacts include the frozen manifest, output-free usage metadata, and
+cost accounting. Raw completions and credentials remain local. No production
+run or validated frontier-model safety scores are included.
+
+A subsequent [cheap-judge micro-pilot](experiments/JUDGE_MICRO_PILOT.md) tests
+GPT-5.4 nano on 12 existing responses with the three original judge prompts.
+Its [report](artifacts/judge_micro_pilot/REPORT.md) measures format validity,
+prompt agreement, and cost; it does not establish judge accuracy.
+
+The subsequent [corrected three-provider extension](docs/FRONTIER_CORRECTED_PROTOCOL.md)
+starts with Astra on 100 paired items and exports responses for the original
+cluster judging pipeline. Its corrected inputs and no-controller IHEval baseline
+require matched historical-model reruns; they are separate from the old pilot.

@@ -13,3 +13,24 @@ slurm/logs/
 venv/
 env/
 core.*
+
+# Credentials and private frontier pilot records
+.env
+.env.*
+*.run.lock
+artifacts/frontier_pilot/.run.lock
+artifacts/frontier_pilot/responses.jsonl
+artifacts/frontier_pilot/ledger.jsonl
+artifacts/frontier_pilot/pilot_results.csv
+artifacts/frontier_pilot/pilot_metadata.csv
+
+# Private cheap-judge inputs, evidence, and request ledger
+artifacts/judge_micro_pilot/*.private.json
+artifacts/judge_micro_pilot/responses.jsonl
+artifacts/judge_micro_pilot/ledger.jsonl
+artifacts/judge_micro_pilot/.run.lock
+
+# Corrected native sources and private frontier handoff
+benchmarks/artifacts/datasets/corrected_v1/
+artifacts/frontier_sample_v1/*.private.*
+artifacts/frontier_sample_v1/.run.lock
