@@ -1,0 +1,40 @@
+{
+  "planned": 7300,
+  "submitted": 1100,
+  "returned": 100,
+  "ready_for_original_judge": 95,
+  "statuses": {
+    "completed": 95,
+    "api_error": 5,
+    "pending_batch": 1000,
+    "skipped_provider_block": 360,
+    "not_submitted": 5840
+  },
+  "usage_estimate_usd": 0.26081,
+  "astra_accounted_usd": 68.34406875,
+  "astra_cap_usd": 75.0,
+  "study_cap_usd": 250,
+  "batches": [
+    {
+      "status": "completed",
+      "reconciled": true,
+      "accounted_usd": 0.60479375,
+      "request_counts": {
+        "total": 100,
+        "completed": 95,
+        "failed": 5
+      }
+    },
+    {
+      "status": "in_progress",
+      "reconciled": false,
+      "accounted_usd": 67.739275,
+      "request_counts": {
+        "total": 1000,
+        "completed": 278,
+        "failed": 2
+      }
+    }
+  ],
+  "judging_status": "not_run; original collaborator cluster pipeline"
+}

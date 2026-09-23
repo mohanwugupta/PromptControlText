@@ -29,3 +29,8 @@ artifacts/judge_micro_pilot/*.private.json
 artifacts/judge_micro_pilot/responses.jsonl
 artifacts/judge_micro_pilot/ledger.jsonl
 artifacts/judge_micro_pilot/.run.lock
+
+# Corrected native sources and private frontier handoff
+benchmarks/artifacts/datasets/corrected_v1/
+artifacts/frontier_sample_v1/*.private.*
+artifacts/frontier_sample_v1/.run.lock
