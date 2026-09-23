@@ -1,0 +1,9 @@
+.pixi/
+__pycache__/
+*.pyc
+.env
+artifacts/
+outputs/
+scratch/
+*.pt
+*.pth

@@ -1,0 +1,21 @@
+models:
+  - slug: qwen25_05b
+    repo_id: Qwen/Qwen2.5-0.5B-Instruct
+    revision: main
+    tensor_parallel_size: 1
+    gpus: 1
+    max_model_len: 8192
+
+  - slug: qwen25_7b
+    repo_id: Qwen/Qwen2.5-7B-Instruct
+    revision: main
+    tensor_parallel_size: 1
+    gpus: 1
+    max_model_len: 8192
+
+  - slug: deepseek_r1_distill_qwen_32b
+    repo_id: deepseek-ai/DeepSeek-R1-Distill-Qwen-32B
+    revision: main
+    tensor_parallel_size: 1
+    gpus: 1
+    max_model_len: 8192

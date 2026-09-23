@@ -1,0 +1,25 @@
+[workspace]
+name = "spar-project-template"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.11.*"
+pip = "*"
+git = "*"
+curl = "*"
+
+[pypi-dependencies]
+openai = ">=1.0"
+pyyaml = ">=6.0"
+transformers = "==4.57.6"
+vllm = "==0.19.0"
+pytest = ">=8"
+ruff = ">=0.8"
+
+[tasks]
+test = "pytest -q"
+lint = "ruff check ."
+serve = "bash scripts/serve_vllm.sh"
+inference-smoke = "python examples/inference_smoke.py"
+mechinterp-smoke = "python examples/mech_interp_smoke.py"
