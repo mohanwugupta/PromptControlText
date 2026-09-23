@@ -85,7 +85,7 @@ python3 experiments/run_frontier_sample.py submit --count 1000
 python3 experiments/run_frontier_sample.py poll
 ```
 
-Only `submit` creates paid work. Source downloads and GET polling do not create
+`submit`, `advance`, and `run` can create paid work. Source downloads and GET polling do not create
 inference. `prepare`/`export` work offline after sources are downloaded.
 
 `artifacts/frontier_sample_v1/summary.json` is the public progress record.
@@ -163,3 +163,19 @@ sends no paid requests. It creates manifest.private.json for matched cluster
 reruns. It does not reconstruct model-generated responses, private batch IDs,
 or the spending ledger. Resuming Astra requires its original private state;
 the public results guard prevents paying for the archived requests again.
+
+## Complete the authorized Astra run
+
+```sh
+python3 experiments/run_frontier_sample.py run
+```
+
+This holds the run lock, polls every 45 seconds, reconciles completed batches,
+and submits the next affordable chunk automatically. Each chunk has at most
+1,000 requests and fits the remaining worst-case $75 budget. It stops when all
+eligible tasks have been submitted and reconciled, on a billing error, at the
+budget cap, or on an unresolved API/transport exception. It never retries a
+inference POST automatically. Interrupted uploads without a persisted file ID
+are safely requeued because batch creation has not been called. `advance` performs one such step without the waiting loop.
+The provider can take up to 24 hours per batch. Keep the process running to
+continue submissions; stopping it does not cancel an already-submitted batch.

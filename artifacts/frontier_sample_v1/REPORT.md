@@ -1,25 +1,30 @@
 # Astra corrected-sample progress
 
-Planned: 7300; submitted: 1100; returned: 100.
-Completed nonempty responses ready for original judging: 95.
-Usage-based cost estimate: $0.260810. Conservative pending/error accounting: $68.344069 / $75.
+Planned: 7300; submitted: 4984; returned: 4063.
+Completed nonempty responses ready for original judging: 4045.
+Usage-based cost estimate: $10.869015. Conservative pending/error accounting: $74.937969 / $75.
 
 ## Planned-row status
 
 | Status | Rows |
 |---|---:|
-| api_error | 5 |
-| completed | 95 |
-| not_submitted | 5840 |
-| pending_batch | 1000 |
-| skipped_provider_block | 360 |
+| api_error | 18 |
+| completed | 4045 |
+| not_submitted | 1843 |
+| pending_batch | 921 |
+| skipped_provider_block | 473 |
 
 ## Batch status
 
 | Batch | State | Reconciled |
 |---|---|---|
 | 1 | completed | True |
-| 2 | in_progress | False |
+| 2 | completed | True |
+| 3 | upload_interrupted_no_inference | True |
+| 4 | completed | True |
+| 5 | completed | True |
+| 6 | completed | True |
+| 7 | in_progress | False |
 
 ## Interpretation and handoff
 

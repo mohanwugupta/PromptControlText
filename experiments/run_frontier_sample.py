@@ -222,6 +222,12 @@ def poll(m):
         if b.get('reconciled'):
             b['accounted_usd']=sum(usage_upper(existing[tid]['usage']) if tid in existing and existing[tid].get('usage') else reservation(tasks[tid]) for tid in b['task_ids'])
             continue
+        if not b.get('input_file_id') and not b.get('id'):
+            # Batch creation occurs only after the uploaded file ID is persisted.
+            # An interrupted upload therefore cannot have launched inference.
+            b.update(status='upload_interrupted_no_inference',reconciled=True,accounted_usd=0,abandoned_task_ids=b['task_ids'],task_ids=[])
+            save(OUT/'state.private.json',s)
+            continue
         if not b.get('id'):
             # Read-only reconciliation of an uncertain create, matching unique metadata.
             listing=api('/batches?limit=100')['data']
@@ -294,8 +300,30 @@ def export(m):
     return summary
 
 
+def advance(m):
+    """Reconcile once and submit one affordable chunk; caller controls waiting."""
+    summary=poll(m)
+    s=state()
+    if any(not b.get('reconciled') for b in s['batches']):
+        return {**summary,'next_action':'wait'}
+    rr=rows(OUT/'responses.private.jsonl')
+    billing={'credit_balance_exhausted','insufficient_quota','organization_spend_limit_exceeded','project_spend_limit_exceeded','organization_usage_limit_exceeded'}
+    if any(r.get('error_code') in billing for r in rr):
+        return {**summary,'next_action':'billing_attention_required'}
+    left=pending(m,s)
+    if not left:return {**summary,'next_action':'generation_finished'}
+    available=CAP-total(s);count=0;reserved=0
+    for t in left[:1000]:
+        amount=reservation(t)
+        if reserved+amount>available:break
+        count+=1;reserved+=amount
+    if count==0:return {**summary,'next_action':'budget_cap_reached'}
+    result=submit(m,count)
+    return {**result,'next_action':'wait'}
+
+
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('action',choices=['download-sources','rebuild-inputs','prepare','submit','poll','export']);p.add_argument('--count',type=int,default=100)
+    p=argparse.ArgumentParser();p.add_argument('action',choices=['download-sources','rebuild-inputs','prepare','submit','poll','advance','run','export']);p.add_argument('--count',type=int,default=100)
     args=p.parse_args();assert 0<args.count<=1000
     OUT.mkdir(parents=True,exist_ok=True)
     with (OUT/'.run.lock').open('w') as lock:
@@ -305,5 +333,12 @@ if __name__=='__main__':
         m=prepare(rebuild_inputs=args.action=='rebuild-inputs')
         if args.action=='rebuild-inputs':
             print(json.dumps({'reconstructed_items':len(m['items']),'reconstructed_tasks':len(m['tasks']),'paid_requests':0}));sys.exit(0)
-        result=submit(m,args.count) if args.action=='submit' else poll(m) if args.action=='poll' else export(m)
+        if args.action=='run':
+            while True:
+                result=advance(m)
+                print(json.dumps({k:result[k] for k in ['submitted','returned','ready_for_original_judge','usage_estimate_usd','astra_accounted_usd','next_action']}),flush=True)
+                if result['next_action']!='wait':break
+                time.sleep(45)
+            sys.exit(0)
+        result=advance(m) if args.action=='advance' else submit(m,args.count) if args.action=='submit' else poll(m) if args.action=='poll' else export(m)
         print(json.dumps(result,indent=2))
