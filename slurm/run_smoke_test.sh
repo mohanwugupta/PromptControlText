@@ -76,6 +76,9 @@ fi
 # This is equivalent to the successful `python -s` import diagnostic.
 if [[ "$MODEL_SLUG" == gemma4_* ]]; then
     export PYTHONNOUSERSITE=1
+    # FlashInfer sampling JIT cannot find curand.h in the cluster toolkit.
+    # Use vLLM's native GPU sampler for startup warmup and generation.
+    export VLLM_USE_FLASHINFER_SAMPLER=0
 fi
 
 export PYTHONPATH="$PROJECT_DIR${PYTHONPATH:+:$PYTHONPATH}"
