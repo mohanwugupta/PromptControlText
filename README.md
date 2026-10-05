@@ -23,9 +23,7 @@ system prompt. The full crossed design was:
 - 4 instruction-tuned models
 
 This gives 72 prompted conditions plus one baseline, or 984,040 planned model
-responses (`3,370 x 73 x 4`). The manuscript reports 984,041 submissions; the
-crossed design and the eight raw run files yield 984,040, so the reported total
-appears to be one row high.
+responses (`3,370 x 73 x 4`). 
 
 ## Benchmarks
 
