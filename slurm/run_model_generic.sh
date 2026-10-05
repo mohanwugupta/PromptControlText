@@ -68,7 +68,7 @@ if [ "${IS_GGUF:-0}" = "1" ]; then
 fi
 
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-$(basename "$MODEL_DIR_NAME")}"
-CONDA_ENV=PromptControlText
+CONDA_ENV="${CONDA_ENV:-PromptControlText}"
 VLLM_PORT=8000
 
 # ------------------------------------------------------------------
@@ -85,6 +85,12 @@ elif [ -f "$HOME/.conda/envs/$CONDA_ENV/bin/activate" ]; then
     source "$HOME/.conda/envs/$CONDA_ENV/bin/activate"
 else
     source activate "$CONDA_ENV"
+fi
+
+# Gemma's CUDA 13 stack must not load conflicting packages from ~/.local.
+# This is equivalent to the successful `python -s` import diagnostic.
+if [[ "$MODEL_SLUG" == gemma4_* ]]; then
+    export PYTHONNOUSERSITE=1
 fi
 
 export PYTHONPATH="$PROJECT_DIR${PYTHONPATH:+:$PYTHONPATH}"

@@ -18,7 +18,7 @@ ALL_SLUGS=(
     deepseek_r1_distill_qwen_32b
     deepseek_r1_distill_llama_70b
     nemotron_3_5_lightning_30b_a3b
-    nemotron_3_nano_4b_gguf
+    nemotron_3_nano_4b
 )
 
 if [ "$#" -gt 0 ]; then
