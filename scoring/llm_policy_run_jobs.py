@@ -6,7 +6,7 @@ Run many CSV jobs from a YAML job registry.
 Usage
 -----
 python -m scoring.llm_policy_run_jobs \\
-  --jobs configs/llm_policy_jobs.yaml \\
+  --jobs configs/llm_policy_jobs_new_models.yaml \\
   --model Qwen2.5-72B-Instruct \\
   --base-url http://localhost:8000/v1 \\
   --batch-size 128 \\
@@ -37,6 +37,35 @@ def load_jobs(path: str | pathlib.Path) -> List[Dict[str, Any]]:
     with open(path) as f:
         config = yaml.safe_load(f)
     return config.get("jobs", [])
+
+
+def validate_job_input(job: Dict[str, Any]) -> int | None:
+    """Reject incomplete new-model inputs before spending GPU time judging."""
+    expected = job.get("expected_rows")
+    if expected is None:
+        return None
+    expected = int(expected)
+    key_fields = ["benchmark", "item_id", "prompt_family", "clarity_level", "prompt_variant"]
+    seen = set()
+    count = empty = 0
+    with pathlib.Path(job["input"]).open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        missing = set([*key_fields, "model_output"]) - set(reader.fieldnames or [])
+        if missing:
+            raise ValueError(f"{job['job_id']}: input is missing columns {sorted(missing)}")
+        for row in reader:
+            key = tuple(row[field] for field in key_fields)
+            if key in seen:
+                raise ValueError(f"{job['job_id']}: duplicate generation condition {key}")
+            seen.add(key)
+            count += 1
+            empty += not (row["model_output"] or "").strip()
+    if count != expected or empty:
+        raise ValueError(
+            f"{job['job_id']}: found {count:,}/{expected:,} responses, "
+            f"including {empty:,} empty outputs. Finish generation before judging."
+        )
+    return count
 
 
 def combine_labeled_outputs(
@@ -127,6 +156,7 @@ def run_all_jobs(
 
         logger.info("Starting job %s …", job_id)
         try:
+            validate_job_input(job)
             run_job(
                 input_path=input_path,
                 job_id=job_id,
@@ -154,7 +184,7 @@ def run_all_jobs(
 
 def _parse_args(argv=None):
     p = argparse.ArgumentParser(description="Run many CSV jobs from a YAML registry.")
-    p.add_argument("--jobs", required=True, help="Path to llm_policy_jobs.yaml")
+    p.add_argument("--jobs", required=True, help="Path to a judge-job YAML registry")
     p.add_argument("--model", required=True)
     p.add_argument("--base-url", default="http://localhost:8000/v1")
     p.add_argument("--batch-size", type=int, default=128)

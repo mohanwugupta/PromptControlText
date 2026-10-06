@@ -122,23 +122,45 @@ majorities with low dissent confidence were resolved automatically. Remaining
 cases were sent to an output-only multi-judge adjudication prompt. Unresolved
 cases were flagged for human audit.
 
-The checked-in `slurm/run_llm_judge.sh` preserves its historical model,
-scheduler, and task-selection settings exactly as used. It is intentionally
-left configured for the last selected task rather than rewritten as a new
-eight-task array. `configs/llm_policy_jobs.yaml` records all eight paper jobs.
+`configs/llm_policy_jobs.yaml` records the eight original paper jobs.
+`slurm/run_llm_judge.sh` now uses `configs/llm_policy_jobs_new_models.yaml`
+to judge only the six new prompted runs, using the same Llama-3.1-8B judge
+and rubric. It requests 24 hours per array task and rejects incomplete or
+empty generation inputs before starting the server.
+
+```bash
+# Four complete new runs: Gemma 12B, Gemma 31B, Qwen 3.6, Nemotron Nano.
+sbatch --array=0-3 slurm/run_llm_judge.sh
+
+# If the original DeepSeek generation jobs have stopped, resume them.
+# Saved responses are retained; only missing or empty conditions are retried.
+bash slurm/submit_model.sh deepseek_r1_distill_qwen_32b
+bash slurm/submit_model.sh deepseek_r1_distill_llama_70b
+
+# After both DeepSeek generation jobs finish successfully:
+sbatch --array=4-5 slurm/run_llm_judge.sh
+```
+
+Each new prompted CSV must contain 242,640 unique, nonempty responses
+(`3,370 x 72`). Generation checkpoints are written atomically. Avoid running
+two generation jobs for the same model/output file at once.
+
+These resume commands retain the existing 512-token generation budget and
+saved responses, including responses that ended at the token limit. Longer
+DeepSeek answers require a separate generation run with a larger output budget.
 
 For an already running OpenAI-compatible judge endpoint, the same jobs can be
 run and combined locally with:
 
 ```bash
 python -m scoring.llm_policy_run_jobs \
-  --jobs configs/llm_policy_jobs.yaml \
+  --jobs configs/llm_policy_jobs_new_models.yaml \
   --model meta-llama/Llama-3.1-8B-Instruct \
   --base-url http://localhost:8000/v1 \
   --batch-size 512 \
   --max-workers 256 \
   --resume \
-  --combined-output artifacts/phase1_results_combined_labeled.csv
+  --combined-output artifacts/phase1_results_new_models_combined_labeled.csv
 ```
 
 The paper reports mean pairwise Cohen's kappa of 0.808, 81.2% unanimous

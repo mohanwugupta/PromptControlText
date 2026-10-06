@@ -78,7 +78,47 @@ def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text
 
     return record
 
-def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0, max_workers: int = 32, data_dir: str = None, registry_version: str = "v3"):
+def _generation_key(record):
+    return (
+        record["benchmark"], record["item_id"], record["prompt_family"],
+        record.get("clarity_level") or None, record["prompt_variant"],
+    )
+
+
+def _load_generation_checkpoint(filepath, generator_model, tasks):
+    """Keep saved nonempty responses only when they match the current run."""
+    df = pd.read_csv(filepath, dtype=str, keep_default_na=False)
+    required = {
+        "benchmark", "item_id", "prompt_family", "clarity_level",
+        "prompt_variant", "model_name", "model_output", "input_text",
+    }
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"Cannot resume: checkpoint is missing columns {sorted(missing)}")
+    expected = {
+        (item.benchmark, item.item_id, family, clarity, variant): item.input_text
+        for item, family, clarity, variant, _ in tasks
+    }
+    records = []
+    completed = set()
+    seen = set()
+    for record in df.to_dict(orient="records"):
+        key = _generation_key(record)
+        if record["model_name"] != generator_model:
+            raise ValueError("Cannot resume: checkpoint belongs to a different generator model")
+        if key not in expected or record["input_text"] != expected[key]:
+            raise ValueError(f"Cannot resume: checkpoint condition does not match this run: {key}")
+        if key in seen:
+            raise ValueError(f"Cannot resume: duplicate checkpoint condition: {key}")
+        seen.add(key)
+        if record["model_output"].strip():
+            records.append(record)
+            completed.add(key)
+    return records, completed
+
+
+def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Instruct", mock_mode: bool = False, limit: int = 0, max_workers: int = 32, data_dir: str = None, registry_version: str = "v3", resume: bool = False):
+    output_filepath = os.fspath(output_filepath)
     print("Loading Registry...")
     # Setup Paths
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -157,10 +197,25 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
         for family, clarity, variant, prompt_text in iter_prompt_triples(registry):
             tasks.append((item, family, clarity, variant, prompt_text))
 
+    planned_total = len(tasks)
+    evaluated_records = []
+    if resume and os.path.isfile(output_filepath):
+        evaluated_records, completed_keys = _load_generation_checkpoint(
+            output_filepath, generator_model, tasks
+        )
+        tasks = [
+            task for task in tasks
+            if (task[0].benchmark, task[0].item_id, task[1], task[2], task[3])
+            not in completed_keys
+        ]
+        print(f"Resuming: preserving {len(evaluated_records)} saved responses; "
+              f"{len(tasks)} conditions remain.")
+        if not tasks:
+            print("All generation conditions are already complete.")
+            return
     total = len(tasks)
     print(f"Submitting {total} generation tasks with max_workers={max_workers}...")
 
-    evaluated_records = []
     completed = 0
 
     # Checkpoint every CHECKPOINT_EVERY completed futures (saves partial progress
@@ -170,7 +225,10 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
 
     def _checkpoint(records, filepath):
         if records:
-            pd.DataFrame(records).to_csv(filepath, index=False)
+            # A killed job must not truncate its last complete checkpoint.
+            temp_path = filepath + ".tmp"
+            pd.DataFrame(records).to_csv(temp_path, index=False)
+            os.replace(temp_path, filepath)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
@@ -188,7 +246,13 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
 
     print(f"Saving {len(evaluated_records)} evaluations to {output_filepath}")
     os.makedirs(os.path.dirname(os.path.abspath(output_filepath)), exist_ok=True)
-    pd.DataFrame(evaluated_records).to_csv(output_filepath, index=False)
+    _checkpoint(evaluated_records, output_filepath)
+    nonempty = sum(bool(record["model_output"].strip()) for record in evaluated_records)
+    if nonempty != planned_total:
+        raise RuntimeError(
+            f"Generation incomplete: {nonempty}/{planned_total} nonempty responses saved. "
+            "Resubmit with --resume to retry missing or empty responses."
+        )
     print("Done.")
 
 if __name__ == "__main__":
@@ -197,6 +261,7 @@ if __name__ == "__main__":
     parser.add_argument("--output-file", type=str, default="artifacts/phase1_results.csv")
     parser.add_argument("--limit", type=int, default=0, help="Limit the number of benchmark items to evaluate.")
     parser.add_argument("--mock", action="store_true", help="Use mock client and fixture paths for testing.")
+    parser.add_argument("--resume", action="store_true", help="Keep matching saved responses and generate only missing or empty conditions.")
     parser.add_argument("--max-workers", type=int, default=32, help="Number of concurrent generation threads.")
     parser.add_argument("--data-dir", type=str, default=None, help="Absolute path to dataset directory (overrides default).")
     parser.add_argument("--registry-version", type=str, default="v3",
@@ -207,4 +272,4 @@ if __name__ == "__main__":
     
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     out = os.path.join(base, args.output_file)
-    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit, max_workers=args.max_workers, data_dir=args.data_dir, registry_version=args.registry_version)
+    run_experiment(out, args.generator_model, mock_mode=args.mock, limit=args.limit, max_workers=args.max_workers, data_dir=args.data_dir, registry_version=args.registry_version, resume=args.resume)

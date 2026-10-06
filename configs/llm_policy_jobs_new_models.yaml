@@ -1,0 +1,38 @@
+# New prompted runs only. A full run is 3,370 benchmark items x 72 prompts.
+# Array indices 0-3 are complete snapshots; finish DeepSeek generation before 4-5.
+jobs:
+  - job_id: phase1_gemma4_12b
+    input: artifacts/phase1_results_gemma4_12b.csv
+    output_dir: artifacts/llm_policy_labels/phase1_gemma4_12b
+    experiment_group: prompted
+    expected_rows: 242640
+
+  - job_id: phase1_gemma4_31b
+    input: artifacts/phase1_results_gemma4_31b.csv
+    output_dir: artifacts/llm_policy_labels/phase1_gemma4_31b
+    experiment_group: prompted
+    expected_rows: 242640
+
+  - job_id: phase1_qwen3_6_35b_a3b
+    input: artifacts/phase1_results_qwen3_6_35b_a3b.csv
+    output_dir: artifacts/llm_policy_labels/phase1_qwen3_6_35b_a3b
+    experiment_group: prompted
+    expected_rows: 242640
+
+  - job_id: phase1_nemotron_3_nano_4b
+    input: artifacts/phase1_results_nemotron_3_nano_4b.csv
+    output_dir: artifacts/llm_policy_labels/phase1_nemotron_3_nano_4b
+    experiment_group: prompted
+    expected_rows: 242640
+
+  - job_id: phase1_deepseek_r1_distill_qwen_32b
+    input: artifacts/phase1_results_deepseek_r1_distill_qwen_32b.csv
+    output_dir: artifacts/llm_policy_labels/phase1_deepseek_r1_distill_qwen_32b
+    experiment_group: prompted
+    expected_rows: 242640
+
+  - job_id: phase1_deepseek_r1_distill_llama_70b
+    input: artifacts/phase1_results_deepseek_r1_distill_llama_70b.csv
+    output_dir: artifacts/llm_policy_labels/phase1_deepseek_r1_distill_llama_70b
+    experiment_group: prompted
+    expected_rows: 242640

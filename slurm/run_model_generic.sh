@@ -36,6 +36,7 @@
 #   IS_MOE=1                add --enable-expert-parallel (for A3B MoE models)
 #   EXTRA_VLLM_ARGS         extra raw args appended to the vllm command
 #   HF_GATED=1              just informational; no download at serve-time
+# Existing generation checkpoints are resumed; completed responses are kept.
 # =============================================================================
 
 set -eo pipefail
@@ -233,13 +234,14 @@ fi
 # 8. Run Evaluation Pipeline
 # ------------------------------------------------------------------
 echo "=========================================="
-echo "Phase 1: XSTest + HarmBench"
+echo "Phase 1: XSTest + HarmBench + IHEval (resume)"
 echo "=========================================="
 python -m experiments.run_phase1 \
     --generator-model    "$SERVED_MODEL_NAME" \
     --output-file        "artifacts/phase1_results_${MODEL_SLUG}.csv" \
     --data-dir           "$PROJECT_DIR/benchmarks/artifacts/datasets" \
     --registry-version   v3 \
-    --max-workers        64
+    --max-workers        64 \
+    --resume
 
 echo "✅ Job completed at $(date)"

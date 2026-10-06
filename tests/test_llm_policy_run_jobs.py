@@ -1,10 +1,60 @@
 import csv
 from pathlib import Path
 
-from scoring.llm_policy_run_jobs import combine_labeled_outputs, load_jobs
+import pytest
+
+from scoring.llm_policy_run_jobs import combine_labeled_outputs, load_jobs, validate_job_input
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+@pytest.fixture
+def judge_input(tmp_path):
+    fields = ["benchmark", "item_id", "prompt_family", "clarity_level", "prompt_variant", "model_output"]
+    rows = [dict(zip(fields, ["XSTest", f"x_{i}", "Answer-first", "explicit", "v1", "Line 1\nLine 2"]))
+            for i in range(2)]
+    path = tmp_path / "input.csv"
+
+    def write(records):
+        with path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fields)
+            writer.writeheader()
+            writer.writerows(records)
+
+    write(rows)
+    return {"job_id": "new-model", "input": str(path), "expected_rows": 2}, rows, write
+
+
+def test_complete_judge_input_counts_multiline_responses(judge_input):
+    job, _, _ = judge_input
+    assert validate_job_input(job) == 2
+
+
+def test_partial_judge_input_rejected(judge_input):
+    job, rows, write = judge_input
+    write(rows[:1])
+    with pytest.raises(ValueError, match="1/2 responses"):
+        validate_job_input(job)
+
+
+def test_duplicate_judge_conditions_rejected_despite_correct_row_count(judge_input):
+    job, rows, write = judge_input
+    write([rows[0], rows[0]])
+    with pytest.raises(ValueError, match="duplicate generation condition"):
+        validate_job_input(job)
+
+
+def test_empty_judge_outputs_rejected(judge_input):
+    job, rows, write = judge_input
+    rows[0]["model_output"] = " \n "
+    write(rows)
+    with pytest.raises(ValueError, match="1 empty outputs"):
+        validate_job_input(job)
+
+
+def test_original_jobs_do_not_require_new_model_row_count():
+    assert validate_job_input({"job_id": "original", "input": "unused.csv"}) is None
 
 
 def test_job_registry_contains_exact_paper_runs():

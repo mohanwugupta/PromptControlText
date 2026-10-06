@@ -6,11 +6,11 @@
 #SBATCH --mem=32G
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=gpu80
-#SBATCH --array=0
+#SBATCH --array=0-5
 #SBATCH --mail-type=begin
 #SBATCH --mail-type=end
 #SBATCH --mail-user=mg9965@princeton.edu
-#SBATCH --time=0:30:00
+#SBATCH --time=24:00:00
 #SBATCH --output=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/llm_judge_%A_%a.out
 #SBATCH --error=/scratch/gpfs/JORDANAT/mg9965/PromptControlText/logs/llm_judge_%A_%a.err
 
@@ -24,59 +24,33 @@
 #   - already on cluster, no startup issues, strong JSON instruction following
 #   - NOT gpt-oss-20b (openai_harmony startup failures + circularity risk)
 #
-# Approximate throughput: ~150 req/s → 7.8M calls (largest CSV) ≈ 14–15 h
+# Each complete CSV has 242,640 responses, with three judge calls per response
+# plus adjudication. Allow a full day and resume if a task times out.
 # All tasks use --resume so they can be safely resubmitted if they time out.
 #
-# Submit: sbatch slurm/run_llm_judge.sh
+# Submit complete models first: sbatch --array=0-3 slurm/run_llm_judge.sh
+# After finishing DeepSeek generation: sbatch --array=4-5 slurm/run_llm_judge.sh
+# Submit all six complete datasets: sbatch slurm/run_llm_judge.sh
 # Resubmit (resume): sbatch slurm/run_llm_judge.sh   (--resume skips done rows)
-# Single task only:  sbatch --array=4 slurm/run_llm_judge.sh   (0=qwen25_72b … 5=control_qwen2_7b)
+# Indices: 0=gemma4_12b, 1=gemma4_31b, 2=qwen3_6_35b_a3b,
+#          3=nemotron_3_nano_4b, 4=deepseek_qwen_32b, 5=deepseek_llama_70b.
+# Inputs and output paths come from configs/llm_policy_jobs_new_models.yaml.
+# Partial inputs fail validation before starting the vLLM server.
 # =============================================================================
 
 set -eo pipefail
 
 # ------------------------------------------------------------------
-# 0. Per-task job registry  (index → job_id | input CSV | output dir)
+# 0. Array task
 # ------------------------------------------------------------------
-JOB_IDS=(
-    # "phase1_qwen25_72b"
-    # "phase1_llama31_8b"
-    # "phase1_llama33_70b"
-    # "phase1_qwen2_7b"
-    # "control_llama31_8b"
-    # "control_qwen2_7b"
-    # "control_llama33_70b"
-    "control_qwen25_72b"
-)
-INPUT_CSVS=(
-    # "artifacts/phase1_results.csv"
-    # "artifacts/phase1_results_llama31_8b.csv"
-    # "artifacts/phase1_results_llama33_70b.csv"
-    # "artifacts/phase1_results_qwen2_7b.csv"
-    # "artifacts/phase1_results_control_llama31_8b.csv"
-    # "artifacts/phase1_results_control_qwen2_7b.csv"
-    # "artifacts/phase1_results_control_llama33_70b.csv"
-    "artifacts/phase1_results_control_qwen25_72b.csv"
-)
-
-TASK=${SLURM_ARRAY_TASK_ID}
-JOB_ID="${JOB_IDS[$TASK]}"
-INPUT_CSV="${INPUT_CSVS[$TASK]}"
-OUTPUT_DIR="artifacts/llm_policy_labels/${JOB_ID}"
+TASK=${SLURM_ARRAY_TASK_ID:-0}
+if ! [[ "$TASK" =~ ^[0-5]$ ]]; then
+    echo "ERROR: SLURM_ARRAY_TASK_ID must be between 0 and 5."
+    exit 1
+fi
 
 # Each array task gets its own port so tasks can run on the same node if needed
 VLLM_PORT=$((8000 + TASK))
-
-echo "=========================================="
-echo " LLM Policy Judge — task ${TASK} / ${JOB_ID}"
-echo "=========================================="
-echo "Job ID:      $SLURM_JOB_ID"
-echo "Array task:  $TASK"
-echo "Node:        $SLURMD_NODENAME"
-echo "Time:        $(date)"
-echo "GPUs:        $CUDA_VISIBLE_DEVICES"
-echo "Input:       $INPUT_CSV"
-echo "Output dir:  $OUTPUT_DIR"
-echo ""
 
 # ------------------------------------------------------------------
 # 1. Configuration
@@ -114,6 +88,30 @@ fi
 
 export PYTHONPATH="$PROJECT_DIR${PYTHONPATH:+:$PYTHONPATH}"
 
+# Use the same job registry and completion check as the multi-job Python runner.
+JOB_CONFIG=$(python - "$TASK" <<'PY'
+import sys
+from scoring.llm_policy_run_jobs import load_jobs, validate_job_input
+
+job = load_jobs("configs/llm_policy_jobs_new_models.yaml")[int(sys.argv[1])]
+validate_job_input(job)
+print("\t".join([job["job_id"], job["input"], job["output_dir"]]))
+PY
+)
+IFS=$'\t' read -r JOB_ID INPUT_CSV OUTPUT_DIR <<< "$JOB_CONFIG"
+
+echo "=========================================="
+echo " LLM Policy Judge — task ${TASK} / ${JOB_ID}"
+echo "=========================================="
+echo "Job ID:      $SLURM_JOB_ID"
+echo "Array task:  $TASK"
+echo "Node:        $SLURMD_NODENAME"
+echo "Time:        $(date)"
+echo "GPUs:        $CUDA_VISIBLE_DEVICES"
+echo "Input:       $INPUT_CSV (242,640 complete responses)"
+echo "Output dir:  $OUTPUT_DIR"
+echo ""
+
 # ------------------------------------------------------------------
 # 3. Cache & offline settings
 # ------------------------------------------------------------------
@@ -136,7 +134,8 @@ export TRANSFORMERS_OFFLINE=1
 # ------------------------------------------------------------------
 # 4. GPU / Memory optimizations
 # ------------------------------------------------------------------
-export CUDA_VISIBLE_DEVICES=0
+# Preserve the GPU assigned by SLURM when array tasks share a node.
+export CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 export OMP_NUM_THREADS=32
 export TOKENIZERS_PARALLELISM=true
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
@@ -154,8 +153,7 @@ else
 fi
 
 if [ -f "$PROJECT_DIR/$INPUT_CSV" ]; then
-    ROW_COUNT=$(wc -l < "$PROJECT_DIR/$INPUT_CSV")
-    echo "✅ Input CSV found: $INPUT_CSV ($ROW_COUNT lines including header)"
+    echo "✅ Complete input CSV found: $INPUT_CSV"
 else
     echo "❌ ERROR: Input CSV not found: $PROJECT_DIR/$INPUT_CSV"
     exit 1
@@ -209,7 +207,7 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
         echo "❌ ERROR: vLLM server exited unexpectedly"
         exit 1
     fi
-    if curl -s "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
+    if curl -fsS "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
         echo "✅ vLLM server ready after ${ELAPSED}s"
         break
     fi
