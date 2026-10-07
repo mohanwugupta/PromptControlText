@@ -7,6 +7,9 @@ from models.client import ModelError
 
 logger = logging.getLogger(__name__)
 
+class ServerUnavailableError(ModelError):
+    """The local vLLM endpoint remained unreachable after connection retries."""
+
 class VLLMClient:
     """
     Client for talking to a vLLM server via the OpenAI API.
@@ -113,6 +116,11 @@ class VLLMClient:
                 if attempt < self.max_retries:
                     time.sleep(self.retry_delay * attempt)
 
-        raise ModelError(
+        from openai import APIConnectionError, APITimeoutError
+
+        error_type = ModelError
+        if isinstance(last_error, APIConnectionError) and not isinstance(last_error, APITimeoutError):
+            error_type = ServerUnavailableError
+        raise error_type(
             f"vLLM generation failed after {self.max_retries} attempts: {last_error}"
         ) from last_error

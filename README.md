@@ -149,6 +149,19 @@ These resume commands retain the existing 512-token generation budget and
 saved responses, including responses that ended at the token limit. Longer
 DeepSeek answers require a separate generation run with a larger output budget.
 
+Both DeepSeek launchers use eager execution (`--enforce-eager`), synchronous
+scheduling (`--no-async-scheduling`), 32 server sequences, a 4,096-token prefill
+budget, and 16 generation workers to mitigate a CUDA illegal-memory-access
+crash observed during inference. This profile can reduce throughput and still
+needs verification on the cluster. Exhausted connection failures stop generation
+and save its checkpoint; individual request timeouts remain retryable.
+
+If the CUDA crash recurs, a diagnostic resubmission can use
+`CUDA_LAUNCH_BLOCKING=1 GENERATION_MAX_WORKERS=1 VLLM_MAX_NUM_SEQS=1 bash slurm/submit_model.sh deepseek_r1_distill_qwen_32b`.
+vLLM's [troubleshooting guide](https://docs.vllm.ai/en/v0.19.0/usage/troubleshooting/)
+recommends CUDA launch blocking to identify the failing kernel. This setting
+slows execution; retain the first CUDA traceback from the job logs.
+
 For an already running OpenAI-compatible judge endpoint, the same jobs can be
 run and combined locally with:
 

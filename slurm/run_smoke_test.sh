@@ -55,6 +55,7 @@ fi
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-$(basename "$MODEL_DIR_NAME")}"
 CONDA_ENV="${CONDA_ENV:-PromptControlText}"
 VLLM_PORT=8001   # distinct from the full job's port to avoid collisions if both ever overlap
+source "$PROJECT_DIR/slurm/model_runtime.sh"
 
 # ------------------------------------------------------------------
 # 1. Environment setup
@@ -143,6 +144,12 @@ VLLM_ARGS=(
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION"
     --disable-custom-all-reduce
 )
+VLLM_ARGS+=("${VLLM_MODEL_ARGS[@]}")
+if [[ "$MODEL_SLUG" == deepseek_r1_distill_* ]]; then
+    VLLM_ARGS+=(--max-num-seqs "$VLLM_MAX_NUM_SEQS"
+                --max-num-batched-tokens "$VLLM_MAX_NUM_BATCHED_TOKENS"
+                --enable-chunked-prefill)
+fi
 
 if [ "${IS_GGUF:-0}" = "1" ]; then
     VLLM_ARGS+=(--quantization gguf --tokenizer "$MODELS_ROOT/$MODEL_DIR_NAME")
@@ -191,7 +198,7 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
         echo "❌ ERROR: vLLM server exited unexpectedly during startup"
         exit 1
     fi
-    if curl -s "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
+    if curl -fsS --max-time 10 "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
         echo "✅ vLLM server ready after ${ELAPSED}s"
         break
     fi

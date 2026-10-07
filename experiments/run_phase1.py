@@ -3,14 +3,14 @@ import unicodedata
 import argparse
 import pandas as pd
 from typing import List
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 
 from core.schema import EvalItem
 from benchmarks.xstest import load_xstest
 from benchmarks.harmbench import load_harmbench
 from benchmarks.iheval import load_iheval
 from prompts.registry import load_registry, iter_prompt_triples
-from models.vllm_client import VLLMClient
+from models.vllm_client import VLLMClient, ServerUnavailableError
 from models.client import LLMClient
 from scoring.harmbench_scorer import parse_harmbench_response
 from scoring.hierarchy_scorer import parse_hierarchy_response
@@ -58,6 +58,8 @@ def _generate_one(client, item: EvalItem, family: str, variant: str, prompt_text
             model=generator_model,
             temperature=0.0
         )
+    except ServerUnavailableError:
+        raise
     except Exception as e:
         print(f"Failed generation for {item.item_id} [{family}/{variant}]: {e}")
         return None
@@ -230,19 +232,61 @@ def run_experiment(output_filepath: str, generator_model: str = "Qwen2.5-72B-Ins
             pd.DataFrame(records).to_csv(temp_path, index=False)
             os.replace(temp_path, filepath)
 
+    server_error = None
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {
-            executor.submit(_generate_one, client, item, family, variant, prompt_text, generator_model, clarity): (item.item_id, family, variant)
-            for item, family, clarity, variant, prompt_text in tasks
-        }
-        for future in as_completed(futures):
-            completed += 1
-            record = future.result()
+        # Keep only one request per worker in flight. A dead server must not
+        # trigger retries for every remaining condition in a large run.
+        pending = set()
+        task_iterator = iter(tasks)
+
+        def _submit_next():
+            task = next(task_iterator, None)
+            if task is not None:
+                item, family, clarity, variant, prompt_text = task
+                pending.add(executor.submit(
+                    _generate_one, client, item, family, variant, prompt_text,
+                    generator_model, clarity
+                ))
+
+        for _ in range(min(max_workers, total)):
+            _submit_next()
+
+        try:
+            while pending:
+                done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                for future in done:
+                    pending.remove(future)
+                    record = future.result()
+                    completed += 1
+                    if record is not None:
+                        evaluated_records.append(record)
+                    if completed % CHECKPOINT_EVERY == 0 or completed == total:
+                        print(f"  Progress: {completed}/{total} attempted — checkpointing {len(evaluated_records)} records")
+                        _checkpoint(evaluated_records, output_filepath)
+                    _submit_next()
+        except ServerUnavailableError as exc:
+            server_error = exc
+            for future in pending:
+                future.cancel()
+
+    if server_error is not None:
+        # The executor has finished the small number of in-flight requests.
+        # Retain any successful responses received during shutdown as well.
+        for future in pending:
+            if future.cancelled():
+                continue
+            try:
+                record = future.result()
+            except Exception:
+                continue
             if record is not None:
                 evaluated_records.append(record)
-            if completed % CHECKPOINT_EVERY == 0 or completed == total:
-                print(f"  Progress: {completed}/{total} — checkpointing {len(evaluated_records)} records")
-                _checkpoint(evaluated_records, output_filepath)
+        _checkpoint(evaluated_records, output_filepath)
+        raise RuntimeError(
+            f"vLLM server unreachable: saved {len(evaluated_records)}/{planned_total} "
+            "responses and stopped generation. Check the server logs, then "
+            "resubmit with --resume."
+        ) from server_error
 
     print(f"Saving {len(evaluated_records)} evaluations to {output_filepath}")
     os.makedirs(os.path.dirname(os.path.abspath(output_filepath)), exist_ok=True)

@@ -36,6 +36,9 @@
 #   IS_MOE=1                add --enable-expert-parallel (for A3B MoE models)
 #   EXTRA_VLLM_ARGS         extra raw args appended to the vllm command
 #   HF_GATED=1              just informational; no download at serve-time
+#   GENERATION_MAX_WORKERS  client concurrency (DeepSeek: 16; others: 64)
+#   VLLM_MAX_NUM_SEQS       server concurrency (DeepSeek: 32; others: 512)
+#   VLLM_MAX_NUM_BATCHED_TOKENS  prefill budget (DeepSeek: 4096; others: 32768)
 # Existing generation checkpoints are resumed; completed responses are kept.
 # =============================================================================
 
@@ -71,6 +74,7 @@ fi
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-$(basename "$MODEL_DIR_NAME")}"
 CONDA_ENV="${CONDA_ENV:-PromptControlText}"
 VLLM_PORT=8000
+source "$PROJECT_DIR/slurm/model_runtime.sh"
 
 # ------------------------------------------------------------------
 # 1. Environment setup
@@ -171,11 +175,12 @@ VLLM_ARGS=(
     --trust-remote-code
     --max-model-len "$MAX_MODEL_LEN"
     --gpu-memory-utilization "$GPU_MEMORY_UTILIZATION"
-    --max-num-seqs 512
+    --max-num-seqs "$VLLM_MAX_NUM_SEQS"
     --enable-chunked-prefill
-    --max-num-batched-tokens 32768
+    --max-num-batched-tokens "$VLLM_MAX_NUM_BATCHED_TOKENS"
     --disable-custom-all-reduce
 )
+VLLM_ARGS+=("${VLLM_MODEL_ARGS[@]}")
 
 if [ "${IS_GGUF:-0}" = "1" ]; then
     VLLM_ARGS+=(--quantization gguf --tokenizer "$MODELS_ROOT/$MODEL_DIR_NAME")
@@ -217,7 +222,7 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
         echo "❌ ERROR: vLLM server exited unexpectedly"
         exit 1
     fi
-    if curl -s "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
+    if curl -fsS --max-time 10 "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
         echo "✅ vLLM server ready after ${ELAPSED}s"
         break
     fi
@@ -241,7 +246,7 @@ python -m experiments.run_phase1 \
     --output-file        "artifacts/phase1_results_${MODEL_SLUG}.csv" \
     --data-dir           "$PROJECT_DIR/benchmarks/artifacts/datasets" \
     --registry-version   v3 \
-    --max-workers        64 \
+    --max-workers        "$GENERATION_MAX_WORKERS" \
     --resume
 
 echo "✅ Job completed at $(date)"

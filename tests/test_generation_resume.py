@@ -31,9 +31,9 @@ def generation_run(monkeypatch, tmp_path):
     )
     pd.DataFrame([saved]).to_csv(path, index=False)
 
-    def run():
+    def run(max_workers=1):
         runner.run_experiment(path, generator_model="test-model", mock_mode=True,
-                              max_workers=1, resume=True)
+                              max_workers=max_workers, resume=True)
 
     return path, saved, client, run
 
@@ -111,3 +111,64 @@ def test_interrupted_checkpoint_write_preserves_previous_file(generation_run, mo
     with pytest.raises(OSError, match="Interrupted"):
         run()
     assert path.read_bytes() == original
+
+
+def test_dead_server_stops_remaining_requests_and_saves_new_progress(generation_run, monkeypatch):
+    from models.vllm_client import ServerUnavailableError
+
+    path, saved, client, run = generation_run
+    items = [EvalItem(item_id=f"x_{i}", benchmark="XSTest", domain="safe",
+                      input_text=f"Request {i}", gold_label="safe") for i in range(30)]
+    monkeypatch.setattr(runner, "load_xstest", lambda _: items)
+    client.generate.side_effect = [
+        ("New answer", {}),
+        ServerUnavailableError("Endpoint disconnected after retries"),
+        AssertionError("Remaining conditions should not be submitted"),
+    ]
+    with pytest.raises(RuntimeError, match="server unreachable: saved 2/30"):
+        run()
+    assert client.generate.call_count == 2
+    rows = pd.read_csv(path, keep_default_na=False)
+    assert len(rows) == 2
+    assert rows.iloc[0]["model_output"] == saved["model_output"]
+    assert rows.iloc[1]["model_output"] == "New answer"
+
+    client.reset_mock()
+    client.generate.side_effect = None
+    run()
+    assert client.generate.call_count == 28
+    rows = pd.read_csv(path)
+    assert len(rows) == 30
+    assert rows["item_id"].nunique() == 30
+
+
+def test_dead_server_retains_successful_inflight_response(generation_run, monkeypatch):
+    from threading import Event
+    from models.vllm_client import ServerUnavailableError
+
+    path, _, client, run = generation_run
+    items = [EvalItem(item_id=f"x_{i}", benchmark="XSTest", domain="safe",
+                      input_text=f"Request {i}", gold_label="safe") for i in range(30)]
+    monkeypatch.setattr(runner, "load_xstest", lambda _: items)
+    failure_observed = Event()
+    original_wait = runner.wait
+
+    def wait_and_release_inflight(*args, **kwargs):
+        result = original_wait(*args, **kwargs)
+        failure_observed.set()
+        return result
+
+    def respond(**kwargs):
+        if kwargs["user_prompt"] == "Request 1":
+            assert failure_observed.wait(timeout=5)
+            return "Successful in-flight answer", {}
+        raise ServerUnavailableError("Endpoint unavailable")
+
+    monkeypatch.setattr(runner, "wait", wait_and_release_inflight)
+    client.generate.side_effect = respond
+    with pytest.raises(RuntimeError, match="server unreachable: saved 2/30"):
+        run(max_workers=2)
+    assert client.generate.call_count == 2
+    rows = pd.read_csv(path)
+    assert len(rows) == 2
+    assert rows.iloc[1]["model_output"] == "Successful in-flight answer"

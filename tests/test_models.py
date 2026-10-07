@@ -59,3 +59,43 @@ def test_vllm_client_retries_and_fails():
         
     assert mock_openai_client.chat.completions.create.call_count == 2
 
+
+@pytest.mark.parametrize("timeout", [False, True])
+def test_vllm_connection_failure_aborts_but_request_timeout_does_not(timeout):
+    import httpx
+    from openai import APIConnectionError, APITimeoutError
+    from models.vllm_client import ServerUnavailableError
+
+    request = httpx.Request("POST", "http://localhost:8000/v1/chat/completions")
+    error = APITimeoutError(request) if timeout else APIConnectionError(request=request)
+    client = VLLMClient(max_retries=2, enable_cache=False, retry_delay=0)
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = error
+    client._thread_local.openai_client = mock_client
+
+    with pytest.raises(ModelError) as caught:
+        client.generate("system", "request")
+    assert isinstance(caught.value, ServerUnavailableError) is not timeout
+    assert caught.value.__cause__ is error
+    assert mock_client.chat.completions.create.call_count == 2
+
+
+def test_vllm_transient_connection_failure_can_recover():
+    import httpx
+    from openai import APIConnectionError
+
+    request = httpx.Request("POST", "http://localhost:8000/v1/chat/completions")
+    response = MagicMock()
+    response.choices[0].message.content = "Recovered answer"
+    response.choices[0].finish_reason = "stop"
+    response.usage = None
+    client = VLLMClient(max_retries=2, enable_cache=False, retry_delay=0)
+    mock_client = MagicMock()
+    mock_client.chat.completions.create.side_effect = [APIConnectionError(request=request), response]
+    client._thread_local.openai_client = mock_client
+
+    output, metadata = client.generate("system", "request")
+    assert output == "Recovered answer"
+    assert metadata["finish_reason"] == "stop"
+    assert mock_client.chat.completions.create.call_count == 2
+
