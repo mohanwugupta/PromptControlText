@@ -1,20 +1,20 @@
 # Main frontier run — launch record
 
-**Main generation is running.** Snapshot: 2026-10-08T06:00:05.165824+00:00.
+**Main generation is running.** Snapshot: 2026-10-08T06:15:25.990815+00:00.
 The [latest progress](progress.json) and [current metadata](requests.jsonl) report
 the verified state at this checkpoint, not a live dashboard. The
 [resume launch](resume-launch.json) and [stop report](STOP-REPORT.md) preserve
 earlier events. The target remains **10,950 frozen cases**. Judging has not started.
 
 Full generated records available at this checkpoint are in [responses/](responses/):
-**6,015 records**. The user explicitly approved public release of all main-study
+**7,215 records**. The user explicitly approved public release of all main-study
 records as they finish, including the synthetic test codes from the public IHEval
-benchmark. [provider-results/](provider-results/) preserves 6,015 original
+benchmark. [provider-results/](provider-results/) preserves 7,215 original
 provider result rows verified against normalized records in this export.
-[requests.jsonl](requests.jsonl) accounts for all **6,615 cases** submitted or
-reserved at this snapshot: 6,015 completed,
+[requests.jsonl](requests.jsonl) accounts for all **7,815 cases** submitted or
+reserved at this snapshot: 7,215 completed,
 0 needing review, and 600 pending.
-Another 4,335 frozen cases have not been submitted.
+Another 3,135 frozen cases have not been submitted.
 Each finished response maps to its frozen item, condition and request hash.
 [operations/](operations/) archives the deployment, backup and export scripts;
 [execution-provenance.json](execution-provenance.json) records execution hashes.
