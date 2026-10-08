@@ -39,9 +39,10 @@ All four workers created for this pilot are deleted. Unrelated account resources
 were left alone. See [cleanup evidence](cleanup.json).
 
 [Attempt records](attempts.jsonl) contain all 50 new Gemini outcomes, including
-outcome/usage metadata, response-text SHA-256 hashes, and references to the
-already-published frozen inputs. Full generated text is retained locally;
-public release requires separate approval. The earlier
+full generated response text, outcome/usage metadata, and references to the
+already-published frozen inputs. The full response records were published after
+explicit user approval and verified against the previously published text hashes
+and the local ledger. The earlier
 quota rejection and its retained cost are in [reconciliation.json](reconciliation.json).
 Anthropic's final 49 outcomes are in [its completion record](../2026-10-08-anthropic-completion/README.md),
 its first success is in [the workspace check](../2026-10-08-anthropic-workspace-check/README.md),

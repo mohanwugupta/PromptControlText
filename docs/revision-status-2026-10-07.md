@@ -59,7 +59,7 @@ checking against actual logs before treating those runs as ready for analysis.
 - [x] Pass 56 focused tests; verify all case IDs/content against the frozen design and SQLite against JSONL.
 - [x] Retrieve and preserve results locally; delete all four pilot workers and stop the final watchdog/sleep inhibitor. Unrelated account resources were left alone.
 - [x] Record code, outcome/usage metadata, response hashes, verification evidence, and this checklist in the GitHub branch/PR, excluding credentials and private account/workspace IDs.
-- [ ] Publish the complete new Anthropic/Gemini response text if explicitly approved. Automatic approval review rejected these raw-result files for public release; complete outputs are safely retained locally. This does not block the status report or outcome metadata.
+- [x] Publish the 99 complete new response records (49 Anthropic and 50 Gemini) after explicit user approval. Verified every response against its previously published text hash and the local ledger; credentials remain excluded.
 
 ## Pilot outcome and budget
 

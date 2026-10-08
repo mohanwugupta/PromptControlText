@@ -26,9 +26,10 @@ cases themselves account for $0.324675 at the configured conservative rates;
 some provider refusals may not be billed. No reservation was released.
 
 [Attempt records](attempts.jsonl) contain the 49 newly executed cases, including
-outcome/usage metadata, response-text SHA-256 hashes, and references to the
-already-published frozen inputs. Full generated text is retained locally;
-public release requires separate approval. The first successful Anthropic case remains in
+full generated response text, outcome/usage metadata, and references to the
+already-published frozen inputs. The full response records were published after
+explicit user approval and verified against the previously published text hashes
+and the local ledger. The first successful Anthropic case remains in
 [the workspace-check record](../2026-10-08-anthropic-workspace-check/README.md).
 [Verification](verification.json) confirms that SQLite and JSONL agree, source
 hashes match, no attempts are in flight, and earlier OpenAI/Gemini records are
