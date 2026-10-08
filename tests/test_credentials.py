@@ -29,6 +29,13 @@ def test_literal_values_environment_precedence_and_allowlist(tmp_path):
     assert env["PATH"] == "original"
 
 
+def test_optional_workspace_is_loaded_and_respects_environment(tmp_path):
+    path = tmp_path / ".env"
+    path.write_text("ANTHROPIC_WORKSPACE_ID=wrkspc_file\n")
+    assert credentials.credential_environment(path, {})["ANTHROPIC_WORKSPACE_ID"] == "wrkspc_file"
+    assert credentials.credential_environment(path, {"ANTHROPIC_WORKSPACE_ID": "wrkspc_env"})["ANTHROPIC_WORKSPACE_ID"] == "wrkspc_env"
+
+
 def test_status_does_not_disclose_values(tmp_path):
     path = tmp_path / ".env"
     path.write_text("RUNPOD_API_KEY=private-test-sentinel\n")

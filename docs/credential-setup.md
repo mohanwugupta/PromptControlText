@@ -32,6 +32,7 @@ changes its permissions, run `chmod 600 .env`.
 | `RUNPOD_API_KEY` | [Runpod Credentials](https://docs.runpod.io/get-started/credentials), API Keys tab | Account reads and pod management for the planned worker; select the relevant restricted permissions offered by the console. A read-only key cannot provision pods. |
 | `OPENAI_API_KEY` | [OpenAI API setup](https://developers.openai.com/api/docs/quickstart) | A project with API billing and access to the selected generator; Batch permissions if used. |
 | `ANTHROPIC_API_KEY` | [Claude API setup](https://platform.claude.com/docs/en/api/overview) | A workspace with API billing and access to the selected generator. |
+| `ANTHROPIC_WORKSPACE_ID` (optional) | [Claude workspace settings](https://platform.claude.com/docs/en/manage-claude/workspaces) | Required when the API key is not scoped to one workspace; the runner sends it as the `anthropic-workspace-id` header. |
 | `GEMINI_API_KEY` | [Google AI Studio key setup](https://ai.google.dev/gemini-api/docs/api-key) | A project with the required billing, quota, and model access. Use this variable consistently rather than also setting `GOOGLE_API_KEY`. |
 | `HF_TOKEN` | [Hugging Face tokens](https://huggingface.co/settings/tokens) | Read access and approved access to [Llama-3.1-8B-Instruct](https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct). |
 
@@ -48,8 +49,9 @@ adding a GitHub token to `.env`.
 git check-ignore .env
 ```
 
-`status` reports only SET/MISSING, makes no network requests, and returns 1 while
-any entry is missing. SET does not establish a valid key, balance, permissions,
+`status` reports only presence, makes no network requests, and returns 1 while
+any required credential is missing. The workspace ID is optional for scoped keys.
+SET does not establish a valid key, balance, permissions,
 or model access. The helper accepts a global `--env-file PATH` option if needed.
 Nonempty existing environment variables take precedence over `.env`.
 
@@ -61,8 +63,15 @@ shell code from the file:
 ```
 
 Do not source `.env` or use commands that print the environment. The helper
-passes only the five documented credential names from the file; a child process
+passes only the five documented credential names and optional workspace ID from the file; a child process
 can still print its own output, so use tools with appropriate logging.
+
+If Anthropic returns an error saying the key is not scoped to a workspace, add
+`ANTHROPIC_WORKSPACE_ID=wrkspc_your_workspace_id` on a separate line in the same
+local `.env` file. Use an actual workspace ID from the organization that owns the
+key, not the workspace name or organization ID. Alternatively, use a key scoped
+to that workspace. This changes account routing, not prompts or model settings.
+Do not retry until the configuration has been updated.
 
 ## Runpod CLI and remote execution
 

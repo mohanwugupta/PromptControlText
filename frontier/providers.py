@@ -103,6 +103,8 @@ def generate(model, messages, config, environment):
         headers["Authorization"] = "Bearer " + key
     elif provider == "anthropic":
         headers.update({"x-api-key": key, "anthropic-version": "2023-06-01"})
+        if environment.get("ANTHROPIC_WORKSPACE_ID"):
+            headers["anthropic-workspace-id"] = environment["ANTHROPIC_WORKSPACE_ID"]
     else:
         headers["x-goog-api-key"] = key
     request = urllib.request.Request(url, data=json.dumps(body).encode(), headers=headers)

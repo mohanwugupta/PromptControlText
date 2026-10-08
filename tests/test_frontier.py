@@ -357,3 +357,64 @@ def test_funding_retry_rejects_other_outcomes(tmp_path, manifest, config, outcom
     with pytest.raises(ValueError, match="Only a known Anthropic credit rejection"):
         ledger.retry_funded_anthropic(case["request_id"], "Credits added")
     assert ledger.total() == before
+
+
+@pytest.mark.parametrize("provider", ["openai", "anthropic", "google"])
+@pytest.mark.parametrize("workspace", [None, "wrkspc_test"])
+def test_workspace_header_routes_only_anthropic(monkeypatch, config, provider, workspace):
+    from frontier.providers import KEYS
+    captured = []
+
+    class FakeOpener:
+        def open(self, request, timeout):
+            captured.append(request)
+            raise urllib.error.HTTPError(request.full_url, 400, "test", {}, io.BytesIO(b'{}'))
+
+    monkeypatch.setattr("urllib.request.build_opener", lambda *args: FakeOpener())
+    model = next(m for m in config["models"] if m["provider"] == provider)
+    env = {KEYS[provider]: "test-only-key"}
+    if workspace:
+        env["ANTHROPIC_WORKSPACE_ID"] = workspace
+    generate(model, [{"role": "user", "content": "test"}], config, env)
+    headers = {k.lower(): v for k, v in captured[0].header_items()}
+    assert headers.get("anthropic-workspace-id") == (workspace if provider == "anthropic" else None)
+
+
+def test_workspace_retry_retains_cost_and_history(tmp_path, manifest, config):
+    case = next(c for c in cases(manifest, config, "pilot") if c["model"]["provider"] == "anthropic")
+    ledger = Ledger(tmp_path / "ledger.sqlite", manifest, config)
+    execute([case], ledger, config, {}, lambda *args: {
+        "outcome": "http_error", "http_status": 400,
+        "error_diagnostic": {"type": "invalid_request_error", "message":
+            "This API key is not scoped to a workspace, so this request must include the anthropic-workspace-id header."}})
+    before = ledger.total()
+    with pytest.raises(ValueError, match="credit rejection"):
+        ledger.retry_funded_anthropic(case["request_id"], "Credits added")
+    with pytest.raises(ValueError, match="explicit account-update"):
+        ledger.retry_workspace_anthropic(case["request_id"], " ")
+    record = ledger.retry_workspace_anthropic(case["request_id"], "User updated workspace setting")
+    assert ledger.total() == pytest.approx(before)
+    assert record["accounted_usd"] == before
+    with pytest.raises(ValueError, match="No current failed"):
+        ledger.retry_workspace_anthropic(case["request_id"], "Repeated command")
+    records = ledger.export(tmp_path / "results.jsonl")
+    assert records[0]["state"] == "retry_ready"
+    assert report(records, manifest, config)["accounted_pilot_usd"] == pytest.approx(before)
+    config["pilot_ceiling_usd"] = before * 1.5
+    assert execute([case], ledger, config, {}, lambda *args: pytest.fail("Over-budget retry")) == "budget_stopped"
+
+
+@pytest.mark.parametrize("outcome", [
+    {"outcome": "http_error", "http_status": 400, "error_diagnostic": {"message": "Your credit balance is too low"}},
+    {"outcome": "http_error", "http_status": 403, "error_diagnostic": {"message": "Missing permissions"}},
+    {"outcome": "transport_or_parse_error"},
+    {"outcome": "blocked", "block_origin": "provider_http", "error_diagnostic": {"code": "cyber_policy"}},
+])
+def test_workspace_retry_rejects_unrelated_errors(tmp_path, manifest, config, outcome):
+    case = next(c for c in cases(manifest, config, "pilot") if c["model"]["provider"] == "anthropic")
+    ledger = Ledger(tmp_path / "ledger.sqlite", manifest, config)
+    execute([case], ledger, config, {}, lambda *args: outcome)
+    before = ledger.total()
+    with pytest.raises(ValueError, match="workspace rejection"):
+        ledger.retry_workspace_anthropic(case["request_id"], "User updated workspace setting")
+    assert ledger.total() == before

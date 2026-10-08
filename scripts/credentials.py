@@ -13,6 +13,7 @@ KEYS = (
     "GEMINI_API_KEY",
     "HF_TOKEN",
 )
+OPTIONAL_KEYS = ("ANTHROPIC_WORKSPACE_ID",)
 
 
 def initialize(path):
@@ -33,7 +34,7 @@ def credential_environment(path, environ=None):
     # Treat credential values literally, including dollar signs. Never source
     # this file in a shell or allow it to override PATH or unrelated settings.
     values = dotenv_values(path, interpolate=False) if path.exists() else {}
-    for key in KEYS:
+    for key in KEYS + OPTIONAL_KEYS:
         if not env.get(key) and values.get(key):
             env[key] = values[key]
     return env
@@ -70,6 +71,8 @@ def main(argv=None):
     if args.action == "status":
         for key in KEYS:
             print(f"{key}: {'SET' if env.get(key) else 'MISSING'}")
+        for key in OPTIONAL_KEYS:
+            print(f"{key}: {'SET' if env.get(key) else 'UNSET (optional)'}")
         print("Presence only: validity, billing, permissions, and model access are not verified.")
         return 0 if all(env.get(key) for key in KEYS) else 1
 

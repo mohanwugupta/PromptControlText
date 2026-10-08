@@ -147,9 +147,15 @@ python -m frontier.reconcile --request-id REQUEST_ID --funding-update "User conf
 python -m frontier.run --execute --providers anthropic
 ```
 
+For the specific HTTP 400 error that says a key is not scoped to a workspace,
+first set `ANTHROPIC_WORKSPACE_ID` in the local `.env` (or replace the key with a
+workspace-scoped key). Then use `--workspace-update "Workspace routing updated"`
+instead of `--funding-update`. This narrowly permits that known setup failure;
+it does not permit retries of permission errors, safety blocks, or timeouts.
+
 Back up the SQLite ledger first. Reconciliation atomically moves that failed
 attempt into `attempt_history`, retaining its complete record and cost, and
-makes only the unchanged request eligible for a new attempt. Other failures,
+makes only the unchanged request eligible for a new attempt. Unrecognized failures,
 completed outputs, and safety blocks are ineligible. There are no automatic
 retries. The budget includes both current and archived attempts, including if
 execution stops between reconciliation and the next request. JSONL exports

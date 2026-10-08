@@ -103,13 +103,21 @@ class Ledger:
             SELECT cost FROM requests UNION ALL SELECT cost FROM attempt_history)""").fetchone()[0]
 
     def retry_funded_anthropic(self, request_id, reason):
-        """Archive one verified credit rejection after an explicit funding update.
+        """Reopen one known credit rejection after an explicit funding update."""
+        return self._retry_anthropic_setup_error(request_id, reason, "credit")
+
+    def retry_workspace_anthropic(self, request_id, reason):
+        """Reopen one missing-workspace rejection after a routing/key update."""
+        return self._retry_anthropic_setup_error(request_id, reason, "workspace")
+
+    def _retry_anthropic_setup_error(self, request_id, reason, error_kind):
+        """Archive one verified account-setup rejection after an explicit update.
 
         The failed attempt and its full reservation remain in the ledger. This
         makes the unchanged request eligible for one new attempt, not a retry loop.
         """
         if not reason.strip():
-            raise ValueError("An explicit funding-update reason is required")
+            raise ValueError("An explicit account-update reason is required")
         with self.db:
             row = self.db.execute("SELECT * FROM requests WHERE request_id=?", (request_id,)).fetchone()
             if row is None:
@@ -117,10 +125,14 @@ class Ledger:
             key, state, cost, case_json, result_json, started, ended = row
             case, result = json.loads(case_json), json.loads(result_json or "{}")
             message = (result.get("error_diagnostic") or {}).get("message", "").lower()
+            matches = ("credit balance is too low" in message if error_kind == "credit" else
+                       "this api key is not scoped to a workspace" in message
+                       and "anthropic-workspace-id" in message
+                       and (result.get("error_diagnostic") or {}).get("type") == "invalid_request_error")
             if not (state == "needs_review" and case["model"]["provider"] == "anthropic"
                     and result.get("outcome") == "http_error" and result.get("http_status") == 400
-                    and "credit balance is too low" in message and ended is not None):
-                raise ValueError("Only a known Anthropic credit rejection can be retried here")
+                    and matches and ended is not None):
+                raise ValueError(f"Only a known Anthropic {error_kind} rejection can be retried here")
             number = self.db.execute("SELECT coalesce(max(attempt_number),0)+1 FROM attempt_history WHERE request_id=?",
                                      (key,)).fetchone()[0]
             record = {"request_id": key, "attempt_number": number, "state": state,
