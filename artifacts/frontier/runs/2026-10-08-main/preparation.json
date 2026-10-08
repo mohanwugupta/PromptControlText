@@ -1,0 +1,21 @@
+{
+  "phase": "prepared_awaiting_credential_approval",
+  "main_inference_requests_submitted": 0,
+  "target_cases": 10950,
+  "cases_per_provider": 3650,
+  "pod_id": "43dht91rp868ts",
+  "pod_created_utc": "2026-10-08T03:52:30.471323+00:00",
+  "pod_cleanup_deadline_utc": "2026-10-08T06:52:00.471323+00:00",
+  "compute_usd_per_hour": 0.06,
+  "main_runpod_reserve_usd": 5,
+  "main_generation_cap_usd": 160,
+  "study_ceiling_usd": 250,
+  "source_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
+  "source_files_verified": 15,
+  "manifest_sha256": "3070e5cb5923cbe7d23c43b84bb61edf14090131544813633d9cf245a4873fa3",
+  "config_sha256": "0a167c997da0d7483aeb7b11e30bc1788ada85e4692dc9d807090d4227882963",
+  "focused_tests_passed": 76,
+  "remote_dry_run_unique_cases": 10950,
+  "credential_transfer_status": "auto_review_rejected_pending_explicit_user_approval_for_new_pod",
+  "credentials_present_on_worker": false
+}
