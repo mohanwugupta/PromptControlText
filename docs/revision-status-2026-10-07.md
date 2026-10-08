@@ -5,6 +5,13 @@ experiment, new judging, human validation, SDT analysis, and final manuscript
 revision are not complete.** This report follows the original task list and
 focuses on Sandy's frontier-model and related-work responsibilities.
 
+**Main-run preparation update:** the user has now authorized the main study.
+The separate Batch runner/configuration is prepared and 76 focused tests pass.
+The [main execution plan](frontier-main-run.md) records the roughly $49.41
+planning estimate, its assumptions, and the $160 generation cap within $250.
+Main inference has not started at this checkpoint; the checklist below records
+the completed pilot and the scientific work still outstanding.
+
 ## What you originally asked for
 
 Review the supplied folder and connected PromptControlText repository; use the
@@ -88,8 +95,9 @@ ran locally, as recorded. No main generation or new judge run has started.
 
 No earlier reservation was silently released. The Anthropic and Gemini pilot
 costs support preliminary main-run projections, but OpenAI's retained block
-reservations prevent a reliable combined cost estimate. Reconcile these before
-committing to the main run. The broader $250 study ceiling and its proposed
+reservations prevent a reliable combined synchronous cost estimate. The separate
+main Batch plan documents its billing assumptions and preserves all old
+reservations without releasing them. The broader $250 study ceiling and its proposed
 allocations remain planning constraints, not a confirmed final experiment price.
 
 Evidence: [final pilot record](../artifacts/frontier/runs/2026-10-08-gemini-completion/README.md),
@@ -105,7 +113,8 @@ and [worker cleanup](../artifacts/frontier/runs/2026-10-08-gemini-completion/cle
    the observed outcome, not errors to evade. Preserve the frozen sample.
 2. **Prepare the main run and judge validation.** Finalize a costed main config
    and execution transport, with checkpoints and a hard study budget. The current
-   runner deliberately refuses paid main execution. In parallel, run the original
+   pilot runner deliberately refuses paid main execution; a separate main Batch
+   runner and configuration are now prepared. In parallel, run the original
    8B judge/rubrics on the 129 pilot text responses and check row-level mapping,
    including identical response text. This judging has not happened yet.
 3. **Finish dashboard and human-audit design.** Set the human rubric, independent
@@ -142,8 +151,9 @@ policy taxonomy; those remain open beyond the short original checklist.
   or the actual authoring project) to integrate the draft and compile the paper.
 - **Current open-weight/DeepSeek outputs and job logs, or scoped cluster access**
   to verify what has finished rather than relying on repository notes.
-- **Provider billing reconciliation** for uncertain reservations, then a reviewed
-  main-run budget/configuration. No additional pilot credentials are missing now.
+- **Provider billing reconciliation** for uncertain reservations. A main-run
+  budget/configuration is now prepared and preserves all old reservations.
+  No additional provider credentials are missing now.
 - **Human annotation arrangements:** who will annotate, available effort, and who
   adjudicates. The exact audit size and agreement criteria still need definition.
 

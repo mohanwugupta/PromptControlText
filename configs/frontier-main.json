@@ -1,0 +1,56 @@
+{
+  "schema_version": 2,
+  "stage": "main",
+  "verified_utc_date": "2026-10-08",
+  "model_access_check": "150-case synchronous pilot completed; Batch compatibility checked on first five main cases per provider",
+  "study_ceiling_usd": 250,
+  "main_generation_allocation_usd": 160,
+  "judge_allocation_usd": 30,
+  "setup_and_contingency_allocation_usd": 60,
+  "max_output_tokens": 4096,
+  "input_token_reserve": 32768,
+  "timeout_seconds": 180,
+  "models": [
+    {
+      "provider": "openai",
+      "model": "gpt-6-astra",
+      "effort": "low",
+      "input_usd_per_million": 10,
+      "input_reserve_usd_per_million": 12.5,
+      "output_usd_per_million": 50,
+      "pricing_source": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "version_note": "Provider model alias; record returned model and run time"
+    },
+    {
+      "provider": "anthropic",
+      "model": "claude-opus-5-5",
+      "effort": "low",
+      "input_usd_per_million": 4,
+      "input_reserve_usd_per_million": 5,
+      "output_usd_per_million": 20,
+      "pricing_source": "https://platform.claude.com/docs/en/models/overview",
+      "version_note": "Fixed model ID without date suffix"
+    },
+    {
+      "provider": "google",
+      "model": "gemini-3.1-pro-preview",
+      "effort": "low",
+      "input_usd_per_million": 2,
+      "input_reserve_usd_per_million": 2,
+      "output_usd_per_million": 12,
+      "pricing_source": "https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-pro-preview",
+      "version_note": "Preview; record returned modelVersion and any availability changes"
+    }
+  ],
+  "transport": "batch",
+  "main_generation_ceiling_usd": 160,
+  "batch_discount": 0.5,
+  "batch_size": 200,
+  "initial_batch_size": 5,
+  "poll_seconds": 60,
+  "prior_pilot_accounted_usd": 9.402844,
+  "main_runpod_reserve_usd": 5,
+  "canonical_judge": "meta-llama/Llama-3.1-8B-Instruct",
+  "manifest_sha256": "3070e5cb5923cbe7d23c43b84bb61edf14090131544813633d9cf245a4873fa3",
+  "pilot_config_sha256": "3bd4fdca75c53a004cfc82639deac2748bdb4633916b557f92f9efd89a2e62d1"
+}

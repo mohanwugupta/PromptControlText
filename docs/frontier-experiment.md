@@ -1,15 +1,14 @@
 # Frontier extension: preparation and execution record
 
-Preparation status (October 7, 2026, Los Angeles): **offline preparation validated**.
-No inference calls or paid Runpod resources were created during preparation.
-The subsequent [live Runpod pilot](../artifacts/frontier/runs/2026-10-08-pilot/README.md)
-completed 50 OpenAI cases and stopped the other providers on billing errors.
-The worker was deleted after verified result retrieval; 100 cases remain unfinished.
-Three subsequent Anthropic retries also returned credit-balance errors; see the
-[latest pilot record](../artifacts/frontier/runs/2026-10-08-anthropic-billing-check/README.md)
-and the [overall revision status](revision-status-2026-10-07.md).
-API model-list checks confirmed access to the three candidate IDs below; they do
-not establish inference permissions, funded billing, or usable rate limits.
+Current status (October 7, 2026, Los Angeles): **all 150 pilot cases complete**.
+Earlier API setup and billing failures were resolved; their attempts and cost
+reservations remain recorded. See the
+[final pilot record](../artifacts/frontier/runs/2026-10-08-gemini-completion/README.md)
+and [overall revision status](revision-status-2026-10-07.md).
+The [main execution plan](frontier-main-run.md) now freezes Batch scheduling,
+cost controls and the separate main runner. Main inference has not started at
+this preparation checkpoint. The following sections preserve the pilot design
+and execution record; use the main plan for main-run commands.
 
 ## Frozen design
 
@@ -223,7 +222,9 @@ Offline checks pass: 50/10 disjoint items, complete context, 73 conditions,
 budget stops, provider-block handling, crash reservations, and duplicate-free
 resume in mocked calls. See `artifacts/frontier/preparation-status.json`.
 
-The runner intentionally refuses paid `--split main`. After the pilot, inspect
+The pilot runner intentionally refuses paid `--split main`; the reviewed main
+runner is now `python -m frontier.main_run` as described in the
+[main execution plan](frontier-main-run.md). After the pilot, inspect
 errors and truncations, estimate cost by provider and stratum, and reweight to
 the main quotas. The report supplies 50% planning headroom; it is not a statistical
 upper bound and five pilot conditions cannot perfectly predict 73. Only then
