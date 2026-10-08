@@ -1,87 +1,154 @@
-# Revision status — October 7, 2026, Pacific
+# Revision status and remaining checklist — October 7, 2026, Pacific
 
-**The frontier experiment is prepared, and the OpenAI pilot is complete.
-Anthropic account setup is now verified with one successful response. The main experiment, new judging,
-human validation, and revised analysis are not complete.**
+**The three-provider frontier pilot is complete: 150/150 cases. The main
+experiment, new judging, human validation, SDT analysis, and final manuscript
+revision are not complete.** This report follows the original task list and
+focuses on Sandy's frontier-model and related-work responsibilities.
 
-This report combines the user's task list, supplied related-work draft and
-revision mapping, repository documentation, and verified pilot records. It
-distinguishes existing repository work from work executed in this chat. Live
-cluster job status has not been checked here.
+## What you originally asked for
 
-| Task | Verified status | What remains / completion criterion |
+Review the supplied folder and connected PromptControlText repository; use the
+revision agreement and supplied related-work rewrite to plan the remaining work;
+run the frontier extension through Runpod; and push code and run records to
+GitHub. The working decisions are:
+
+- One generator per company: OpenAI, Anthropic, and Google, superseding the earlier
+  six-model suggestion.
+- Preserve the documented **`meta-llama/Llama-3.1-8B-Instruct`** judge and its
+  original A/B/C rubrics and adjudication. You explicitly confirmed 8B rather
+  than the tentative 70B recollection. No judge substitution was made.
+- Keep the same items across providers and all 73 conditions in the main study.
+- Run a 150-case pilot within the authorized **$10 total cap** before main work.
+- Keep credentials private and publish reproducible experiment records.
+
+The report draws on the supplied paper/revision material, your pasted draft,
+repository files, and actual run records. Existing repository work is separated
+from work performed here. Live cluster/DeepSeek completion has not been verified.
+
+## Original checklist: current status
+
+| Original task | Status | What remains before it is complete |
 |---|---|---|
-| Clean up GitHub | Marked complete in the user's checklist. Experiment code and records are on `codex/frontier-credential-setup`, draft PR #3. | Review and merge the final PR when ready; keep run provenance and results linked. Pushing a branch is not merging it. |
-| Dashboard for rating LLM judges | Existing Streamlit dashboard, blinding, autosave, export, and audit builders are in `audit/`. No new dashboard revision or completed human audit is established by this work. | Align the interface with the canonical six-policy rubric; include the context needed by each separate annotation task; finalize instructions and adjudication; verify label exports and completion tracking. |
-| Human-audit sampling | Existing sampling code is present. The frontier generation sample is frozen, but that does not finalize the human-audit sample. | Freeze an audit design covering models, benchmarks, common and rare labels, disagreements, and safety boundaries. Keep a representative random component separate from targeted error discovery; obtain independent human labels and report class-wise errors and agreement. |
-| New open-weight models / DeepSeek | Repository README and job config identify four completed prompted snapshots (Gemma 12B, Gemma 31B, Qwen 3.6, Nemotron Nano), and two DeepSeek runs needing completion. This is repository-reported status, not a fresh cluster verification. | Check actual row coverage, nonempty outputs, duplicates, and job logs; finish the two DeepSeek generations; verify the documented CUDA mitigation on the cluster; run the original judge on completed inputs. |
-| Frontier models — Sandy | Context repairs, sampling, adapters, durable budget ledger, controlled resume, and Runpod deployment are implemented. OpenAI completed 50 pilot cases. Anthropic has one successful case after four billing rejections and one missing-workspace rejection; Google has one quota rejection and is now deferred. | Finish the remaining 49 Anthropic pilot cases, review output quality and costs, then prepare the main-run configuration. Restore Google only after billing is ready; it remains in the frozen three-provider design. |
-| Preserve the model rater | Canonical judge confirmed as `meta-llama/Llama-3.1-8B-Instruct`; existing A/B/C rubrics and adjudication retained in the protocol. HF access was verified earlier. No new judge job was run here. | Run that checkpoint and the same rubrics on the new valid responses using Mohan's cluster or a GPU pod; map labels to every request, including repeated response text; human-validate the labels. Report provider blocks and errors separately from textual refusals. |
-| Change analysis to d-prime / SDT | Not implemented in the current revision. The original analysis notebook remains. | Define the positive class and endpoint labels first; implement d-prime and criterion with a declared correction for zero/one rates; estimate uncertainty by item/parent; regenerate figures and tables. Retain six-policy transition analysis as a separate outcome. |
-| Rewrite related work — Sandy | The revised draft was supplied by the user and appears in the local PDF material. It is a draft, not a citation-verified manuscript integration. | Check primary sources and citation keys; qualify broad claims about prior work; make the within-item intervention, six-policy outcomes, and safety-tradeoff contribution precise; integrate and compile in the manuscript. No editable `.tex` or `.bib` source was found in the supplied folder. |
-| Finish the revision | Revision mapping identifies practical implications, taxonomy/judge validation, and generalizability as remaining concerns. | Integrate new evidence into methods/results/discussion; explain operating-point choices and limitations; address sensitivity to policy definitions; update the reviewer-response mapping and reproducibility package. |
+| Clean up GitHub | **Marked done in your original checklist.** New experiment code and records are on `codex/frontier-credential-setup`, draft PR #3. | Review and merge the final PR when ready. A pushed branch is not a merged revision. |
+| Create/edit dashboard to rate LLM judges | **Existing dashboard; revision not completed here.** `audit/` already contains a Streamlit interface, blinding, autosave, tracking, exports, and audit builders. | Review the interface against the six-policy rubric, improve instructions and adjudication, verify exports, and run the human audit. Preserve output-only policy labeling; any context-rich endpoint assessment must be a separate annotation task. |
+| Figure out sampling | **Frontier generation sampling done; human-audit sampling pending.** These are different samples. | Freeze the human-audit design, annotator allocation, and adjudication rules. Include a representative random component for error estimates and a separately reported targeted component for rare labels/disagreements. |
+| Get new models running / check DeepSeek | **Partially documented; live completion unverified.** Your checklist marked the DeepSeek check done. The repository reports four completed prompted snapshots and two DeepSeek runs still needing completion. | Verify current cluster outputs and logs; finish missing generations if still necessary; check coverage, duplicates, empty/truncated outputs, and judge all valid new responses. The original generic “Check” subitem has no specific completion criterion yet. |
+| Change to d-prime / SDT | **Not implemented in this revision.** | Specify positive class and endpoint labels, treatment of blocks/missing data, extreme-rate correction, d-prime and criterion, and paired/item-clustered uncertainty. Regenerate figures and tables. Keep six-policy transitions as a separate analysis. |
+| Run frontier models — Sandy | **Preparation and three-provider pilot complete. Main extension pending.** | Review pilot costs and output quality, freeze the main execution configuration, run the 10,950 planned cases, then judge and analyze them. Pilot execution alone does not establish whether the paper's pattern generalizes. |
+| Rewrite related work — Sandy | **Your revised draft exists; final verification/integration pending.** | Check primary sources and citation keys, qualify broad claims about prior work, sharpen the within-item/policy-transition contribution, then integrate and compile the manuscript. No editable `.tex` or `.bib` files were found in the supplied folder. |
 
-## What the frontier preparation established
+The four repository-reported completed snapshots are Gemma 12B, Gemma 31B,
+Qwen 3.6, and Nemotron Nano. The two outstanding repository entries are
+DeepSeek-R1-Distill-Qwen-32B and DeepSeek-R1-Distill-Llama-70B. Each prompted run
+expects 242,640 unique, nonempty rows (`3,370 × 72`). These are not newly verified
+cluster results. The documented 512-token cap and CUDA mitigation also need
+checking against actual logs before treating those runs as ready for analysis.
 
-- Restored required IHEval task system context and HarmBench contextual passages
-  for the new extension while preserving historical data and runners.
-- Froze 50 stratified main items and 10 disjoint pilot items. All models receive
-  identical items. The main study retains all 73 conditions.
-- The original three-provider plan has 10,950 main cases and 150 pilot cases.
-  The current instruction is OpenAI plus Anthropic for now: 100 pilot cases;
-  Google's 50 are deferred. The main design has not silently been reduced.
-- Kept model settings and prompts unchanged across pilot attempts. Added
-  provider-subset continuation and explicit attempt history without erasing costs.
-- Passed 48 focused tests. Preserved the local SQLite ledger, published response
-  records, and verified retrieval before deleting all paid workers.
+## Verified work completed here
 
-## Current pilot and budget
+- [x] Reviewed the supplied research/revision context and relevant repository pipeline files.
+- [x] Set up local, Git-ignored credentials and verify live access to all three generators.
+- [x] Resolve Anthropic account/workspace routing and Gemini's earlier quota blocker.
+- [x] Restore missing IHEval task-system context and HarmBench contextual passages for the new extension, preserving historical data/runners.
+- [x] Freeze 50 main items and 10 disjoint pilot items, stratified across the three benchmarks.
+- [x] Preserve all 73 main conditions: `50 items × 73 conditions × 3 providers = 10,950 cases`.
+- [x] Freeze the pilot: `10 items × 5 conditions × 3 providers = 150 cases`.
+- [x] Implement provider adapters, durable checkpoints, duplicate protection, shared cost reservations, and controlled recovery from known setup errors.
+- [x] Complete every pilot case without rephrasing or resending provider-blocked prompts or using fallback models.
+- [x] Preserve every failed setup attempt and its reservation; correct one recorded Anthropic refusal classification without a new API call.
+- [x] Pass 56 focused tests; verify all case IDs/content against the frozen design and SQLite against JSONL.
+- [x] Retrieve and preserve results locally; delete all four pilot workers and stop the final watchdog/sleep inhibitor. Unrelated account resources were left alone.
+- [x] Record code, outcome/usage metadata, response hashes, verification evidence, and this checklist in the GitHub branch/PR, excluding credentials and private account/workspace IDs.
+- [ ] Publish the complete new Anthropic/Gemini response text if explicitly approved. Automatic approval review rejected these raw-result files for public release; complete outputs are safely retained locally. This does not block the status report or outcome metadata.
 
-There are **57 API attempts and 51 completed cases**: 40 OpenAI text responses,
-10 OpenAI HTTP safety blocks, one Anthropic text response, four Anthropic billing
-failures, one missing-workspace failure, and one Google quota failure. No completed
-response has a recorded output-token truncation. The last four setup checks ran
-locally; earlier live attempts ran on Runpod. No main generation or new judge
-run has begun.
+## Pilot outcome and budget
 
-The original $10 cap is unchanged. Current API accounting is **$7.752668**,
-including **$7.487488 of retained reservations** and **$0.265180 of token-based
-estimates**. Including the full $1 infrastructure reserve gives **$8.752668**;
-approximately **$1.25** remains under that conservative accounting. Estimated
-compute across the three deleted workers is **$0.035314**. These figures are
-not an invoice. Missing usage and incomplete provider pilots prevent a reliable
-full-study cost estimate. The broader $250 study ceiling and its allocations are
-planning constraints, not measured expected costs.
+| Generator | Cases completed | Text responses | Provider blocks | Recorded truncations |
+|---|---:|---:|---:|---:|
+| OpenAI `gpt-6-astra` | 50 | 40 | 10 | 0 |
+| Anthropic `claude-opus-5-5` | 50 | 39 | 11 | 0 |
+| Google `gemini-3.1-pro-preview` | 50 | 50 | 0 | 0 |
+| **Total** | **150** | **129** | **21** | **0** |
 
-See [the successful workspace check](../artifacts/frontier/runs/2026-10-08-anthropic-workspace-check/README.md),
-[the billing checks](../artifacts/frontier/runs/2026-10-08-anthropic-billing-check/README.md),
-[the Runpod continuation](../artifacts/frontier/runs/2026-10-08-anthropic-resume/README.md),
-and [the initial pilot](../artifacts/frontier/runs/2026-10-08-pilot/README.md).
+These counts describe API/output outcomes, not the six behavioral labels or
+safety rankings. A text response can itself be a refusal. Empty provider blocks
+need separate reporting and cannot simply be sent to the text judge as refusals.
+There were **156 API attempts**: the 150 final case outcomes plus six preserved
+setup failures. Most calls ran on Runpod; four one-case Anthropic setup checks
+ran locally, as recorded. No main generation or new judge run has started.
 
-## Order of work to finish
+| Budget measure | USD | Interpretation |
+|---|---:|---|
+| Token usage at configured conservative rates | 0.915356 | Estimate from returned usage, not a reconciled invoice; some blocks may be unbilled. |
+| Retained reservations | 7.487488 | Possible charges held for missing usage and prior failures, not confirmed spending. |
+| Total API ledger | 8.402844 | Sum of usage estimates and retained reservations. |
+| Full infrastructure reserve | 1.000000 | Kept intact for enforcing the pilot cap. |
+| **Conservative total against the $10 cap** | **9.402844** | **Pilot remained under the cap.** |
+| Estimated compute across all four pilot workers | 0.061027 | Elapsed time at recorded compute rates; not exact invoices/storage charges. |
 
-1. **Resume on Runpod.** The updated key and workspace header produced a valid
-   Anthropic response. Deploy the tested adapter with the same ledger and cap,
-   preserving all prior attempts and skipping completed cases.
-2. **Complete and review the pilot.** Finish Anthropic, reconcile reservations,
-   assess blocks/truncations and cost by stratum, and decide when Google rejoins.
-   Freeze any justified setting changes before main generation.
-3. **Execute the main extension.** Use the same frozen items under all 73
-   conditions, enforce the reviewed study budget, checkpoint, verify coverage,
-   retrieve outputs, and terminate resources. Do not resample after viewing
-   comparative model results.
-4. **Finish judging and human validation.** Preserve Llama-3.1-8B and its rubrics;
-   complete the dashboard and independent audit sample; report confusion,
-   class-wise reliability, adjudication, and how label errors affect conclusions.
-5. **Complete SDT and policy-transition analysis.** Separate endpoint correctness
-   from the output-only policy taxonomy, account for the paired item design,
-   and present the small sample as an exploratory generalization check.
-6. **Finish the manuscript and reproducibility record.** Sandy can finalize
-   related work while billing/model work proceeds. Integrate results, practical
-   implications, limitations, and reviewer responses; verify citations and
-   compiled manuscript; publish final artifacts and review/merge the PR.
+No earlier reservation was silently released. The Anthropic and Gemini pilot
+costs support preliminary main-run projections, but OpenAI's retained block
+reservations prevent a reliable combined cost estimate. Reconcile these before
+committing to the main run. The broader $250 study ceiling and its proposed
+allocations remain planning constraints, not a confirmed final experiment price.
 
-Dashboard preparation, related-work verification, and checking cluster outputs
-can proceed alongside the frontier pilot. Formal notation should clarify the
-measured behavior and assumptions; it should not imply a demonstrated internal
-mechanism or causal process that this behavioral design does not establish.
+Evidence: [final pilot record](../artifacts/frontier/runs/2026-10-08-gemini-completion/README.md),
+[coverage/quality summary](../artifacts/frontier/runs/2026-10-08-gemini-completion/quality-summary.json),
+[checkpoint verification](../artifacts/frontier/runs/2026-10-08-gemini-completion/verification.json),
+and [worker cleanup](../artifacts/frontier/runs/2026-10-08-gemini-completion/cleanup.json).
+
+## Remaining steps, in order
+
+1. **Review and close out the pilot.** Reconcile costs against provider billing;
+   inspect response completeness and context fidelity; declare how provider
+   blocks enter endpoint analyses and denominators. The 21 blocks are part of
+   the observed outcome, not errors to evade. Preserve the frozen sample.
+2. **Prepare the main run and judge validation.** Finalize a costed main config
+   and execution transport, with checkpoints and a hard study budget. The current
+   runner deliberately refuses paid main execution. In parallel, run the original
+   8B judge/rubrics on the 129 pilot text responses and check row-level mapping,
+   including identical response text. This judging has not happened yet.
+3. **Finish dashboard and human-audit design.** Set the human rubric, independent
+   rater allocation, representative/targeted sampling, blinding, and adjudication.
+   Freeze the design before using comparative model results to select cases.
+4. **Run the main frontier extension.** Execute all 10,950 frozen cases, verify
+   coverage and returned model versions, preserve failures/blocks, retrieve
+   results, and terminate resources. The 50 independent items support an
+   exploratory extension, not precise benchmark-wide or fine-subgroup rankings.
+5. **Complete open-weight generation and judging.** Verify the four reported
+   snapshots and two DeepSeek jobs; finish anything missing. Judge the new valid
+   outputs with the same 8B checkpoint and rubrics, and map every label back to its
+   generation request. Mohan's cluster is an available proposed route, not a job
+   already submitted by this work.
+6. **Complete human validation and analysis.** Collect independent human labels,
+   assess class-wise judge errors/agreement, adjudicate disagreements, and report
+   how label uncertainty affects conclusions. Implement SDT/d-prime and criterion
+   with declared corrections and paired uncertainty; analyze six-policy
+   transitions separately from harmful-compliance/false-refusal endpoints.
+7. **Finish the manuscript and reviewer response.** Verify and integrate Sandy's
+   related-work draft; update methods, results, practical implications, taxonomy
+   sensitivity, limitations, and generalizability. Map each reviewer concern to
+   a concrete change, compile/check the paper and references, and finalize the
+   reproducibility package and PR.
+
+Related-work verification, dashboard preparation, and checking cluster outputs
+can proceed in parallel with main-run planning. The revision mapping also asks
+for clearer practical implications and sensitivity to the manually designed
+policy taxonomy; those remain open beyond the short original checklist.
+
+## Inputs still needed
+
+- **Editable manuscript and bibliography location** (`.tex`/`.bib`, Overleaf source,
+  or the actual authoring project) to integrate the draft and compile the paper.
+- **Current open-weight/DeepSeek outputs and job logs, or scoped cluster access**
+  to verify what has finished rather than relying on repository notes.
+- **Provider billing reconciliation** for uncertain reservations, then a reviewed
+  main-run budget/configuration. No additional pilot credentials are missing now.
+- **Human annotation arrangements:** who will annotate, available effort, and who
+  adjudicates. The exact audit size and agreement criteria still need definition.
+
+The framing should remain behavioral: explicit prompt interventions, observed
+response policies, and within-item safety tradeoffs. Formal notation should
+clarify the process and assumptions without implying a demonstrated internal
+mechanism. The supplied related-work draft already points in this direction,
+but its citations and broad comparisons have not yet been independently verified.

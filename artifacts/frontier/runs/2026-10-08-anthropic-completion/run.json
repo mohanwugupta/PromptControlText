@@ -1,0 +1,48 @@
+{
+  "run_id": "2026-10-08-anthropic-completion",
+  "status": "anthropic_complete",
+  "execution_location": "Runpod CPU worker",
+  "pod_id": "j36p1t0z02ydon",
+  "runner_commits": [
+    "9c177e624959d2f290fa909f99f0e2574d2132fa",
+    "6e07a2db16688200cf4c137c09623cc6fc6b0f95"
+  ],
+  "manifest_sha256": "3070e5cb5923cbe7d23c43b84bb61edf14090131544813633d9cf245a4873fa3",
+  "config_sha256": "3bd4fdca75c53a004cfc82639deac2748bdb4633916b557f92f9efd89a2e62d1",
+  "new_api_attempts": 49,
+  "cumulative_api_attempts": 106,
+  "cumulative_completed_cases": 100,
+  "completed_by_provider": {
+    "openai": 50,
+    "anthropic": 50,
+    "google": 0
+  },
+  "currently_requested_providers": [
+    "openai",
+    "anthropic",
+    "google"
+  ],
+  "anthropic_outcomes": {
+    "text": 39,
+    "blocked": 11
+  },
+  "anthropic_truncated": 0,
+  "new_attempts_started_utc": "2026-10-08T03:02:37.420220Z",
+  "new_attempts_ended_utc": "2026-10-08T03:10:32.461063Z",
+  "budget": {
+    "total_cap_usd": 10,
+    "api_cap_usd": 9,
+    "infrastructure_reserve_usd": 1,
+    "cumulative_api_accounted_usd": 8.075488,
+    "unknown_api_reservations_usd": 7.487488,
+    "api_usage_at_conservative_rates_usd": 0.588,
+    "anthropic_50_case_usage_at_conservative_rates_usd": 0.324675,
+    "conservative_total_including_full_infrastructure_reserve_usd": 9.075488,
+    "remaining_under_conservative_total_usd": 0.924512,
+    "note": "Reservations are not confirmed charges; no prior reservation has been released."
+  },
+  "current_worker_state": "continued to Gemini after separate key-transfer approval",
+  "main_generation_ready": false,
+  "judge_run": false,
+  "next_step": "See subsequent Gemini continuation for the remaining 50 cases and final worker cleanup."
+}

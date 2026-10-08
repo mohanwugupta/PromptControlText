@@ -1,0 +1,42 @@
+{
+  "run_id": "2026-10-08-gemini-completion",
+  "status": "three_provider_pilot_complete",
+  "execution_location": "Runpod CPU worker",
+  "pod_id": "j36p1t0z02ydon",
+  "runner_commit": "6e07a2db16688200cf4c137c09623cc6fc6b0f95",
+  "manifest_sha256": "3070e5cb5923cbe7d23c43b84bb61edf14090131544813633d9cf245a4873fa3",
+  "config_sha256": "3bd4fdca75c53a004cfc82639deac2748bdb4633916b557f92f9efd89a2e62d1",
+  "new_api_attempts": 50,
+  "cumulative_api_attempts": 156,
+  "cumulative_completed_cases": 150,
+  "completed_by_provider": {
+    "openai": 50,
+    "anthropic": 50,
+    "google": 50
+  },
+  "current_outcomes": {
+    "text": 129,
+    "blocked": 21
+  },
+  "prior_setup_failures": 6,
+  "recorded_truncations": 0,
+  "gemini_started_utc": "2026-10-08T03:14:22.516136Z",
+  "gemini_ended_utc": "2026-10-08T03:19:48.770870Z",
+  "budget": {
+    "total_cap_usd": 10,
+    "api_cap_usd": 9,
+    "infrastructure_reserve_usd": 1,
+    "cumulative_api_accounted_usd": 8.402844,
+    "unknown_api_reservations_usd": 7.487488,
+    "api_usage_at_conservative_rates_usd": 0.915356,
+    "all_workers_estimated_compute_usd": 0.061027,
+    "conservative_total_including_full_infrastructure_reserve_usd": 9.402844,
+    "remaining_under_conservative_total_usd": 0.597156,
+    "note": "Retained reservations are possible charges, not confirmed spending; exact invoices/storage charges remain unreconciled."
+  },
+  "all_four_pilot_workers_deleted": true,
+  "current_worker_deleted_utc": "2026-10-08T03:20:57.137359Z",
+  "main_generation_ready": false,
+  "judge_run": false,
+  "next_step": "Review pilot quality and retained billing reservations, validate the unchanged judge on pilot text outputs, and freeze a separate main-run configuration before main generation."
+}

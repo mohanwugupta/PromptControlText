@@ -1,0 +1,13 @@
+{
+  "pod_id": "j36p1t0z02ydon",
+  "deleted_utc": "2026-10-08T03:20:57.137359Z",
+  "delete_http_status": 204,
+  "absence_http_status": 404,
+  "absent_from_list": true,
+  "remaining_pods_in_account": 1,
+  "retrieval_verified_before_deletion": true,
+  "worker_estimated_compute_usd": 0.025713,
+  "prior_workers_estimated_compute_usd": 0.035314,
+  "all_workers_estimated_compute_usd": 0.061027,
+  "note": "Compute estimate from elapsed time at the API-reported $0.06/hour rate; not an invoice or exact storage charge."
+}

@@ -295,13 +295,13 @@ documents the frozen 50-item design, corrected benchmark context, three-provider
 pilot, budget accounting, and Runpod execution steps. Use
 `python -m frontier.run` for a free dry run; paid pilot calls require `--execute`.
 
-The [October 8 Runpod pilot record](artifacts/frontier/runs/2026-10-08-pilot/README.md)
-contains 50 completed OpenAI cases and the billing blockers for Anthropic and
-Google. The worker was terminated; the full 150-case pilot is still incomplete.
+The [completed three-provider pilot](artifacts/frontier/runs/2026-10-08-gemini-completion/README.md)
+contains 150 verified cases: 129 text responses and 21 provider blocks, with no
+recorded truncations. OpenAI, Anthropic, and Gemini each completed 50 cases.
+All four pilot workers are deleted. The main experiment and judging have not run.
 
-See the [successful Anthropic workspace check](artifacts/frontier/runs/2026-10-08-anthropic-workspace-check/README.md)
-and [revision status report](docs/revision-status-2026-10-07.md) for subsequent
-attempts, cumulative budget accounting, and the remaining work across all tasks.
+See the [revision status report and checklist](docs/revision-status-2026-10-07.md)
+for completed work, budget accounting, missing inputs, and remaining tasks.
 
 Git LFS is required for the large CSV artifacts.
 
