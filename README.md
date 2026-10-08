@@ -290,6 +290,11 @@ For the planned frontier-model extension, see
 [credential setup](docs/credential-setup.md). Actual API keys belong only in the
 Git-ignored local `.env`; the blank `.env.example` is safe to commit.
 
+The [frontier experiment protocol and runbook](docs/frontier-experiment.md)
+documents the frozen 50-item design, corrected benchmark context, three-provider
+pilot, budget accounting, and Runpod execution steps. Use
+`python -m frontier.run` for a free dry run; paid pilot calls require `--execute`.
+
 Git LFS is required for the large CSV artifacts.
 
 ```bash

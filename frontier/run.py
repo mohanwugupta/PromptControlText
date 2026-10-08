@@ -1,0 +1,204 @@
+"""Dry-run the frozen design, or execute its capped pilot with a durable ledger.
+
+The first version deliberately permits paid PILOT calls only. Main generation
+requires a reviewed cost/completeness report and a subsequent main-run config.
+"""
+
+import argparse
+import fcntl
+import json
+import math
+import sqlite3
+import time
+from collections import Counter
+from contextlib import contextmanager
+from pathlib import Path
+
+from frontier.prepare import ROOT, digest, render_messages, validate_manifest
+from frontier.providers import KEYS, MODEL_IDS, generate, request_spec
+from scripts.credentials import credential_environment
+
+
+def validate_config(config):
+    if config["schema_version"] != 1 or config["stage"] != "pilot":
+        raise ValueError("This runner supports the reviewed pilot configuration only")
+    if len(config["models"]) != 3 or {m["provider"] for m in config["models"]} != set(KEYS):
+        raise ValueError("Expected one model per provider")
+    if not 0 < config["pilot_ceiling_usd"] <= 10 or config["study_ceiling_usd"] != 250:
+        raise ValueError("Pilot must remain within its $10 cap and the $250 study ceiling")
+    if not 1 <= config["max_output_tokens"] <= 4096 or config["input_token_reserve"] != 32768:
+        raise ValueError("Unreviewed token limits")
+    for model in config["models"]:
+        if MODEL_IDS.get(model["provider"]) != model["model"] or model["effort"] != "low":
+            raise ValueError("Unreviewed model or reasoning configuration")
+        for key in ("input_usd_per_million", "input_reserve_usd_per_million", "output_usd_per_million"):
+            if not math.isfinite(model[key]) or model[key] <= 0:
+                raise ValueError("Invalid price")
+        if model["input_reserve_usd_per_million"] < model["input_usd_per_million"]:
+            raise ValueError("Input reserve must cover standard pricing")
+    return config
+
+
+def cases(manifest, config, split):
+    conditions = [c for c in manifest["conditions"]
+                  if split == "main" or c["condition_id"] in manifest["pilot_condition_ids"]]
+    pairs = [(item, condition) for item in manifest[split] for condition in conditions]
+    pairs.sort(key=lambda p: digest([manifest["seed"], split, p[0]["item_id"], p[1]["condition_id"]]))
+    for item, condition in pairs:
+        messages = render_messages(item, condition)
+        for model in config["models"]:
+            url, body = request_spec(model, messages, config["max_output_tokens"])
+            if len(json.dumps(body, ensure_ascii=False).encode()) + 1024 > config["input_token_reserve"]:
+                raise ValueError("Input exceeds conservative token reserve; review before running")
+            request_id = digest([manifest["manifest_sha256"], digest(config), split,
+                                 item["item_id"], condition["condition_id"], url, body])
+            yield {"request_id": request_id, "split": split, "item": item,
+                   "condition": condition, "model": model, "messages": messages,
+                   "request_body_sha256": digest(body)}
+
+
+def reservation(model, config):
+    return (config["input_token_reserve"] * model["input_reserve_usd_per_million"]
+            + config["max_output_tokens"] * model["output_usd_per_million"]) / 1e6
+
+
+def accounted_cost(result, model, config):
+    """Do not release the reservation if usage is absent or the outcome uncertain."""
+    reserve = reservation(model, config)
+    tokens = [result.get("input_tokens"), result.get("output_tokens")]
+    if any(not isinstance(t, int) or isinstance(t, bool) or t < 0 for t in tokens):
+        return reserve, "reserved_unknown"
+    amount = (tokens[0] * model["input_reserve_usd_per_million"]
+              + tokens[1] * model["output_usd_per_million"]) / 1e6
+    return amount, "usage_at_conservative_rates"
+
+
+class Ledger:
+    def __init__(self, path, manifest, config):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        self.db = sqlite3.connect(path)
+        self.db.execute("PRAGMA synchronous=FULL")
+        self.db.execute("CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT)")
+        self.db.execute("""CREATE TABLE IF NOT EXISTS requests (
+            request_id TEXT PRIMARY KEY, state TEXT NOT NULL, cost REAL NOT NULL,
+            case_json TEXT NOT NULL, result_json TEXT, started REAL NOT NULL, ended REAL)""")
+        expected = {"manifest_sha256": manifest["manifest_sha256"], "config_sha256": digest(config)}
+        existing = dict(self.db.execute("SELECT key,value FROM metadata"))
+        if existing and existing != expected:
+            raise ValueError("Ledger belongs to a different manifest or model configuration")
+        if not existing:
+            self.db.executemany("INSERT INTO metadata VALUES (?,?)", expected.items())
+            self.db.commit()
+
+    def total(self):
+        return self.db.execute("SELECT coalesce(sum(cost),0) FROM requests").fetchone()[0]
+
+    def states(self):
+        return dict(self.db.execute("SELECT request_id,state FROM requests"))
+
+    def reserve(self, case, amount, cap):
+        with self.db:
+            if self.total() + amount > cap:
+                return False
+            self.db.execute("INSERT INTO requests VALUES (?, 'reserved', ?, ?, NULL, ?, NULL)",
+                            (case["request_id"], amount, json.dumps(case), time.time()))
+        return True
+
+    def finish(self, case, result, config):
+        cost, basis = accounted_cost(result, case["model"], config)
+        result["cost_basis"] = basis
+        state = "done" if result["outcome"] in ("text", "blocked", "truncated") else "needs_review"
+        if basis == "reserved_unknown" or cost > reservation(case["model"], config):
+            state = "needs_review"
+        with self.db:
+            self.db.execute("UPDATE requests SET state=?, cost=?, result_json=?, ended=? WHERE request_id=?",
+                            (state, cost, json.dumps(result), time.time(), case["request_id"]))
+        return state
+
+    def export(self, path):
+        """Export all states, including errors and unresolved reservations."""
+        records = []
+        for request_id, state, cost, case, result, started, ended in self.db.execute(
+                "SELECT * FROM requests ORDER BY started,request_id"):
+            records.append({"request_id": request_id, "state": state, "accounted_usd": cost,
+                            "started_unix": started, "ended_unix": ended,
+                            "case": json.loads(case), "result": json.loads(result) if result else None})
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = path.with_suffix(path.suffix + ".tmp")
+        temporary.write_text("".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records))
+        temporary.replace(path)
+        return records
+
+
+@contextmanager
+def run_lock(path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise ValueError("Another worker already owns this ledger") from None
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def execute(requests, ledger, config, environment, call=generate):
+    states = ledger.states()
+    if any(s != "done" for s in states.values()):
+        return "needs_review: unresolved attempt; retain reservation and reconcile before retrying"
+    for case in requests:
+        if case["request_id"] in states:
+            continue
+        reserve = reservation(case["model"], config)
+        if not ledger.reserve(case, reserve, config["pilot_ceiling_usd"]):
+            return "budget_stopped"
+        result = call(case["model"], case["messages"], config, environment)
+        state = ledger.finish(case, result, config)
+        print(json.dumps({"request_id": case["request_id"], "provider": case["model"]["provider"],
+                          "outcome": result["outcome"], "accounted_usd": round(ledger.total(), 6)}), flush=True)
+        if state != "done":
+            return "needs_review: provider error, missing usage, or unexpected billing"
+    return "complete"
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, default=ROOT / "artifacts/frontier/manifest.json")
+    parser.add_argument("--config", type=Path, default=ROOT / "configs/frontier-pilot.json")
+    parser.add_argument("--split", choices=("pilot", "main"), default="pilot")
+    parser.add_argument("--execute", action="store_true", help="Make paid PILOT calls; otherwise dry run")
+    parser.add_argument("--ledger", type=Path, default=ROOT / ".local/frontier/pilot.sqlite")
+    parser.add_argument("--export", type=Path, default=ROOT / ".local/frontier/pilot.jsonl")
+    args = parser.parse_args()
+    manifest = validate_manifest(json.loads(args.manifest.read_text()))
+    config = validate_config(json.loads(args.config.read_text()))
+    requests = list(cases(manifest, config, args.split))
+    if not args.execute:
+        print(json.dumps({"status": "dry_run", "split": args.split, "requests": len(requests),
+                          "unique_request_ids": len({r["request_id"] for r in requests}),
+                          "manifest_sha256": manifest["manifest_sha256"], "config_sha256": digest(config),
+                          "providers": dict(Counter(r["model"]["provider"] for r in requests)),
+                          "max_token_reservations_usd": round(sum(reservation(r["model"], config) for r in requests), 4),
+                          "note": "Token-limit bound, not expected cost. No API calls or credential access."}))
+        return
+    if args.split != "pilot":
+        raise SystemExit("Main generation is gated on pilot cost/completeness review; no calls made")
+    environment = credential_environment(ROOT / ".env")
+    if any(not environment.get(key) for key in KEYS.values()):
+        raise SystemExit("Missing provider credentials; use scripts/credentials.py status")
+    with run_lock(args.ledger.with_suffix(".lock")):
+        ledger = Ledger(args.ledger, manifest, config)
+        try:
+            status = execute(requests, ledger, config, environment)
+        finally:
+            ledger.export(args.export)
+        print(json.dumps({"status": status, "states": dict(Counter(ledger.states().values())),
+                          "accounted_usd": round(ledger.total(), 6), "target_requests": len(requests)}))
+        if status != "complete":
+            raise SystemExit(2)
+
+
+if __name__ == "__main__":
+    main()
