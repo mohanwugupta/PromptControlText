@@ -1,0 +1,36 @@
+{
+  "archived_script_sha256": {
+    "artifacts/frontier/runs/2026-10-08-main/operations/control.py": "e2ac5052cd05eac781722aa86212841d05ecdc933acd998cdf9cfb260c500f4b",
+    "artifacts/frontier/runs/2026-10-08-main/operations/extend_runtime.py": "a176443a9e0bc4a490d1a9f4e07ade2d9e7a37eb64452c1ef072d1ad77710733",
+    "artifacts/frontier/runs/2026-10-08-main/operations/monitor.py": "255f547a53c8063bdc82c002c3193e2d86c12726f4f35437152e00063fcf3464",
+    "artifacts/frontier/runs/2026-10-08-main/operations/launch.sh": "ca16e8cc0f3f196dec7384ea1ca1059066922c1146fff15b71e51cdeb2f225b2",
+    "artifacts/frontier/runs/2026-10-08-main/operations/README.md": "37a935546c4fce487bb032e1cd261abba451981dc3e2fa7cbba521efb81e079c",
+    "artifacts/frontier/runs/2026-10-08-main/operations/export_public.py": "e9e0f2555e3a8d7ad2bf3a873a20e375808f40d362f4f57bbad399c506e4fc83"
+  },
+  "initial_deployment": {
+    "source_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
+    "files": {
+      "configs/frontier-pilot.json": "a292711de288f2399a29c67d72839aca5a3dbfef6be5da46513e3ffa2078cfe5",
+      "configs/frontier-main.json": "b30a6d833d1e017481ee5bc972cdd95b609a7aa027a68aff3e0e6e21b23d75bf",
+      "artifacts/frontier/manifest.json": "a026b7ac35fd1819333ed4131b26ca9a9451df7278cbcf703acce5b44d54bcf5",
+      "requirements-frontier.txt": "8b0e98c986eeb62e23254cc2a2e96f19ac08d0771c66abd2051c434a28584dcb",
+      "scripts/credentials.py": "54a5e6798fca1b8f6f753c2f34572d3a7067d74e1a5314833089b56b8eb21556",
+      "prompts/registry.py": "f8ada1ca224c889925fddb86e2fb8acf5ad41108df257ecb51b9beaebe113b4f",
+      "frontier/run.py": "538de22f9be9b7e62cc42963b643a025f8037b313f4cbf147b093dac4d9a9139",
+      "frontier/runpod_watchdog.py": "cc4684ad4c14f10cdc221291e1fc8a0b4d144ad4334c3632acd5958d40c3478e",
+      "frontier/batch_api.py": "e8904427858eac60da97accaafffb0181dfc35a00bf67dcfb67d0ad837438874",
+      "frontier/main_run.py": "c0f8367561e5198f53c8ba2359809a1f4775303a66ecc5bd900bab1385cd07bf",
+      "frontier/__init__.py": "f158750f4937e2ba5c82b307e6f3b501f3a9d4d9abaf9183047fe7150aa4ef31",
+      "frontier/providers.py": "061675c57fc879e65d75132a057591284c47a1d77bc48e42f260513390b7e4a7",
+      "frontier/reconcile.py": "0c0d0860796a9dbee4faf22f9b250bd9060d170d59abffc8667c149906bae81b",
+      "frontier/report.py": "938b6740f6942efb0a5e86f2e93177a9a430fa054a498def6f084944b7e6ad2c",
+      "frontier/prepare.py": "08916136e11cbd4afe974d2660635bd3c71bad9b19a091a9fe4a33ebdefb6eb4"
+    }
+  },
+  "supervisor": {
+    "deadline": 1791604350.4713228,
+    "source_commit": "e17b1398a09a96785664838ffcef259e16d8c211",
+    "sha256": "e69429d25a1e825931f91f8447b374865ee6e8d87f301fb0540be1738e5636eb",
+    "pid": 196
+  }
+}

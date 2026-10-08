@@ -1,0 +1,58 @@
+{
+  "run_id": "2026-10-08-anthropic-resume",
+  "status": "blocked_anthropic_credit_balance",
+  "user_requested_providers": [
+    "openai",
+    "anthropic"
+  ],
+  "deferred_provider": "google",
+  "original_pilot_target_cases": 150,
+  "currently_requested_pilot_target_cases": 100,
+  "cumulative_completed_cases": 50,
+  "new_api_attempts": 1,
+  "cumulative_api_attempts": 53,
+  "text_responses": 40,
+  "provider_blocks": 10,
+  "completed_by_provider": {
+    "openai": 50,
+    "anthropic": 0,
+    "google": 0
+  },
+  "original_openai_records_unchanged": true,
+  "main_generation_ready": false,
+  "judge_run": false,
+  "manifest_sha256": "3070e5cb5923cbe7d23c43b84bb61edf14090131544813633d9cf245a4873fa3",
+  "config_sha256": "3bd4fdca75c53a004cfc82639deac2748bdb4633916b557f92f9efd89a2e62d1",
+  "runner_commit": "79c34b321018df3301fc370afae6966b1dff3556",
+  "new_attempt_started_utc": "2026-10-08T02:25:14.146950Z",
+  "new_attempt_ended_utc": "2026-10-08T02:25:14.548908Z",
+  "anthropic_http_status": 400,
+  "anthropic_error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "anthropic_http_request_id": "req_011CfoycuL1aKCd8SaWcWg9E",
+  "budget": {
+    "total_cap_usd": 10,
+    "api_cap_usd": 9,
+    "infrastructure_reserve_usd": 1,
+    "cumulative_api_accounted_usd": 7.013533,
+    "api_usage_at_conservative_rates_usd": 0.263325,
+    "unknown_api_reservations_usd": 6.750208,
+    "this_continuation_estimated_compute_usd": 0.0182,
+    "all_pilot_workers_estimated_compute_usd": 0.035314,
+    "conservative_total_including_full_infrastructure_reserve_usd": 8.013533,
+    "remaining_under_conservative_total_usd": 1.986467,
+    "note": "Reservations are possible charges, not confirmed spending; invoice reconciliation is pending."
+  },
+  "validation": {
+    "focused_tests_passed": 36,
+    "worker_key_matches_project_saved_key": true,
+    "no_environment_key_override": true,
+    "checkpoint_archive_hash_verified": true,
+    "downloaded_sqlite_matches_jsonl": true,
+    "no_inflight_attempts": true,
+    "all_workers_deleted_and_absence_verified": true
+  },
+  "next_step": "Check that the Anthropic Console organization with available API credits owns the saved project key; update only the local ANTHROPIC_API_KEY if needed. Reconcile the latest billing failure explicitly before another bounded attempt."
+}

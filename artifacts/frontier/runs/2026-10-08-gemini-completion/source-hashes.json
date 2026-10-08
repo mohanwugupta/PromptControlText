@@ -1,0 +1,12 @@
+{
+  "frontier/__init__.py": "f158750f4937e2ba5c82b307e6f3b501f3a9d4d9abaf9183047fe7150aa4ef31",
+  "frontier/prepare.py": "08916136e11cbd4afe974d2660635bd3c71bad9b19a091a9fe4a33ebdefb6eb4",
+  "frontier/run.py": "538de22f9be9b7e62cc42963b643a025f8037b313f4cbf147b093dac4d9a9139",
+  "frontier/report.py": "938b6740f6942efb0a5e86f2e93177a9a430fa054a498def6f084944b7e6ad2c",
+  "frontier/reconcile.py": "0c0d0860796a9dbee4faf22f9b250bd9060d170d59abffc8667c149906bae81b",
+  "frontier/providers.py": "061675c57fc879e65d75132a057591284c47a1d77bc48e42f260513390b7e4a7",
+  "scripts/credentials.py": "54a5e6798fca1b8f6f753c2f34572d3a7067d74e1a5314833089b56b8eb21556",
+  "prompts/registry.py": "f8ada1ca224c889925fddb86e2fb8acf5ad41108df257ecb51b9beaebe113b4f",
+  "configs/frontier-pilot.json": "a292711de288f2399a29c67d72839aca5a3dbfef6be5da46513e3ffa2078cfe5",
+  "artifacts/frontier/manifest.json": "a026b7ac35fd1819333ed4131b26ca9a9451df7278cbcf703acce5b44d54bcf5"
+}

@@ -1,0 +1,71 @@
+{
+  "run_id": "2026-10-08-pilot",
+  "status": "partial_blocked_on_provider_billing",
+  "target_cases": 150,
+  "api_attempts": 52,
+  "completed_cases": 50,
+  "text_responses": 40,
+  "provider_blocks": 10,
+  "billing_errors": 2,
+  "unattempted_cases": 98,
+  "started_utc": "2026-10-08T01:41:34.503131Z",
+  "last_request_ended_utc": "2026-10-08T01:52:32.393971Z",
+  "manifest_sha256": "3070e5cb5923cbe7d23c43b84bb61edf14090131544813633d9cf245a4873fa3",
+  "config_sha256": "3bd4fdca75c53a004cfc82639deac2748bdb4633916b557f92f9efd89a2e62d1",
+  "base_commit": "775c3adde18aba9cde6b8327c3c6f9b6b9baf239",
+  "execution_location": "Runpod CPU pod 5j72rq5yoh5pg7",
+  "provider_completion": {
+    "openai": 50,
+    "anthropic": 0,
+    "google": 0
+  },
+  "returned_models": [
+    "gpt-6-astra"
+  ],
+  "budget": {
+    "total_cap_usd": 10,
+    "api_cap_usd": 9,
+    "infrastructure_reserve_usd": 1,
+    "api_accounted_usd": 6.767773,
+    "api_usage_at_conservative_rates_usd": 0.263325,
+    "unknown_api_reservations_usd": 6.504448,
+    "estimated_runpod_compute_usd": 0.017114,
+    "conservative_total_including_full_infrastructure_reserve_usd": 7.767773,
+    "billing_note": "Token-based API accounting is not a confirmed invoice. Failed/blocked calls without usage retain full reservations. Runpod compute is elapsed time at quoted hourly rate; storage/invoice settlement is covered by the $1 reserve."
+  },
+  "blocking_conditions": [
+    {
+      "provider": "anthropic",
+      "http_status": 400,
+      "reason": "API credit balance too low",
+      "action": "Add Claude API credits to the existing key organization"
+    },
+    {
+      "provider": "google",
+      "http_status": 429,
+      "reason": "Gemini Pro free-tier request and input-token quota are both zero",
+      "action": "Enable paid Gemini API billing on the existing key project"
+    }
+  ],
+  "main_generation_ready": false,
+  "main_cost_estimate_available": false,
+  "judge_run": false,
+  "validation": {
+    "tests_passed": 31,
+    "all_record_ids_match_frozen_design": true,
+    "no_duplicate_request_ids": true,
+    "no_unresolved_inflight_requests": true,
+    "remote_jsonl_matches_downloaded_sqlite_export": true,
+    "credentials_excluded_from_publication": true
+  },
+  "cleanup": {
+    "pod_deleted": true,
+    "deleted_utc": "2026-10-08T01:55:50.949116Z",
+    "confirmed_http_404": true,
+    "absent_from_account_pod_list": true,
+    "network_volume_created": false,
+    "local_watchdog_stopped": true,
+    "host_keep_awake_stopped": true
+  },
+  "resume_note": "Restore the saved local SQLite ledger on a new Runpod CPU worker. Reconcile the two billing failures with an explicit attempt-history record after account funding changes; preserve all prior costs and completed cases. Do not start a fresh blank ledger or repeat OpenAI cases."
+}

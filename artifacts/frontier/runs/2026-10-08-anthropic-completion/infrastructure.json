@@ -1,0 +1,17 @@
+{
+  "pod_id": "j36p1t0z02ydon",
+  "compute_type": "CPU",
+  "vcpu_count": 2,
+  "memory_gb": 4,
+  "container_disk_gb": 10,
+  "network_volume_gb": 0,
+  "region": "US-NC-1",
+  "compute_usd_per_hour": 0.06,
+  "created_utc": "2026-10-08T02:55:14.377129Z",
+  "watchdog_deadline_utc": "2026-10-08T05:55:04.377129Z",
+  "state_at_record": "running at Anthropic completion; subsequently continued to Gemini",
+  "terminated": false,
+  "prior_three_workers_deleted": true,
+  "prior_workers_total_estimated_compute_usd": 0.035314,
+  "note": "Snapshot at the Anthropic completion checkpoint. Final cleanup is recorded with the subsequent Gemini continuation; this historical snapshot is not live state."
+}

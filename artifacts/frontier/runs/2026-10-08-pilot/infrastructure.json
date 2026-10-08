@@ -1,0 +1,49 @@
+{
+  "pod": {
+    "id": "5j72rq5yoh5pg7",
+    "name": "PromptControlText-pilot-20261008",
+    "imageName": "runpod/base:1.0.2-ubuntu2404",
+    "desiredStatus": "RUNNING",
+    "costPerHr": 0.06,
+    "createdAt": "2026-10-08 01:38:43.68 +0000 UTC",
+    "containerDiskInGb": 10,
+    "volumeInGb": 0,
+    "memoryInGb": 4,
+    "vcpuCount": 2,
+    "gpuCount": null,
+    "cpuFlavorId": "cpu3c",
+    "computeType": null
+  },
+  "create_request": {
+    "computeType": "CPU",
+    "cloudType": "SECURE",
+    "cpuFlavorIds": [
+      "cpu3c"
+    ],
+    "cpuFlavorPriority": "custom",
+    "vcpuCount": 2,
+    "name": "PromptControlText-pilot-20261008",
+    "templateId": "runpod-ubuntu-2404",
+    "containerDiskInGb": 10,
+    "volumeInGb": 0,
+    "ports": [
+      "22/tcp"
+    ]
+  },
+  "created_utc": "2026-10-08T01:38:44.121300Z",
+  "deleted_utc": "2026-10-08T01:55:50.949116Z",
+  "local_watchdog_deadline_utc": "2026-10-08T04:38:44.121300Z",
+  "watchdog_type": "local API deletion guard; host idle sleep inhibited; normal cleanup occurred before deadline",
+  "server_side_termination_schedule": false,
+  "rejected_creation_attempt": {
+    "api": "GraphQL podFindAndDeployOnDemand",
+    "error": "gpuTypeId is required",
+    "resource_created": false
+  },
+  "python_version": "3.12.3",
+  "uv_version": "0.10.9",
+  "dependencies": {
+    "python-dotenv": "1.2.1",
+    "PyYAML": "6.0.3"
+  }
+}

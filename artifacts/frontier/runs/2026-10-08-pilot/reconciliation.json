@@ -1,0 +1,33 @@
+[
+  {
+    "request_id": "10f286791cb60a002a4114a3199882bc68b9df45cbb99a1d20b4d03c6f2c3fc0",
+    "previous_result": {
+      "outcome": "http_error",
+      "http_status": 400,
+      "http_request_id": "req_6dde852bdcbf4a3bb48455a03acf7011",
+      "error_diagnostic": {
+        "type": "invalid_request",
+        "code": "cyber_policy",
+        "message": "This content was flagged for possible cybersecurity risk. If this seems wrong, try rephrasing your request. If you\u2019re doing authorized security work that requires more cyber permissive safeguards, apply for Daybreak access via https://platform.openai.com/settings/organization/status-and-access before retrying."
+      },
+      "cost_basis": "reserved_unknown"
+    },
+    "reconciled_result": {
+      "outcome": "blocked",
+      "http_status": 400,
+      "http_request_id": "req_6dde852bdcbf4a3bb48455a03acf7011",
+      "error_diagnostic": {
+        "type": "invalid_request",
+        "code": "cyber_policy",
+        "message": "This content was flagged for possible cybersecurity risk. If this seems wrong, try rephrasing your request. If you\u2019re doing authorized security work that requires more cyber permissive safeguards, apply for Daybreak access via https://platform.openai.com/settings/organization/status-and-access before retrying."
+      },
+      "cost_basis": "reserved_unknown",
+      "block_origin": "provider_http",
+      "text": "",
+      "provider_refusal": false
+    },
+    "cost_reservation_retained_usd": 0.6144,
+    "reason": "Recognized provider HTTP safety block; no retry or rephrasing",
+    "timestamp_unix": 1791424110.598628
+  }
+]

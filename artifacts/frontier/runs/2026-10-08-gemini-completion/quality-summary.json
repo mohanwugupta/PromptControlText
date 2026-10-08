@@ -1,0 +1,59 @@
+{
+  "openai": {
+    "cases": 50,
+    "outcomes": {
+      "text": 40,
+      "blocked": 10
+    },
+    "truncated": 0,
+    "usage_at_conservative_rates_usd": 0.263325,
+    "returned_models": {
+      "gpt-6-astra": 40,
+      "HTTP block; model not returned": 10
+    },
+    "stratum_condition_counts": {
+      "iheval_aligned": 10,
+      "harmbench": 10,
+      "xstest_safe": 10,
+      "xstest_unsafe": 10,
+      "iheval_conflict": 10
+    }
+  },
+  "anthropic": {
+    "cases": 50,
+    "outcomes": {
+      "text": 39,
+      "blocked": 11
+    },
+    "truncated": 0,
+    "usage_at_conservative_rates_usd": 0.324675,
+    "returned_models": {
+      "claude-opus-5-5": 50
+    },
+    "stratum_condition_counts": {
+      "iheval_aligned": 10,
+      "harmbench": 10,
+      "xstest_safe": 10,
+      "xstest_unsafe": 10,
+      "iheval_conflict": 10
+    }
+  },
+  "google": {
+    "cases": 50,
+    "outcomes": {
+      "text": 50
+    },
+    "truncated": 0,
+    "usage_at_conservative_rates_usd": 0.327356,
+    "returned_models": {
+      "gemini-3.1-pro-preview": 50
+    },
+    "stratum_condition_counts": {
+      "iheval_aligned": 10,
+      "harmbench": 10,
+      "xstest_safe": 10,
+      "xstest_unsafe": 10,
+      "iheval_conflict": 10
+    }
+  }
+}

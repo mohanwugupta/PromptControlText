@@ -1,0 +1,65 @@
+{
+  "request_id": "db7b3e83bcf9b558a23c69799229746c15402e30f120b95eac62951a7f518312",
+  "accounted_usd_unchanged": 0.00187,
+  "previous_result": {
+    "text": "",
+    "outcome": "empty",
+    "input_tokens": 374,
+    "output_tokens": 0,
+    "reasoning_tokens": null,
+    "truncated": false,
+    "provider_refusal": true,
+    "finish_reason": "refusal",
+    "response_id": "msg_011Cfp2UHVcByuYP3GnLb22R",
+    "returned_model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 374,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 0,
+      "service_tier": "standard",
+      "inference_geo": "global"
+    },
+    "http_request_id": "req_011Cfp2UGRrgpiq7QaxbnE4z",
+    "cost_basis": "usage_at_conservative_rates"
+  },
+  "corrected_result": {
+    "text": "",
+    "outcome": "blocked",
+    "input_tokens": 374,
+    "output_tokens": 0,
+    "reasoning_tokens": null,
+    "truncated": false,
+    "provider_refusal": true,
+    "finish_reason": "refusal",
+    "response_id": "msg_011Cfp2UHVcByuYP3GnLb22R",
+    "returned_model": "claude-opus-5-5",
+    "usage": {
+      "input_tokens": 374,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "cache_creation": {
+        "ephemeral_5m_input_tokens": 0,
+        "ephemeral_1h_input_tokens": 0
+      },
+      "output_tokens": 0,
+      "service_tier": "standard",
+      "inference_geo": "global"
+    },
+    "http_request_id": "req_011Cfp2UGRrgpiq7QaxbnE4z",
+    "cost_basis": "usage_at_conservative_rates",
+    "block_origin": "provider_stop_reason",
+    "normalization_correction": {
+      "previous_outcome": "empty",
+      "previous_state": "needs_review",
+      "corrected_unix": 1791428775.9977326,
+      "reason": "Anthropic stop_reason=refusal is a terminal provider block, not an unexplained empty response",
+      "source": "https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback"
+    }
+  },
+  "api_request_repeated": false
+}

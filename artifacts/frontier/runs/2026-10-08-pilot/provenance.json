@@ -1,0 +1,40 @@
+{
+  "initial_transfer": {
+    "base_commit": "775c3adde18aba9cde6b8327c3c6f9b6b9baf239",
+    "files": {
+      "requirements-frontier.txt": "8b0e98c986eeb62e23254cc2a2e96f19ac08d0771c66abd2051c434a28584dcb",
+      "configs/frontier-pilot.json": "a292711de288f2399a29c67d72839aca5a3dbfef6be5da46513e3ffa2078cfe5",
+      "artifacts/frontier/manifest.json": "a026b7ac35fd1819333ed4131b26ca9a9451df7278cbcf703acce5b44d54bcf5",
+      "scripts/credentials.py": "5a66806b378dfb854ee140fbb30c6d8771d0afd24419df6f11644797292683a6",
+      "prompts/registry.py": "f8ada1ca224c889925fddb86e2fb8acf5ad41108df257ecb51b9beaebe113b4f",
+      "frontier/__init__.py": "f158750f4937e2ba5c82b307e6f3b501f3a9d4d9abaf9183047fe7150aa4ef31",
+      "frontier/prepare.py": "08916136e11cbd4afe974d2660635bd3c71bad9b19a091a9fe4a33ebdefb6eb4",
+      "frontier/providers.py": "dfaec758b4e01654d5876731b201dc5271ad846b1f603ea976d117cf9be17974",
+      "frontier/report.py": "7568b6e976cbaa8d7f8647d296b63120f2d3845f8fdce7119533be6f8c9a7676",
+      "frontier/run.py": "b84b2efb6534b0a664605fabe1070840c4b3eba56d5e1aba5ddb4fc786ede3df",
+      "frontier/runpod_watchdog.py": "cc4684ad4c14f10cdc221291e1fc8a0b4d144ad4334c3632acd5958d40c3478e"
+    },
+    "bundle_sha256": "7b8d99ed82df0d329f3eec974e530135d57e864ec07b9bdd6e5f9d99b2f18918"
+  },
+  "remote_source_hashes_at_completion": {
+    "requirements-frontier.txt": "8b0e98c986eeb62e23254cc2a2e96f19ac08d0771c66abd2051c434a28584dcb",
+    "configs/frontier-pilot.json": "a292711de288f2399a29c67d72839aca5a3dbfef6be5da46513e3ffa2078cfe5",
+    "artifacts/frontier/manifest.json": "a026b7ac35fd1819333ed4131b26ca9a9451df7278cbcf703acce5b44d54bcf5",
+    "scripts/credentials.py": "5a66806b378dfb854ee140fbb30c6d8771d0afd24419df6f11644797292683a6",
+    "prompts/registry.py": "f8ada1ca224c889925fddb86e2fb8acf5ad41108df257ecb51b9beaebe113b4f",
+    "frontier/__init__.py": "f158750f4937e2ba5c82b307e6f3b501f3a9d4d9abaf9183047fe7150aa4ef31",
+    "frontier/prepare.py": "08916136e11cbd4afe974d2660635bd3c71bad9b19a091a9fe4a33ebdefb6eb4",
+    "frontier/providers.py": "350aadff04078bf9a813c86ac5891333dbecd17812aaf18273f1cfe529f0262a",
+    "frontier/report.py": "52a493aa4e5829cf86bb80b6a2614342ab2aa3c8eb4403b3e0bd8ce1b4cd947f",
+    "frontier/run.py": "10548f14d4f1a9733f8205f3b2b89a00af365b16cb1544dca24b4dddee424eb5",
+    "frontier/runpod_watchdog.py": "cc4684ad4c14f10cdc221291e1fc8a0b4d144ad4334c3632acd5958d40c3478e"
+  },
+  "local_postprocessor_sha256": "67041be17a9ffb0330d01a528a49cb6fd811a874aa6cff07b821d7c25478c88d",
+  "verified_archive_sha256": "2497e3f2a7673cabeaa063a4d074727b23675c3468989a12dee300dbaf9a43dc",
+  "code_change_notes": [
+    "API cap reduced from $10 to $9, reserving $1 for infrastructure before any inference",
+    "Provider-subset continuation added after Anthropic billing rejection; shared ledger and all reservations retained",
+    "Known OpenAI HTTP cyber_policy blocks recorded separately with no replay or rephrasing",
+    "Cost reporting withholds expected-spend estimates when usage is missing"
+  ]
+}

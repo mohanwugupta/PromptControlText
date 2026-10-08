@@ -1,0 +1,35 @@
+{
+  "base_commit": "18dfeda9e765a871609df5cf14bdb3029ecf59ba",
+  "files": {
+    "requirements-frontier.txt": "8b0e98c986eeb62e23254cc2a2e96f19ac08d0771c66abd2051c434a28584dcb",
+    "configs/frontier-pilot.json": "a292711de288f2399a29c67d72839aca5a3dbfef6be5da46513e3ffa2078cfe5",
+    "artifacts/frontier/manifest.json": "a026b7ac35fd1819333ed4131b26ca9a9451df7278cbcf703acce5b44d54bcf5",
+    "scripts/credentials.py": "5a66806b378dfb854ee140fbb30c6d8771d0afd24419df6f11644797292683a6",
+    "prompts/registry.py": "f8ada1ca224c889925fddb86e2fb8acf5ad41108df257ecb51b9beaebe113b4f",
+    "frontier/__init__.py": "f158750f4937e2ba5c82b307e6f3b501f3a9d4d9abaf9183047fe7150aa4ef31",
+    "frontier/prepare.py": "08916136e11cbd4afe974d2660635bd3c71bad9b19a091a9fe4a33ebdefb6eb4",
+    "frontier/providers.py": "350aadff04078bf9a813c86ac5891333dbecd17812aaf18273f1cfe529f0262a",
+    "frontier/report.py": "938b6740f6942efb0a5e86f2e93177a9a430fa054a498def6f084944b7e6ad2c",
+    "frontier/run.py": "f32d9714a52fe82256a71bd3cfa63cc0d7d710ab0be6623f20f40be030806f9e",
+    "frontier/reconcile.py": "e53470810348ce77329ffaaccd43a846460fa3569b955d2692f90c557f1c5c8c",
+    "frontier/runpod_watchdog.py": "cc4684ad4c14f10cdc221291e1fc8a0b4d144ad4334c3632acd5958d40c3478e",
+    ".local/frontier/pilot.sqlite": "9010db579b280cfa55b87b128a4deb3bad476e17b3a280916a1be164ee1e4f32"
+  },
+  "bundle_sha256": "4b7ad0a378164e54a882606d5b4d50ebc61e1b9262caff548f33141c9c38bddc",
+  "runner_commit": "79c34b321018df3301fc370afae6966b1dff3556",
+  "remote_source_hashes": {
+    "frontier/run.py": "f32d9714a52fe82256a71bd3cfa63cc0d7d710ab0be6623f20f40be030806f9e",
+    "frontier/report.py": "938b6740f6942efb0a5e86f2e93177a9a430fa054a498def6f084944b7e6ad2c",
+    "frontier/reconcile.py": "e53470810348ce77329ffaaccd43a846460fa3569b955d2692f90c557f1c5c8c",
+    "frontier/providers.py": "350aadff04078bf9a813c86ac5891333dbecd17812aaf18273f1cfe529f0262a",
+    "configs/frontier-pilot.json": "a292711de288f2399a29c67d72839aca5a3dbfef6be5da46513e3ffa2078cfe5",
+    "artifacts/frontier/manifest.json": "a026b7ac35fd1819333ed4131b26ca9a9451df7278cbcf703acce5b44d54bcf5"
+  },
+  "archive_verification": {
+    "sha256": "51b4810bf4c1c0899b80f5d932d692f680d1c59e4a6244c4da7a7844161bef9d",
+    "bytes": 56486,
+    "worker_key_matches_project_key": true,
+    "worker_inherited_key_override": false
+  },
+  "public_record_note": "New billing attempts refer to unchanged benchmark inputs by item, condition, request and configuration IDs. Full joined exports are preserved locally; original public outputs remain in 2026-10-08-pilot/results.jsonl."
+}

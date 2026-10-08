@@ -1,0 +1,34 @@
+[
+  {
+    "pod_id": "i319l43f2f9h9o",
+    "name": "PromptControlText-anthropic-resume-20261008",
+    "image": "runpod/base:1.0.2-ubuntu2404",
+    "vcpu_count": 2,
+    "ram_gb": 4,
+    "container_disk_gb": 10,
+    "volume_gb": 0,
+    "hourly_compute_usd": 0.06,
+    "created_utc": "2026-10-08T02:09:23.448681Z",
+    "deleted_utc": "2026-10-08T02:17:02.707205Z",
+    "estimated_compute_usd": 0.007654,
+    "confirmed_http_404": true,
+    "absent_from_account_pod_list": true,
+    "reason": "Runpod host unreachable; SSH and provider restart failed; no credentials transferred"
+  },
+  {
+    "pod_id": "igpc6ih6b0mwg8",
+    "name": "PromptControlText-anthropic-resume-US-20261008",
+    "image": "runpod/base:1.0.2-ubuntu2404",
+    "vcpu_count": 2,
+    "ram_gb": 4,
+    "container_disk_gb": 10,
+    "volume_gb": 0,
+    "hourly_compute_usd": 0.06,
+    "created_utc": "2026-10-08T02:17:31.207853Z",
+    "deleted_utc": "2026-10-08T02:28:03.971289Z",
+    "estimated_compute_usd": 0.010546,
+    "confirmed_http_404": true,
+    "absent_from_account_pod_list": true,
+    "reason": "Anthropic still rejects saved project key for insufficient API credit; retrieved and verified checkpoint before deletion"
+  }
+]

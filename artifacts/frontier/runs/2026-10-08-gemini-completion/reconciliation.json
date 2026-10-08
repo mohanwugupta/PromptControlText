@@ -1,0 +1,24 @@
+{
+  "request_id": "0eec74855968964cee418dbd5fa1d4b1211aa0eacc4e3087bc4ec3e6217b1498",
+  "attempt_number": 1,
+  "state": "needs_review",
+  "accounted_usd": 0.114688,
+  "started_unix": 1791423831.1024928,
+  "ended_unix": 1791423831.3875406,
+  "reconciled_unix": 1791429262.4548144,
+  "retry_reason": "User re-enabled Gemini and explicitly approved its key transfer to this worker; retry the unchanged zero-free-tier rejection once",
+  "result": {
+    "outcome": "http_error",
+    "http_status": 429,
+    "http_request_id": null,
+    "error_diagnostic": {
+      "code": "429",
+      "status": "RESOURCE_EXHAUSTED",
+      "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_input_token_count, limit: 0, model: gemini-3.1-pro\nPlease retry in 22h16m8.632446311s."
+    },
+    "cost_basis": "reserved_unknown"
+  },
+  "provider": "google",
+  "item_id": "safety_aligned_104719892631430_1",
+  "condition_id": "Source-isolation-first/explicit/v1"
+}

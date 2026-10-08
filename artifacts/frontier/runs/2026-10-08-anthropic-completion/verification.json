@@ -1,0 +1,8 @@
+{
+  "source_hashes_match": true,
+  "sqlite_matches_jsonl": true,
+  "earlier_openai_and_google_unchanged": true,
+  "inflight_requests": 0,
+  "checkpoint_sha256": "3dbbb68902d4aad35252acaa58845b6ecc61712387102e94600ddd073fe8e4f8",
+  "exit_code": 0
+}
