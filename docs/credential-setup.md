@@ -91,5 +91,7 @@ into an image. Keep the Runpod management key on the orchestration machine.
 Commit the template, setup instructions, helper, and tests. Record credential
 presence and verification outcomes without key values or account details.
 Credentials, local executables, and virtual environments remain untracked.
-Authentication is pending until the user enters keys and live checks succeed.
+Authentication is established only after the user enters keys and live checks
+succeed. See the [verification record](credential-verification.md) for the
+checks completed on this setup and their limits.
 The research spending ceiling remains $250; this setup performs no paid run.
