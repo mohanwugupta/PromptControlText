@@ -7,15 +7,16 @@ The [latest published progress](progress.json) records batch IDs, completion
 counts, budget accounting and checkpoint verification. The [launch snapshot](launch.json)
 preserves the earlier starting state. Both are timestamped snapshots, not live status.
 
-Fifteen complete generated records (five per provider) are verified locally.
-Their public release is pending explicit main-study approval after automatic
-approval review rejected it; the earlier raw-data approval covered the pilot.
-Generation continues while that publication request is pending.
-[requests.jsonl](requests.jsonl) accounts for all
-615 cases submitted or reserved at this snapshot, including 600 still pending.
-Each finished response is linked to its frozen item, condition and request hash.
-[operations/](operations/) archives the actual deployment and backup scripts;
-[execution-provenance.json](execution-provenance.json) records their hashes.
+Full generated records available at this checkpoint are in [responses/](responses/):
+**815 records**. The user explicitly approved public release of all main-study
+records as they finish, including the synthetic test codes from the public IHEval
+benchmark. [provider-results/](provider-results/) preserves 815 original
+provider result rows verified against normalized records in this export.
+[requests.jsonl](requests.jsonl) accounts for all **1,415 cases** submitted or
+reserved at this snapshot, including 600 still pending.
+Each finished response maps to its frozen item, condition and request hash.
+[operations/](operations/) archives the deployment, backup and export scripts;
+[execution-provenance.json](execution-provenance.json) records execution hashes.
 Credentials, SSH keys, private account/workspace configuration, temporary bundles
 and duplicate local database backups remain excluded from the public repo.
 
