@@ -1,25 +1,24 @@
 {
-  "as_of_utc": "2026-10-08T14:59:45.350714+00:00",
-  "phase": "running",
-  "checkpoint_sha256": "7a4888043d32635ee1c937ef41d7ee4d5de47d415815b60ebfb6548786065289",
+  "as_of_utc": "2026-10-08T16:53:01.639369+00:00",
+  "phase": "complete",
+  "checkpoint_sha256": "dce4e78c8cc9ea36f4f14586bc8a7beacc26b3454b381fa37fbdc14e34cc0526",
   "main": {
     "expected_requests": 10950,
-    "submitted_or_reserved": 10305,
-    "complete": false,
+    "submitted_or_reserved": 10950,
+    "complete": true,
     "done_by_provider": {
       "openai": 3650,
-      "anthropic": 2805,
+      "anthropic": 3650,
       "google": 3650
     },
     "outcomes": {
-      "text": 9695,
-      "blocked": 410,
-      "pending": 200
+      "text": 10432,
+      "blocked": 518
     },
-    "main_accounted_usd": 65.553836,
+    "main_accounted_usd": 44.927853,
     "prior_pilot_accounted_usd": 9.402844,
     "main_runpod_reserved_usd": 5,
-    "study_accounted_including_reserved_usd": 79.95668,
+    "study_accounted_including_reserved_usd": 59.330697,
     "main_generation_cap_usd": 160,
     "judge_allocation_usd": 30,
     "batches": [
@@ -521,23 +520,59 @@
       {
         "batch_key": "anthropic-eebdee8edb6414709114a604e5bdd2cb",
         "provider": "anthropic",
-        "state": "active",
+        "state": "done",
         "remote_id": "msgbatch_018zfVtJLGf3EP29TLCHz45x",
         "created": 1791471532.0995798,
-        "updated": 1791471532.7429953,
+        "updated": 1791476564.9769692,
+        "error": null
+      },
+      {
+        "batch_key": "anthropic-0b9751994aff1ff49f717008ccc78220",
+        "provider": "anthropic",
+        "state": "done",
+        "remote_id": "msgbatch_013Km9vhM7K5S5Fy1wjMWbLG",
+        "created": 1791476565.0894482,
+        "updated": 1791476814.0685852,
+        "error": null
+      },
+      {
+        "batch_key": "anthropic-de6a9023f664f3cff7d596b763f24d0a",
+        "provider": "anthropic",
+        "state": "done",
+        "remote_id": "msgbatch_01G2BhPJng2gjGBTeAFFcCAV",
+        "created": 1791476814.1815765,
+        "updated": 1791477498.4873834,
+        "error": null
+      },
+      {
+        "batch_key": "anthropic-35b604a0be767454fc6d4158af03bf91",
+        "provider": "anthropic",
+        "state": "done",
+        "remote_id": "msgbatch_01Up9wdfJnpjbUbe5nsgMPVt",
+        "created": 1791477498.6091497,
+        "updated": 1791477872.131824,
+        "error": null
+      },
+      {
+        "batch_key": "anthropic-b9d1a5bbdeb0492a1fdfd6bbf3b89952",
+        "provider": "anthropic",
+        "state": "done",
+        "remote_id": "msgbatch_01KwLy4sxBm8TVXwyBezr3gZ",
+        "created": 1791477872.2487943,
+        "updated": 1791478246.2448287,
         "error": null
       }
     ]
   },
   "supervisor": {
-    "state": "running",
-    "updated_epoch": 1791465081.7127106,
+    "state": "complete",
+    "updated_epoch": 1791478249.424344,
     "deadline_epoch": 1791604350.4713228,
-    "session_minutes": 120
+    "last_exit_code": 0
   },
-  "published_full_response_records": 10105,
-  "published_original_provider_records_in_this_export": 10105,
-  "generation_complete": false,
+  "published_full_response_records": 10950,
+  "published_original_provider_records_in_this_export": 10950,
+  "generation_complete": true,
   "judging_started": false,
   "raw_publication_authorization": "User explicitly approved publishing all records from the 10,950-case main study as they finish, including benchmark prompts, answers and synthetic IHEval test codes. API credentials/private configuration are excluded.",
   "verification": {
@@ -545,15 +580,15 @@
     "unique_request_ids": true,
     "sqlite_matches_checkpoint_summary": true,
     "original_provider_rows_match_normalized_results": true,
-    "exported_request_records": 10305,
+    "exported_request_records": 10950,
     "secret_scan_passed": true
   },
   "source_commit": "a17c796acf48a295ad38bdb2982215057f7ac326",
   "continuation_commit": "e17b1398a09a96785664838ffcef259e16d8c211",
-  "worker_terminated": false,
-  "completed_cases": 10105,
+  "worker_terminated": true,
+  "completed_cases": 10950,
   "review_cases": 0,
-  "unsubmitted_cases": 645,
+  "unsubmitted_cases": 0,
   "read_only_recovery": null,
   "terminal_block_resolution": {
     "resolved_epoch": 1791435786.48601,
@@ -577,8 +612,8 @@
   "initial_generator_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
   "current_worker_id": "2x588ujuurvi58",
   "budget_breakdown_usd": {
-    "usage_estimates": 38.626731,
+    "usage_estimates": 42.576749,
     "retained_unknown_usage_reservations": 2.351104,
-    "pending_reservations": 24.576
+    "pending_reservations": 0
   }
 }
