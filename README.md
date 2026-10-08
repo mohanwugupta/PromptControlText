@@ -286,6 +286,10 @@ tests/                              Tests for the retained paper pipeline
 
 ## Setup and verification
 
+For the planned frontier-model extension, see
+[credential setup](docs/credential-setup.md). Actual API keys belong only in the
+Git-ignored local `.env`; the blank `.env.example` is safe to commit.
+
 Git LFS is required for the large CSV artifacts.
 
 ```bash

@@ -13,3 +13,10 @@ slurm/logs/
 venv/
 env/
 core.*
+
+# Local credentials and setup tools. Only the blank template is public.
+.env
+.env.*
+!.env.example
+.secrets/
+.local/
