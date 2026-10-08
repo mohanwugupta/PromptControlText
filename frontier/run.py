@@ -104,13 +104,17 @@ class Ledger:
 
     def retry_funded_anthropic(self, request_id, reason):
         """Reopen one known credit rejection after an explicit funding update."""
-        return self._retry_anthropic_setup_error(request_id, reason, "credit")
+        return self._retry_setup_error(request_id, reason, "credit")
 
     def retry_workspace_anthropic(self, request_id, reason):
         """Reopen one missing-workspace rejection after a routing/key update."""
-        return self._retry_anthropic_setup_error(request_id, reason, "workspace")
+        return self._retry_setup_error(request_id, reason, "workspace")
 
-    def _retry_anthropic_setup_error(self, request_id, reason, error_kind):
+    def retry_google_quota(self, request_id, reason):
+        """Reopen one known zero-free-tier rejection after an explicit update."""
+        return self._retry_setup_error(request_id, reason, "quota")
+
+    def _retry_setup_error(self, request_id, reason, error_kind):
         """Archive one verified account-setup rejection after an explicit update.
 
         The failed attempt and its full reservation remain in the ledger. This
@@ -125,14 +129,22 @@ class Ledger:
             key, state, cost, case_json, result_json, started, ended = row
             case, result = json.loads(case_json), json.loads(result_json or "{}")
             message = (result.get("error_diagnostic") or {}).get("message", "").lower()
-            matches = ("credit balance is too low" in message if error_kind == "credit" else
-                       "this api key is not scoped to a workspace" in message
-                       and "anthropic-workspace-id" in message
-                       and (result.get("error_diagnostic") or {}).get("type") == "invalid_request_error")
-            if not (state == "needs_review" and case["model"]["provider"] == "anthropic"
-                    and result.get("outcome") == "http_error" and result.get("http_status") == 400
+            if error_kind == "quota":
+                provider, status, label = "google", 429, "Google quota"
+                matches = ((result.get("error_diagnostic") or {}).get("status") == "RESOURCE_EXHAUSTED"
+                           and "generate_content_free_tier" in message and "limit: 0," in message)
+            elif error_kind in ("credit", "workspace"):
+                provider, status, label = "anthropic", 400, f"Anthropic {error_kind}"
+                matches = ("credit balance is too low" in message if error_kind == "credit" else
+                           "this api key is not scoped to a workspace" in message
+                           and "anthropic-workspace-id" in message
+                           and (result.get("error_diagnostic") or {}).get("type") == "invalid_request_error")
+            else:
+                raise ValueError("Unrecognized account-update kind")
+            if not (state == "needs_review" and case["model"]["provider"] == provider
+                    and result.get("outcome") == "http_error" and result.get("http_status") == status
                     and matches and ended is not None):
-                raise ValueError(f"Only a known Anthropic {error_kind} rejection can be retried here")
+                raise ValueError(f"Only a known {label} rejection can be retried here")
             number = self.db.execute("SELECT coalesce(max(attempt_number),0)+1 FROM attempt_history WHERE request_id=?",
                                      (key,)).fetchone()[0]
             record = {"request_id": key, "attempt_number": number, "state": state,
@@ -146,6 +158,32 @@ class Ledger:
 
     def states(self):
         return dict(self.db.execute("SELECT request_id,state FROM requests"))
+
+    def classify_anthropic_refusal(self, request_id):
+        """Correct a recorded provider refusal; never resend or change its cost."""
+        with self.db:
+            row = self.db.execute("SELECT state,cost,case_json,result_json FROM requests WHERE request_id=?",
+                                  (request_id,)).fetchone()
+            if row is None:
+                raise ValueError("No recorded response to classify")
+            state, cost, case_json, result_json = row
+            case, result = json.loads(case_json), json.loads(result_json or "{}")
+            if not (state == "needs_review" and case["model"]["provider"] == "anthropic"
+                    and result.get("outcome") == "empty" and not result.get("text")
+                    and result.get("finish_reason") == "refusal" and result.get("provider_refusal") is True
+                    and result.get("cost_basis") == "usage_at_conservative_rates"
+                    and result.get("output_tokens") == 0):
+                raise ValueError("Only a recorded empty Anthropic provider refusal can be classified here")
+            previous = dict(result)
+            result.update(outcome="blocked", block_origin="provider_stop_reason")
+            result["normalization_correction"] = {
+                "previous_outcome": "empty", "previous_state": state, "corrected_unix": time.time(),
+                "reason": "Anthropic stop_reason=refusal is a terminal provider block, not an unexplained empty response",
+                "source": "https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback"}
+            self.db.execute("UPDATE requests SET state='done',result_json=? WHERE request_id=?",
+                            (json.dumps(result), request_id))
+        return {"request_id": request_id, "accounted_usd_unchanged": cost,
+                "previous_result": previous, "corrected_result": result, "api_request_repeated": False}
 
     def reserve(self, case, amount, cap):
         with self.db:

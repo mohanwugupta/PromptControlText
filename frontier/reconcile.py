@@ -1,4 +1,4 @@
-"""Explicitly reopen one known Anthropic account-setup rejection after an update."""
+"""Explicitly reopen one known provider account-setup rejection after an update."""
 import argparse
 import json
 from pathlib import Path
@@ -13,6 +13,7 @@ def main():
     update = parser.add_mutually_exclusive_group(required=True)
     update.add_argument("--funding-update")
     update.add_argument("--workspace-update")
+    update.add_argument("--quota-update", help="Explicit Gemini zero-free-tier quota update or authorized retry")
     parser.add_argument("--ledger", type=Path, default=ROOT / ".local/frontier/pilot.sqlite")
     parser.add_argument("--export", type=Path, default=ROOT / ".local/frontier/pilot.jsonl")
     args = parser.parse_args()
@@ -20,7 +21,9 @@ def main():
     config = validate_config(json.loads((ROOT / "configs/frontier-pilot.json").read_text()))
     with run_lock(args.ledger.with_suffix(".lock")):
         ledger = Ledger(args.ledger, manifest, config)
-        if args.workspace_update is not None:
+        if args.quota_update is not None:
+            record = ledger.retry_google_quota(args.request_id, args.quota_update)
+        elif args.workspace_update is not None:
             record = ledger.retry_workspace_anthropic(args.request_id, args.workspace_update)
         else:
             record = ledger.retry_funded_anthropic(args.request_id, args.funding_update)

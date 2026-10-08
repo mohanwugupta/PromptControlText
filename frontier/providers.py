@@ -65,11 +65,14 @@ def normalize(provider, data):
         if input_tokens is not None:
             input_tokens += usage.get("cache_creation_input_tokens", 0) + usage.get("cache_read_input_tokens", 0)
         result.update(input_tokens=input_tokens, output_tokens=usage.get("output_tokens"),
+                      reasoning_tokens=(usage.get("output_tokens_details") or {}).get("thinking_tokens"),
                       finish_reason=data.get("stop_reason"), response_id=data.get("id"),
-                      returned_model=data.get("model"), usage=usage)
+                      returned_model=data.get("model"), usage=usage, stop_details=data.get("stop_details"))
         result["truncated"] = data.get("stop_reason") in ("max_tokens", "model_context_window_exceeded")
         result["provider_refusal"] = data.get("stop_reason") == "refusal"
-        blocked, failed = False, data.get("type") == "error"
+        blocked, failed = result["provider_refusal"], data.get("type") == "error"
+        if blocked:
+            result["block_origin"] = "provider_stop_reason"
     else:
         candidates = data.get("candidates") or []
         candidate = candidates[0] if candidates else {}

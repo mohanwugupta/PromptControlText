@@ -418,3 +418,77 @@ def test_workspace_retry_rejects_unrelated_errors(tmp_path, manifest, config, ou
     with pytest.raises(ValueError, match="workspace rejection"):
         ledger.retry_workspace_anthropic(case["request_id"], "User updated workspace setting")
     assert ledger.total() == before
+
+
+def test_anthropic_classifier_refusal_is_a_block_with_metadata():
+    details = {'type': 'refusal', 'category': 'cyber', 'explanation': 'Declined'}
+    result = normalize('anthropic', {'type': 'message', 'content': [], 'stop_reason': 'refusal',
+        'stop_details': details, 'usage': {'input_tokens': 374, 'output_tokens': 0}})
+    assert result['outcome'] == 'blocked' and result['block_origin'] == 'provider_stop_reason'
+    assert result['text'] == '' and result['provider_refusal']
+    assert result['stop_details'] == details
+
+
+def test_classify_saved_refusal_preserves_response_cost_and_skips_resend(tmp_path, manifest, config):
+    selected = [c for c in cases(manifest, config, 'pilot') if c['model']['provider'] == 'anthropic'][:2]
+    ledger = Ledger(tmp_path / 'ledger.sqlite', manifest, config)
+    execute(selected, ledger, config, {}, lambda *args: {'outcome': 'empty', 'text': '',
+        'finish_reason': 'refusal', 'provider_refusal': True, 'input_tokens': 374, 'output_tokens': 0})
+    before = ledger.total()
+    saved = ledger.db.execute('SELECT started,ended,case_json FROM requests').fetchall()
+    correction = ledger.classify_anthropic_refusal(selected[0]['request_id'])
+    assert not correction['api_request_repeated'] and ledger.total() == before
+    assert ledger.db.execute('SELECT started,ended,case_json FROM requests').fetchall() == saved
+    assert not ledger.db.execute('SELECT * FROM attempt_history').fetchall()
+    calls = []
+    def succeed(model, messages, *args):
+        calls.append(messages)
+        return {'outcome': 'text', 'input_tokens': 10, 'output_tokens': 10, 'text': 'test'}
+    assert execute(selected, ledger, config, {}, succeed) == 'complete'
+    assert calls == [selected[1]['messages']]
+    with pytest.raises(ValueError):
+        ledger.classify_anthropic_refusal(selected[0]['request_id'])
+
+
+def test_ordinary_empty_response_cannot_be_classified_as_refusal(tmp_path, manifest, config):
+    case = next(c for c in cases(manifest, config, 'pilot') if c['model']['provider'] == 'anthropic')
+    ledger = Ledger(tmp_path / 'ledger.sqlite', manifest, config)
+    execute([case], ledger, config, {}, lambda *args: {'outcome': 'empty', 'text': '',
+        'finish_reason': 'end_turn', 'provider_refusal': False, 'input_tokens': 10, 'output_tokens': 0})
+    before = ledger.total()
+    with pytest.raises(ValueError, match='Only a recorded empty Anthropic provider refusal'):
+        ledger.classify_anthropic_refusal(case['request_id'])
+    assert ledger.total() == before and ledger.states()[case['request_id']] == 'needs_review'
+
+
+def test_google_zero_quota_retry_preserves_history_and_cap(tmp_path, manifest, config):
+    case = next(c for c in cases(manifest, config, 'pilot') if c['model']['provider'] == 'google')
+    ledger = Ledger(tmp_path / 'ledger.sqlite', manifest, config)
+    execute([case], ledger, config, {}, lambda *args: {'outcome': 'http_error', 'http_status': 429,
+        'error_diagnostic': {'status': 'RESOURCE_EXHAUSTED', 'message':
+            'Quota exceeded: generate_content_free_tier_requests, limit: 0, model: gemini-3.1-pro'}})
+    before = ledger.total()
+    archived = ledger.retry_google_quota(case['request_id'], 'User enabled Gemini and requested retry')
+    assert ledger.total() == before and archived['accounted_usd'] == before
+    interim = ledger.export(tmp_path / 'interim.jsonl')
+    assert report(interim, manifest, config)['accounted_pilot_usd'] == pytest.approx(before)
+    with pytest.raises(ValueError, match='No current failed'):
+        ledger.retry_google_quota(case['request_id'], 'Repeated command')
+    config['pilot_ceiling_usd'] = before * 1.5
+    assert execute([case], ledger, config, {}, lambda *args: pytest.fail('Over-budget retry')) == 'budget_stopped'
+
+
+@pytest.mark.parametrize('outcome', [
+    {'outcome': 'http_error', 'http_status': 429, 'error_diagnostic': {'status': 'RESOURCE_EXHAUSTED', 'message': 'Too many requests'}},
+    {'outcome': 'http_error', 'http_status': 403},
+    {'outcome': 'transport_or_parse_error'},
+    {'outcome': 'blocked', 'input_tokens': 10, 'output_tokens': 0},
+])
+def test_google_quota_retry_rejects_other_failures(tmp_path, manifest, config, outcome):
+    case = next(c for c in cases(manifest, config, 'pilot') if c['model']['provider'] == 'google')
+    ledger = Ledger(tmp_path / 'ledger.sqlite', manifest, config)
+    execute([case], ledger, config, {}, lambda *args: outcome)
+    before = ledger.total()
+    with pytest.raises(ValueError, match='Only a known Google quota rejection'):
+        ledger.retry_google_quota(case['request_id'], 'User enabled Gemini')
+    assert ledger.total() == before

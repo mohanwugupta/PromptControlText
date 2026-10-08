@@ -139,6 +139,15 @@ can continue unaffected providers in the same ledger; unresolved costs from all
 providers still count toward the shared cap. This does not make a partial pilot
 complete. Billing failures remain blocked until the account state changes.
 
+Anthropic's documented `stop_reason=refusal` is also a terminal provider block,
+including when `content` is empty. Preserve `stop_details`, available token usage,
+and `block_origin=provider_stop_reason`. Do not resend the request, use a fallback
+model, or assign a textual six-policy label to an empty provider block. A saved
+response previously classified as unexplained `empty` can be corrected with
+`Ledger.classify_anthropic_refusal`; that narrow correction records its original
+classification and changes neither the request count nor its cost. See the
+[provider documentation](https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback).
+
 After the user confirms Anthropic credits have been added, a known HTTP 400
 credit-balance rejection can be reopened explicitly:
 
@@ -152,6 +161,13 @@ first set `ANTHROPIC_WORKSPACE_ID` in the local `.env` (or replace the key with 
 workspace-scoped key). Then use `--workspace-update "Workspace routing updated"`
 instead of `--funding-update`. This narrowly permits that known setup failure;
 it does not permit retries of permission errors, safety blocks, or timeouts.
+
+For Gemini's known HTTP 429 `RESOURCE_EXHAUSTED` rejection with a zero free-tier
+quota, use `--quota-update "User enabled Gemini and authorized a new attempt"`
+after a quota/billing change or explicit user instruction to retry. This path
+matches that specific setup error and retains its reservation. Other rate limits,
+permission errors, and transport failures remain ineligible. Stop again on any
+new failure; this is not an automatic retry policy.
 
 Back up the SQLite ledger first. Reconciliation atomically moves that failed
 attempt into `attempt_history`, retaining its complete record and cost, and
