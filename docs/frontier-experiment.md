@@ -136,6 +136,23 @@ can continue unaffected providers in the same ledger; unresolved costs from all
 providers still count toward the shared cap. This does not make a partial pilot
 complete. Billing failures remain blocked until the account state changes.
 
+After the user confirms Anthropic credits have been added, a known HTTP 400
+credit-balance rejection can be reopened explicitly:
+
+```bash
+python -m frontier.reconcile --request-id REQUEST_ID --funding-update "User confirmed credits added"
+python -m frontier.run --execute --providers anthropic
+```
+
+Back up the SQLite ledger first. Reconciliation atomically moves that failed
+attempt into `attempt_history`, retaining its complete record and cost, and
+makes only the unchanged request eligible for a new attempt. Other failures,
+completed outputs, and safety blocks are ineligible. There are no automatic
+retries. The budget includes both current and archived attempts, including if
+execution stops between reconciliation and the next request. JSONL exports
+embed `prior_attempts` on each case; reports include their costs separately from
+the current-response cost projection. Preserve the same ledger on the next pod.
+
 The live pilot has a **$10 total cap**: $9 for API accounting and $1 reserved for
 Runpod infrastructure, part of the $60 setup/contingency allocation.
 Each call reserves 32,768 input tokens plus its maximum output at conservative

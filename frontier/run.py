@@ -87,6 +87,9 @@ class Ledger:
         self.db.execute("""CREATE TABLE IF NOT EXISTS requests (
             request_id TEXT PRIMARY KEY, state TEXT NOT NULL, cost REAL NOT NULL,
             case_json TEXT NOT NULL, result_json TEXT, started REAL NOT NULL, ended REAL)""")
+        self.db.execute("""CREATE TABLE IF NOT EXISTS attempt_history (
+            request_id TEXT NOT NULL, attempt_number INTEGER NOT NULL, record_json TEXT NOT NULL,
+            cost REAL NOT NULL, PRIMARY KEY (request_id, attempt_number))""")
         expected = {"manifest_sha256": manifest["manifest_sha256"], "config_sha256": digest(config)}
         existing = dict(self.db.execute("SELECT key,value FROM metadata"))
         if existing and existing != expected:
@@ -96,7 +99,38 @@ class Ledger:
             self.db.commit()
 
     def total(self):
-        return self.db.execute("SELECT coalesce(sum(cost),0) FROM requests").fetchone()[0]
+        return self.db.execute("""SELECT coalesce(sum(cost),0) FROM (
+            SELECT cost FROM requests UNION ALL SELECT cost FROM attempt_history)""").fetchone()[0]
+
+    def retry_funded_anthropic(self, request_id, reason):
+        """Archive one verified credit rejection after an explicit funding update.
+
+        The failed attempt and its full reservation remain in the ledger. This
+        makes the unchanged request eligible for one new attempt, not a retry loop.
+        """
+        if not reason.strip():
+            raise ValueError("An explicit funding-update reason is required")
+        with self.db:
+            row = self.db.execute("SELECT * FROM requests WHERE request_id=?", (request_id,)).fetchone()
+            if row is None:
+                raise ValueError("No current failed attempt to reconcile")
+            key, state, cost, case_json, result_json, started, ended = row
+            case, result = json.loads(case_json), json.loads(result_json or "{}")
+            message = (result.get("error_diagnostic") or {}).get("message", "").lower()
+            if not (state == "needs_review" and case["model"]["provider"] == "anthropic"
+                    and result.get("outcome") == "http_error" and result.get("http_status") == 400
+                    and "credit balance is too low" in message and ended is not None):
+                raise ValueError("Only a known Anthropic credit rejection can be retried here")
+            number = self.db.execute("SELECT coalesce(max(attempt_number),0)+1 FROM attempt_history WHERE request_id=?",
+                                     (key,)).fetchone()[0]
+            record = {"request_id": key, "attempt_number": number, "state": state,
+                      "accounted_usd": cost, "case": case, "result": result,
+                      "started_unix": started, "ended_unix": ended,
+                      "reconciled_unix": time.time(), "retry_reason": reason}
+            self.db.execute("INSERT INTO attempt_history VALUES (?,?,?,?)",
+                            (key, number, json.dumps(record), cost))
+            self.db.execute("DELETE FROM requests WHERE request_id=?", (key,))
+        return record
 
     def states(self):
         return dict(self.db.execute("SELECT request_id,state FROM requests"))
@@ -125,11 +159,21 @@ class Ledger:
     def export(self, path):
         """Export all states, including errors and unresolved reservations."""
         records = []
+        prior = {}
+        for key, data in self.db.execute("SELECT request_id,record_json FROM attempt_history ORDER BY request_id,attempt_number"):
+            prior.setdefault(key, []).append(json.loads(data))
         for request_id, state, cost, case, result, started, ended in self.db.execute(
                 "SELECT * FROM requests ORDER BY started,request_id"):
             records.append({"request_id": request_id, "state": state, "accounted_usd": cost,
                             "started_unix": started, "ended_unix": ended,
-                            "case": json.loads(case), "result": json.loads(result) if result else None})
+                            "case": json.loads(case), "result": json.loads(result) if result else None,
+                            "prior_attempts": prior.pop(request_id, [])})
+        # A crash between reconciliation and the next reservation must still
+        # export every previous attempt and dollar held against the cap.
+        for key, attempts in prior.items():
+            records.append({"request_id": key, "state": "retry_ready", "accounted_usd": 0,
+                            "started_unix": None, "ended_unix": None, "case": attempts[-1]["case"],
+                            "result": None, "prior_attempts": attempts})
         path.parent.mkdir(parents=True, exist_ok=True)
         temporary = path.with_suffix(path.suffix + ".tmp")
         temporary.write_text("".join(json.dumps(record, ensure_ascii=False) + "\n" for record in records))

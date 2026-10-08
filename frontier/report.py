@@ -15,6 +15,8 @@ def report(records, manifest, config):
     accounted = 0.0
     unknown_cost_requests, unknown_cost_reservations = 0, 0.0
     unknown_by_provider = Counter()
+    prior_attempt_count, prior_attempt_cost = 0, 0.0
+    prior_unknown_count, prior_unknown_cost = 0, 0.0
     for record in records:
         key = record["request_id"]
         if key in seen or key not in expected:
@@ -24,6 +26,13 @@ def report(records, manifest, config):
         result = record.get("result") or {}
         outcomes[result.get("outcome", "unresolved")] += 1
         accounted += record["accounted_usd"]
+        for attempt in record.get("prior_attempts", []):
+            prior_attempt_count += 1
+            prior_attempt_cost += attempt["accounted_usd"]
+            accounted += attempt["accounted_usd"]
+            if (attempt.get("result") or {}).get("cost_basis") == "reserved_unknown":
+                prior_unknown_count += 1
+                prior_unknown_cost += attempt["accounted_usd"]
         if record["state"] == "reserved" or result.get("cost_basis") == "reserved_unknown":
             unknown_cost_requests += 1
             unknown_cost_reservations += record["accounted_usd"]
@@ -48,6 +57,9 @@ def report(records, manifest, config):
     return {
         "expected_requests": len(expected), "recorded_requests": len(seen), "complete": complete,
         "accounted_pilot_usd": round(accounted, 6), "outcomes": dict(outcomes),
+        "prior_attempts": prior_attempt_count, "prior_attempt_accounted_usd": round(prior_attempt_cost, 6),
+        "prior_unknown_cost_attempts": prior_unknown_count,
+        "prior_unknown_cost_reservations_usd": round(prior_unknown_cost, 6),
         "unknown_cost_requests": unknown_cost_requests,
         "unknown_cost_reservations_usd": round(unknown_cost_reservations, 6),
         "completed_by_provider": completed_by_provider,

@@ -299,3 +299,61 @@ def test_known_http_policy_block_keeps_cost_and_continues(tmp_path, manifest, co
     assert execute(requests, ledger, config, {}, fake) == "complete"
     assert len(calls) == 2 and all(s == "done" for s in ledger.states().values())
     assert ledger.total() >= reservation(requests[0]["model"], config)
+
+
+def test_funded_retry_preserves_history_cost_and_completed_cases(tmp_path, manifest, config):
+    selected = [c for c in cases(manifest, config, "pilot") if c["model"]["provider"] in ("openai", "anthropic")][:2]
+    openai, anthropic = selected
+    ledger = Ledger(tmp_path / "ledger.sqlite", manifest, config)
+    success = {"outcome": "text", "text": "mock", "input_tokens": 10, "output_tokens": 10}
+    execute([openai], ledger, config, {}, lambda *args: dict(success))
+    execute([anthropic], ledger, config, {}, lambda *args: {
+        "outcome": "http_error", "http_status": 400,
+        "error_diagnostic": {"message": "Your credit balance is too low"}})
+    before = ledger.total()
+    archived = ledger.retry_funded_anthropic(anthropic["request_id"], "User confirms credits added")
+    assert ledger.total() == pytest.approx(before)
+    interim = ledger.export(tmp_path / "interim.jsonl")
+    assert report(interim, manifest, config)["accounted_pilot_usd"] == pytest.approx(before)
+    assert any(r["state"] == "retry_ready" for r in interim)
+    with pytest.raises(ValueError, match="No current failed"):
+        ledger.retry_funded_anthropic(anthropic["request_id"], "Same command repeated")
+    called = []
+    def succeed(model, *args):
+        called.append(model["provider"])
+        return dict(success)
+    reopened = Ledger(tmp_path / "ledger.sqlite", manifest, config)
+    assert execute(selected, reopened, config, {}, succeed) == "complete"
+    assert called == ["anthropic"]
+    records = reopened.export(tmp_path / "results.jsonl")
+    summary = report(records, manifest, config)
+    assert summary["prior_attempts"] == 1
+    assert summary["prior_unknown_cost_reservations_usd"] == archived["accounted_usd"]
+    assert summary["accounted_pilot_usd"] == pytest.approx(reopened.total())
+    assert reopened.total() > before
+
+
+def test_retry_reservation_cannot_evade_budget(tmp_path, manifest, config):
+    case = next(c for c in cases(manifest, config, "pilot") if c["model"]["provider"] == "anthropic")
+    ledger = Ledger(tmp_path / "ledger.sqlite", manifest, config)
+    execute([case], ledger, config, {}, lambda *args: {
+        "outcome": "http_error", "http_status": 400,
+        "error_diagnostic": {"message": "Your credit balance is too low"}})
+    ledger.retry_funded_anthropic(case["request_id"], "User confirms funding")
+    config["pilot_ceiling_usd"] = reservation(case["model"], config) * 1.5
+    assert execute([case], ledger, config, {}, lambda *args: pytest.fail("Over-budget retry")) == "budget_stopped"
+
+
+@pytest.mark.parametrize("outcome", [
+    {"outcome": "http_error", "http_status": 400, "error_diagnostic": {"message": "Different failure"}},
+    {"outcome": "transport_or_parse_error"},
+    {"outcome": "text", "input_tokens": 10, "output_tokens": 10},
+])
+def test_funding_retry_rejects_other_outcomes(tmp_path, manifest, config, outcome):
+    case = next(c for c in cases(manifest, config, "pilot") if c["model"]["provider"] == "anthropic")
+    ledger = Ledger(tmp_path / "ledger.sqlite", manifest, config)
+    execute([case], ledger, config, {}, lambda *args: outcome)
+    before = ledger.total()
+    with pytest.raises(ValueError, match="Only a known Anthropic credit rejection"):
+        ledger.retry_funded_anthropic(case["request_id"], "Credits added")
+    assert ledger.total() == before
