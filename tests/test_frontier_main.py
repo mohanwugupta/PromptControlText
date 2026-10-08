@@ -188,3 +188,24 @@ def test_changed_config_cannot_reopen_ledger(setup):
     config["batch_size"] = 201
     with pytest.raises(ValueError):
         MainLedger(path / "main.sqlite", manifest, config)
+
+
+def test_supervisor_never_restarts_error_or_finished_run():
+    from frontier.main_watch import next_action
+    assert next_action(2, {"complete": False}, 5000, 1000) == "needs_review"
+    assert next_action(0, {"complete": True}, 5000, 1000) == "complete"
+    assert next_action(0, {"complete": False}, 5000, 4500) == "deadline"
+    assert next_action(0, {"complete": False}, 5000, 1000) == "resume"
+
+
+def test_longer_watchdog_requires_fixed_main_budget():
+    from frontier.runpod_watchdog import validate_deadline
+    state = {"pod_id": "testpod", "created_local_epoch": 1000,
+             "deadline_epoch": 1000 + 48*3600, "purpose": "frontier_main",
+             "compute_usd_per_hour": .06, "infrastructure_reserve_usd": 5}
+    assert validate_deadline(state, 1010, True) == state["deadline_epoch"]
+    with pytest.raises(ValueError): validate_deadline(state, 1010)
+    for key, value in [("compute_usd_per_hour", 1), ("infrastructure_reserve_usd", 0),
+                       ("purpose", "other"), ("deadline_epoch", 1001 + 48*3600)]:
+        invalid = {**state, key: value}
+        with pytest.raises(ValueError): validate_deadline(invalid, 1010, True)

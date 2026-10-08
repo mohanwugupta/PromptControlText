@@ -1,4 +1,4 @@
-"""Local fail-safe that deletes only the pilot pod at its recorded deadline.
+"""Local fail-safe that deletes only the recorded experiment pod at its deadline.
 
 Run alongside the pilot controller. Normal completion deletes the pod sooner.
 The host must remain awake; this is an API-driven local guard, not a claimed
@@ -15,15 +15,27 @@ from frontier.prepare import ROOT
 from scripts.credentials import credential_environment
 
 
+def validate_deadline(state, now, main_study=False):
+    maximum = 48 * 3600 if main_study else 3 * 3600
+    if not state["pod_id"].isalnum() or not 0 < state["deadline_epoch"] - now <= maximum:
+        raise ValueError("Invalid experiment pod ID or deadline")
+    if main_study:
+        duration = state["deadline_epoch"] - state["created_local_epoch"]
+        if (state.get("purpose") != "frontier_main" or not 0 < duration <= maximum
+                or state.get("compute_usd_per_hour") != .06
+                or state.get("infrastructure_reserve_usd") != 5):
+            raise ValueError("Main watchdog requires the reviewed 48-hour CPU budget")
+    return state["deadline_epoch"]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--state", type=Path, required=True)
+    parser.add_argument("--main-study", action="store_true")
     args = parser.parse_args()
     state = json.loads(args.state.read_text())
     pod_id = state["pod_id"]
-    deadline = state["deadline_epoch"]
-    if not pod_id.isalnum() or not 0 < deadline - time.time() <= 3 * 3600:
-        raise SystemExit("Invalid pilot ID or deadline")
+    deadline = validate_deadline(state, time.time(), args.main_study)
     environment = credential_environment(ROOT / ".env")
     headers = {"Authorization": "Bearer " + environment["RUNPOD_API_KEY"],
                "User-Agent": "PromptControlText-frontier/1"}

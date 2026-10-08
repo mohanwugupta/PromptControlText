@@ -6,10 +6,11 @@ revision are not complete.** This report follows the original task list and
 focuses on Sandy's frontier-model and related-work responsibilities.
 
 **Main-run preparation update:** the user has now authorized the main study.
-The separate Batch runner/configuration is prepared and 76 focused tests pass.
+The separate Batch runner/configuration is prepared and 78 focused tests pass.
 The [main execution plan](frontier-main-run.md) records the roughly $49.41
 planning estimate, its assumptions, and the $160 generation cap within $250.
-Main inference has not started at this checkpoint; the checklist below records
+All three providers have accepted the initial main Batch jobs; see the
+[launch record](../artifacts/frontier/runs/2026-10-08-main/README.md). The checklist below records
 the completed pilot and the scientific work still outstanding.
 
 ## What you originally asked for
@@ -82,7 +83,7 @@ safety rankings. A text response can itself be a refusal. Empty provider blocks
 need separate reporting and cannot simply be sent to the text judge as refusals.
 There were **156 API attempts**: the 150 final case outcomes plus six preserved
 setup failures. Most calls ran on Runpod; four one-case Anthropic setup checks
-ran locally, as recorded. No main generation or new judge run has started.
+ran locally, as recorded. Main generation has since started; no new judge run has started.
 
 | Budget measure | USD | Interpretation |
 |---|---:|---|

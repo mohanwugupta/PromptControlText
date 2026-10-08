@@ -1,9 +1,9 @@
 # Main frontier extension — frozen execution plan
 
-Prepared October 8, 2026 UTC (October 7 Pacific). **Preparation is complete;
-main inference has not started at this checkpoint.** The user authorized the
-main extension after the completed 150-case pilot. Subsequent run records in
-`artifacts/frontier/runs/` take precedence over this preparation status.
+Prepared October 8, 2026 UTC (October 7 Pacific). **Main generation has started; the initial
+five-case Batch jobs were accepted by all three providers.** The user authorized the
+main extension after the completed 150-case pilot. The [main run record](../artifacts/frontier/runs/2026-10-08-main/README.md)
+contains timestamped progress snapshots.
 
 ## Design and settings
 
@@ -117,7 +117,7 @@ depends on the host remaining awake and connected.
 
 ## Verification before launch
 
-76 focused tests passed, covering both pilot regressions and main budgets,
+78 focused tests passed, covering both pilot regressions and main budgets,
 preserved payloads, atomic reservations, ambiguous submissions, initial-wave
 gating, out-of-order results, duplicate/foreign/missing IDs, usage accounting,
 Gemini REST result shape, checkpoints and read-only recovery. The offline main
@@ -125,3 +125,14 @@ dry run verifies 10,950 unique IDs and 3,650 cases per provider.
 
 Manifest SHA256: `3070e5cb5923cbe7d23c43b84bb61edf14090131544813633d9cf245a4873fa3`.
 Main config SHA256: `0a167c997da0d7483aeb7b11e30bc1788ada85e4692dc9d807090d4227882963`.
+
+## Bounded continuation after launch
+
+The Batch supervisor (`frontier.main_watch`) waits for the first two-hour session
+to exit, then resumes the same ledger only after a clean exit. Completion, budget
+stops and errors terminate continuation. It never reruns completed cases.
+The worker cleanup deadline is 48 hours from creation, with maximum compute of
+$2.88 at $0.06/hour within the unchanged $5 infrastructure reserve. The local
+watchdog's `--main-study` mode checks this price, reserve and lifetime. It does
+not extend the pilot watchdog limit. Backups and API-driven deletion require
+the local host to remain awake and connected. This is not a provider-side timer.

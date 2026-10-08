@@ -1,0 +1,66 @@
+{
+  "phase": "running_initial_wave",
+  "as_of_utc": "2026-10-08T04:19:44.425574+00:00",
+  "pod_id": "43dht91rp868ts",
+  "source_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
+  "credential_transfer": "Explicitly approved by user for all three provider keys and workspace ID; completed over SSH with mode 600",
+  "first_request_reserved_epoch": 1791432856.9690895,
+  "verified_local_checkpoint_sha256": "fc71a2dc24ca2e41d0c1ffc8deaa5d0a01073273900ed7b68cba9c6b67e63877",
+  "main": {
+    "expected_requests": 10950,
+    "submitted_or_reserved": 15,
+    "complete": false,
+    "done_by_provider": {
+      "openai": 5,
+      "google": 5
+    },
+    "outcomes": {
+      "text": 10,
+      "pending": 5
+    },
+    "main_accounted_usd": 0.651384,
+    "prior_pilot_accounted_usd": 9.402844,
+    "main_runpod_reserved_usd": 5,
+    "study_accounted_including_reserved_usd": 15.054228,
+    "main_generation_cap_usd": 160,
+    "judge_allocation_usd": 30,
+    "batches": [
+      {
+        "batch_key": "openai-d34da4501436678d3adacd2f0f1dc6db",
+        "provider": "openai",
+        "state": "done",
+        "remote_id": "batch_6ac7189a28bc8190aa580d81da4bb503",
+        "created": 1791432856.9690895,
+        "updated": 1791432983.790852,
+        "error": null
+      },
+      {
+        "batch_key": "anthropic-1515661da13e86c5f4863a62eb078d4d",
+        "provider": "anthropic",
+        "state": "active",
+        "remote_id": "msgbatch_013MdjXUP3VtEkprjZcu465p",
+        "created": 1791432858.8278587,
+        "updated": 1791433105.2924604,
+        "error": null
+      },
+      {
+        "batch_key": "google-b9a49e3a9033f9b89d399fda27e380ad",
+        "provider": "google",
+        "state": "done",
+        "remote_id": "batches/49yvp1ht4ebkq18bnacmpbq9gy8sp8q0v1us",
+        "created": 1791432859.3315074,
+        "updated": 1791433044.980036,
+        "error": null
+      }
+    ]
+  },
+  "runtime_plan": {
+    "maximum_worker_lifetime_hours": 48,
+    "compute_usd_per_hour": 0.06,
+    "maximum_compute_usd": 2.88,
+    "infrastructure_reserve_usd": 5,
+    "cleanup_deadline_epoch": 1791604350.4713228,
+    "local_host_required_for_backups_and_cleanup": true
+  },
+  "focused_tests_passed": 78
+}

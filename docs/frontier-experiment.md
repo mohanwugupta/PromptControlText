@@ -6,8 +6,8 @@ reservations remain recorded. See the
 [final pilot record](../artifacts/frontier/runs/2026-10-08-gemini-completion/README.md)
 and [overall revision status](revision-status-2026-10-07.md).
 The [main execution plan](frontier-main-run.md) now freezes Batch scheduling,
-cost controls and the separate main runner. Main inference has not started at
-this preparation checkpoint. The following sections preserve the pilot design
+cost controls and the separate main runner. The first main Batch jobs have now been accepted; see the
+[main launch record](../artifacts/frontier/runs/2026-10-08-main/README.md). The following sections preserve the pilot design
 and execution record; use the main plan for main-run commands.
 
 ## Frozen design

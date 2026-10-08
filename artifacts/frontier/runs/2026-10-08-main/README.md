@@ -1,25 +1,33 @@
-# Main frontier run — deployment record
+# Main frontier run — launch record
 
-The main study is **prepared; inference has not started at this checkpoint**.
-Its target is 50 fixed items × 73 conditions × three generators = **10,950 cases**.
-The [execution plan](../../../../docs/frontier-main-run.md) specifies the design,
-Batch transport, accounting assumptions, recovery behavior and caps.
+**Main generation has started.** All three providers accepted their initial
+five-case Batch jobs on October 8 UTC (October 7 Pacific). The target remains
+50 fixed items × 73 conditions × three generators = **10,950 cases**.
+The [launch snapshot](launch.json) records batch IDs, progress, budget accounting
+and the verified local checkpoint. It is a timestamped snapshot, not live status.
 
-Published code commit: `8db7bdd680c36b5f434b7cc6b5f564c96b22c88a`.
-All 15 deployed source files match their recorded hashes. The Runpod dry run
-verified 10,950 unique cases and 3,650 per provider; 76 local focused tests passed.
+The user explicitly approved transferring the three provider keys and Anthropic
+workspace ID to worker `43dht91rp868ts`. Transfer succeeded over encrypted SSH,
+with mode 600 on the credential file. No keys or workspace IDs are published.
+The earlier [preparation checkpoint](preparation.json) preserves the original
+approval blocker; that blocker is now resolved.
 
-Worker `43dht91rp868ts` uses two CPU cores, 4 GB RAM and the official Ubuntu 24.04
-image at $0.06/hour, within a $5 main infrastructure reserve. A local three-hour
-API deletion watchdog is armed; it requires the host to remain awake and online.
-Unrelated Runpod account resources were left untouched.
+Generator code commit: `8db7bdd680c36b5f434b7cc6b5f564c96b22c88a`.
+All 15 originally deployed files matched their hashes. The Runpod dry run verified
+10,950 unique cases and 3,650 per provider. The continuation/cleanup update passed
+78 focused tests and changes scheduling only; model settings, prompts, request
+identities, sample and API cap remain fixed.
 
-Automatic approval review rejected transfer of the three provider API keys and
-Anthropic workspace ID to this new worker because prior approvals named a pilot
-worker. A bundled approval request is pending. The prepared worker currently has
-no provider credentials and has submitted no main requests. Its exact timestamps,
-configuration hashes and limits are in [preparation.json](preparation.json).
+Batch jobs may take up to 24 hours per wave. A supervisor resumes clean two-hour
+polling sessions using the same ledger. It stops on completion, review/budget
+errors, or the deadline; ambiguous submissions are never blindly retried.
+The worker lifetime is limited to 48 hours from creation, costing at most $2.88
+in compute at $0.06/hour within the $5 infrastructure reserve. The local API
+watchdog enforces deletion and requires the host to stay awake and connected.
+Local checkpoints are retrieved regularly; unrelated Runpod resources are untouched.
 
-This record will be supplemented with actual batch IDs, coverage, cost accounting,
-retrieval verification and cleanup evidence after execution. It is not a result
-report, an invoice, or confirmation that the main study is running.
+The [execution plan](../../../../docs/frontier-main-run.md) documents the $160
+API cap within the $250 study ceiling, accounting assumptions and recovery.
+A cap or time limit can leave the study incomplete. Already-submitted provider
+Batch jobs can continue after worker deletion; their IDs and reserved costs
+remain in the saved ledger. Judge validation, judging and analysis are not yet done.
