@@ -5,14 +5,15 @@ experiment, new judging, human validation, SDT analysis, and final manuscript
 revision are not complete.** This report follows the original task list and
 focuses on Sandy's frontier-model and related-work responsibilities.
 
-**Main-run update:** generation stopped for accounting review after four Gemini
-provider blocks omitted output-token usage. The worker was deleted after a
-verified backup. Read-only recovery now accounts for 1,411 completed cases,
-4 review cases, 200 pending submitted cases, and 9,335
-unsubmitted cases. See the [stop report](../artifacts/frontier/runs/2026-10-08-main/STOP-REPORT.md).
-The frozen design and budgets are unchanged. PR #3 was merged; later recovery
-records are being published in a follow-up PR. Generation has no reliable ETA
-until the accounting handling is reviewed and execution resumes.
+**Main-run update:** generation has resumed on the approved replacement worker.
+All 1,615 previously submitted cases are recovered and accounted for. The four
+terminal Gemini blocks retain their full cost reservations. Providers accepted
+the next 600 cases; 8,735 frozen cases remain unsubmitted at this snapshot.
+See the [resume launch](../artifacts/frontier/runs/2026-10-08-main/resume-launch.json)
+and [latest published progress](../artifacts/frontier/runs/2026-10-08-main/progress.json).
+The first worker was deleted; its cost remains within the original $5 reserve.
+The sample, model settings, budget, judge and original cleanup deadline remain
+fixed. PR #3 is merged; recovery and continuation work is in draft PR #4.
 
 ## What you originally asked for
 
@@ -43,7 +44,7 @@ from work performed here. Live cluster/DeepSeek completion has not been verified
 | Figure out sampling | **Frontier generation sampling done; human-audit sampling pending.** These are different samples. | Freeze the human-audit design, annotator allocation, and adjudication rules. Include a representative random component for error estimates and a separately reported targeted component for rare labels/disagreements. |
 | Get new models running / check DeepSeek | **Partially documented; live completion unverified.** Your checklist marked the DeepSeek check done. The repository reports four completed prompted snapshots and two DeepSeek runs still needing completion. | Verify current cluster outputs and logs; finish missing generations if still necessary; check coverage, duplicates, empty/truncated outputs, and judge all valid new responses. The original generic “Check” subitem has no specific completion criterion yet. |
 | Change to d-prime / SDT | **Not implemented in this revision.** | Specify positive class and endpoint labels, treatment of blocks/missing data, extreme-rate correction, d-prime and criterion, and paired/item-clustered uncertainty. Regenerate figures and tables. Keep six-policy transitions as a separate analysis. |
-| Run frontier models — Sandy | **Pilot complete. Main extension started, then stopped for accounting review.** | Resolve the four terminal Gemini blocks without resending them, recover pending batches, resume the existing frozen ledger, then judge and analyze all accounted cases. Pilot execution alone does not establish whether the paper's pattern generalizes. |
+| Run frontier models — Sandy | **Pilot complete. Main extension resumed after the accounting fix.** | Finish the remaining frozen cases, verify complete coverage, then judge and analyze all accounted cases. Pilot execution alone does not establish whether the paper's pattern generalizes. |
 | Rewrite related work — Sandy | **Your revised draft exists; final verification/integration pending.** | Check primary sources and citation keys, qualify broad claims about prior work, sharpen the within-item/policy-transition contribution, then integrate and compile the manuscript. No editable `.tex` or `.bib` files were found in the supplied folder. |
 
 The four repository-reported completed snapshots are Gemma 12B, Gemma 31B,

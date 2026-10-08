@@ -1,21 +1,24 @@
 # Main frontier run — launch record
 
-**Main generation stopped for accounting review.** The worker was deleted after
-a verified backup at approximately 9:40 PM Pacific on October 7. Four Gemini
-prompt blocks omitted output-token usage, triggering the unknown-cost stop.
-See the [stop report](STOP-REPORT.md), [latest progress](progress.json), and
-[cleanup evidence](cleanup.json). The target remains 10,950 frozen cases;
-the study is incomplete. These are timestamped snapshots, not live status.
+**Main generation has resumed.** The replacement worker restored all 1,615
+previously submitted cases and the providers accepted the next 600 cases
+(200 each). At this snapshot, 8,735 cases remain unsubmitted. The four terminal
+Gemini blocks retain their full cost reservations; no completed or blocked case
+was resent. See the [resume launch](resume-launch.json), [resume record](RESUME.md),
+[current metadata](requests.jsonl), and [timestamped progress](progress.json).
+The [stop report](STOP-REPORT.md) preserves the earlier failure and cleanup.
+Published full-record files remain immutable; requests.jsonl contains current
+completion states after the four-case correction.
 
 Full generated records available at this checkpoint are in [responses/](responses/):
-**1,415 records**. The user explicitly approved public release of all main-study
+**1,615 records**. The user explicitly approved public release of all main-study
 records as they finish, including the synthetic test codes from the public IHEval
-benchmark. [provider-results/](provider-results/) preserves 1,415 original
+benchmark. [provider-results/](provider-results/) preserves 1,615 original
 provider result rows verified against normalized records in this export.
-[requests.jsonl](requests.jsonl) accounts for all **1,615 cases** submitted or
-reserved at this snapshot: 1,411 completed,
-4 needing review, and 200 pending.
-Another 9,335 frozen cases have not been submitted.
+[requests.jsonl](requests.jsonl) accounts for all **2,215 cases** submitted or
+reserved at this snapshot: 1,615 completed,
+0 needing review, and 600 pending.
+Another 8,735 frozen cases have not been submitted.
 Each finished response maps to its frozen item, condition and request hash.
 [operations/](operations/) archives the deployment, backup and export scripts;
 [execution-provenance.json](execution-provenance.json) records execution hashes.

@@ -1,12 +1,11 @@
 # Main frontier extension — frozen execution plan
 
-Prepared October 8, 2026 UTC (October 7 Pacific). **The accounting stop has been
-resolved and continuation is being prepared on the existing ledger.** All 1,615
-submitted cases have been retrieved; 9,335 frozen cases remain. Terminal Gemini
-prompt blocks retain their full unknown-cost reservations while counting as
-completed outcomes. See the [resume record](../artifacts/frontier/runs/2026-10-08-main/RESUME.md)
-and [timestamped progress](../artifacts/frontier/runs/2026-10-08-main/progress.json)
-for execution status. The earlier stop report is historical evidence.
+Prepared October 8, 2026 UTC (October 7 Pacific). **Main generation has resumed
+from the existing ledger.** All 1,615 earlier cases were recovered, the four
+Gemini blocks retain their full cost reservations, and the next 600 cases were
+accepted. See the [resume launch](../artifacts/frontier/runs/2026-10-08-main/resume-launch.json)
+and [timestamped progress](../artifacts/frontier/runs/2026-10-08-main/progress.json).
+The original sample, model settings, budgets and cleanup deadline are unchanged.
 
 ## Design and settings
 

@@ -1,12 +1,15 @@
 {
   "archived_script_sha256": {
-    "artifacts/frontier/runs/2026-10-08-main/operations/control.py": "e2ac5052cd05eac781722aa86212841d05ecdc933acd998cdf9cfb260c500f4b",
+    "artifacts/frontier/runs/2026-10-08-main/operations/control.py": "3ed817ab430c16c7f993d14266ce38eaad6ba0eb71d4f4d24e4646dcc6e0605c",
     "artifacts/frontier/runs/2026-10-08-main/operations/extend_runtime.py": "a176443a9e0bc4a490d1a9f4e07ade2d9e7a37eb64452c1ef072d1ad77710733",
     "artifacts/frontier/runs/2026-10-08-main/operations/monitor.py": "255f547a53c8063bdc82c002c3193e2d86c12726f4f35437152e00063fcf3464",
     "artifacts/frontier/runs/2026-10-08-main/operations/launch.sh": "ca16e8cc0f3f196dec7384ea1ca1059066922c1146fff15b71e51cdeb2f225b2",
     "artifacts/frontier/runs/2026-10-08-main/operations/README.md": "37a935546c4fce487bb032e1cd261abba451981dc3e2fa7cbba521efb81e079c",
-    "artifacts/frontier/runs/2026-10-08-main/operations/export_public.py": "90cb591701f64177afd0bcd53f4cc6e254cb75e482d0703a7618121a6ad26d7a",
-    "artifacts/frontier/runs/2026-10-08-main/operations/recover_existing.py": "48c634280a79847b5a34badabad5cad982d9ecf68007228d311f14adc2a93de9"
+    "artifacts/frontier/runs/2026-10-08-main/operations/export_public.py": "e0c4ea55923f12bd8a95b8f41b0ee5425f7f123825c8c5b9e20207240c01d295",
+    "artifacts/frontier/runs/2026-10-08-main/operations/recover_existing.py": "48c634280a79847b5a34badabad5cad982d9ecf68007228d311f14adc2a93de9",
+    "artifacts/frontier/runs/2026-10-08-main/operations/prepare_resume.py": "7234a1fe1e67590b3e4726b1b76665acc734a578e13a6ac3f9c302f0dddbdd55",
+    "artifacts/frontier/runs/2026-10-08-main/operations/restore_worker.py": "7577b5a798802c38472a32ad49e3fb2bb95b52301329739d4595dcfae16d4681",
+    "artifacts/frontier/runs/2026-10-08-main/operations/create_replacement.py": "e6fa80ae96271457dbecfe72aabd40cde82490c8709080c79c4011c0261a2c31"
   },
   "initial_deployment": {
     "source_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
@@ -33,5 +36,14 @@
     "source_commit": "e17b1398a09a96785664838ffcef259e16d8c211",
     "sha256": "e69429d25a1e825931f91f8447b374865ee6e8d87f301fb0540be1738e5636eb",
     "pid": 196
+  },
+  "resume_preparation": {
+    "source_commit": "a17c796acf48a295ad38bdb2982215057f7ac326",
+    "restore_bundle_sha256": "63a62e222db43a03a7ed6051f2e480c2212499918f2b7de5b19b27c2f0b353ee",
+    "ledger_sha256": "edac70b2ab03f50995ed3efa0cd1d62f7dc823d0112f6391aadfe7b8b5fef222",
+    "request_count": 1615,
+    "new_worker_created": true,
+    "worker_id": "2x588ujuurvi58",
+    "phase": "running"
   }
 }

@@ -27,3 +27,12 @@ at 200 cases per provider, one active batch per provider, within the same $160
 cap and $250 study ceiling. The sample, model settings and 8B judge are unchanged.
 See [progress.json](progress.json) for the latest verified execution phase;
 this preparation record alone does not confirm a running worker.
+
+The user explicitly approved one replacement worker and key transfer after the
+automatic review requested confirmation. Worker `2x588ujuurvi58` was created at
+$0.06/hour. Code hashes, the 10,950-case offline design and the restored 1,615-case
+ledger were verified before launch. Credentials were transferred by encrypted SSH
+into a mode-600 file. The next 600 cases were accepted (200 per provider). The
+continuation supervisor, three-minute backup/cleanup monitor and local deadline
+watchdog are active; completion monitoring has been re-enabled.
+See [resume-launch.json](resume-launch.json) for the verified launch snapshot.

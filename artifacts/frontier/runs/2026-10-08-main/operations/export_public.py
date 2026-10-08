@@ -62,14 +62,19 @@ record['completed_cases']=sum(summary['done_by_provider'].values())
 record['review_cases']=sum(r['state']=='needs_review' for r in rows)
 record['unsubmitted_cases']=summary['expected_requests']-len(rows)
 record['read_only_recovery']=checkpoint.get('recovery')
-record['terminal_block_resolution']=checkpoint.get('resolution')
+resolution=checkpoint.get('resolution')
+if resolution is None and (dest/'resume-resolution.json').exists():resolution=json.loads((dest/'resume-resolution.json').read_text())
+record['terminal_block_resolution']=resolution
+record['initial_generator_commit']='8db7bdd680c36b5f434b7cc6b5f564c96b22c88a'
+record['source_commit']=control.get('source_commit',record['source_commit'])
+record['current_worker_id']=control.get('pod_id')
 record['budget_breakdown_usd']={
  'usage_estimates':round(sum(r['cost'] for r in rows if r['result'] and r['result'].get('cost_basis')=='usage_at_conservative_batch_rates'),6),
  'retained_unknown_usage_reservations':round(sum(r['cost'] for r in rows if r['result'] and r['result'].get('cost_basis')=='reserved_unknown'),6),
  'pending_reservations':round(sum(r['cost'] for r in rows if r['result'] is None),6)}
 write(dest/'progress.json',json.dumps(record,indent=2)+'\n')
-if checkpoint.get('resolution'):
- write(dest/'resume-resolution.json',json.dumps(checkpoint['resolution'],indent=2)+'\n',True)
+if resolution:
+ write(dest/'resume-resolution.json',json.dumps(resolution,indent=2)+'\n',True)
 cleanup=json.loads((local/'cleanup.json').read_text()) if (local/'cleanup.json').exists() else None
 if cleanup:
  public_cleanup={k:v for k,v in cleanup.items() if k!='checkpoint_path'}

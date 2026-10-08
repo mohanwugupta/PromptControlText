@@ -42,5 +42,27 @@
     "original_worker_supervisor_preserved": true,
     "result": "needs_review",
     "checkpoint_sha256": "08626844af3c80a89ddd3ad158df15082fa4768446b942dd56dc26ab2c3719da"
+  },
+  {
+    "kind": "read_only_provider_recovery",
+    "source_checkpoint_sha256": "08626844af3c80a89ddd3ad158df15082fa4768446b942dd56dc26ab2c3719da",
+    "source_retrieved_epoch": 1791435280.231324,
+    "recovered_epoch": 1791435689.123691,
+    "http_calls": [
+      {
+        "provider": "anthropic",
+        "path": "/messages/batches/msgbatch_01W5JhKJA6ekW35c1wJywFnG",
+        "method": "GET"
+      },
+      {
+        "provider": "anthropic",
+        "path": "/messages/batches/msgbatch_01W5JhKJA6ekW35c1wJywFnG/results",
+        "method": "GET"
+      }
+    ],
+    "new_submissions": 0,
+    "original_worker_supervisor_preserved": true,
+    "result": "needs_review",
+    "checkpoint_sha256": "0db6ef6b8ae27aa16b66789b901e9ff5af321252df8b583f16cc9e7407b00a0c"
   }
 ]
