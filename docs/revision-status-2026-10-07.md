@@ -5,13 +5,14 @@ experiment, new judging, human validation, SDT analysis, and final manuscript
 revision are not complete.** This report follows the original task list and
 focuses on Sandy's frontier-model and related-work responsibilities.
 
-**Main-run preparation update:** the user has now authorized the main study.
-The separate Batch runner/configuration is prepared and 78 focused tests pass.
-The [main execution plan](frontier-main-run.md) records the roughly $49.41
-planning estimate, its assumptions, and the $160 generation cap within $250.
-All three providers have accepted the initial main Batch jobs; see the
-[launch record](../artifacts/frontier/runs/2026-10-08-main/README.md). The checklist below records
-the completed pilot and the scientific work still outstanding.
+**Main-run update:** generation stopped for accounting review after four Gemini
+provider blocks omitted output-token usage. The worker was deleted after a
+verified backup. Read-only recovery now accounts for 1,411 completed cases,
+4 review cases, 200 pending submitted cases, and 9,335
+unsubmitted cases. See the [stop report](../artifacts/frontier/runs/2026-10-08-main/STOP-REPORT.md).
+The frozen design and budgets are unchanged. PR #3 was merged; later recovery
+records are being published in a follow-up PR. Generation has no reliable ETA
+until the accounting handling is reviewed and execution resumes.
 
 ## What you originally asked for
 
@@ -37,12 +38,12 @@ from work performed here. Live cluster/DeepSeek completion has not been verified
 
 | Original task | Status | What remains before it is complete |
 |---|---|---|
-| Clean up GitHub | **Marked done in your original checklist.** New experiment code and records are on `codex/frontier-credential-setup`, draft PR #3. | Review and merge the final PR when ready. A pushed branch is not a merged revision. |
+| Clean up GitHub | **Marked done in your original checklist.** PR #3 containing pilot/main-launch work is merged. Recovery records continue on `codex/frontier-credential-setup`. | Review the follow-up recovery/results PR when ready; later pushes are not automatically part of merged PR #3. |
 | Create/edit dashboard to rate LLM judges | **Existing dashboard; revision not completed here.** `audit/` already contains a Streamlit interface, blinding, autosave, tracking, exports, and audit builders. | Review the interface against the six-policy rubric, improve instructions and adjudication, verify exports, and run the human audit. Preserve output-only policy labeling; any context-rich endpoint assessment must be a separate annotation task. |
 | Figure out sampling | **Frontier generation sampling done; human-audit sampling pending.** These are different samples. | Freeze the human-audit design, annotator allocation, and adjudication rules. Include a representative random component for error estimates and a separately reported targeted component for rare labels/disagreements. |
 | Get new models running / check DeepSeek | **Partially documented; live completion unverified.** Your checklist marked the DeepSeek check done. The repository reports four completed prompted snapshots and two DeepSeek runs still needing completion. | Verify current cluster outputs and logs; finish missing generations if still necessary; check coverage, duplicates, empty/truncated outputs, and judge all valid new responses. The original generic “Check” subitem has no specific completion criterion yet. |
 | Change to d-prime / SDT | **Not implemented in this revision.** | Specify positive class and endpoint labels, treatment of blocks/missing data, extreme-rate correction, d-prime and criterion, and paired/item-clustered uncertainty. Regenerate figures and tables. Keep six-policy transitions as a separate analysis. |
-| Run frontier models — Sandy | **Preparation and three-provider pilot complete. Main extension pending.** | Review pilot costs and output quality, freeze the main execution configuration, run the 10,950 planned cases, then judge and analyze them. Pilot execution alone does not establish whether the paper's pattern generalizes. |
+| Run frontier models — Sandy | **Pilot complete. Main extension started, then stopped for accounting review.** | Resolve the four terminal Gemini blocks without resending them, recover pending batches, resume the existing frozen ledger, then judge and analyze all accounted cases. Pilot execution alone does not establish whether the paper's pattern generalizes. |
 | Rewrite related work — Sandy | **Your revised draft exists; final verification/integration pending.** | Check primary sources and citation keys, qualify broad claims about prior work, sharpen the within-item/policy-transition contribution, then integrate and compile the manuscript. No editable `.tex` or `.bib` files were found in the supplied folder. |
 
 The four repository-reported completed snapshots are Gemma 12B, Gemma 31B,
@@ -112,10 +113,10 @@ and [worker cleanup](../artifacts/frontier/runs/2026-10-08-gemini-completion/cle
    inspect response completeness and context fidelity; declare how provider
    blocks enter endpoint analyses and denominators. The 21 blocks are part of
    the observed outcome, not errors to evade. Preserve the frozen sample.
-2. **Prepare the main run and judge validation.** Finalize a costed main config
-   and execution transport, with checkpoints and a hard study budget. The current
-   pilot runner deliberately refuses paid main execution; a separate main Batch
-   runner and configuration are now prepared. In parallel, run the original
+2. **Resolve the main-run stop and prepare judge validation.** The main config,
+   Batch transport, and hard budgets are frozen. Recover existing batches and
+   review the four terminal blocks while retaining unknown-cost reservations.
+   Validate the accounting handling before resuming the same ledger. Run the original
    8B judge/rubrics on the 129 pilot text responses and check row-level mapping,
    including identical response text. This judging has not happened yet.
 3. **Finish dashboard and human-audit design.** Set the human rubric, independent

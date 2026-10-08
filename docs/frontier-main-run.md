@@ -1,9 +1,11 @@
 # Main frontier extension — frozen execution plan
 
-Prepared October 8, 2026 UTC (October 7 Pacific). **Main generation has started; the initial
-five-case Batch jobs were accepted by all three providers.** The user authorized the
-main extension after the completed 150-case pilot. The [main run record](../artifacts/frontier/runs/2026-10-08-main/README.md)
-contains timestamped progress snapshots.
+Prepared October 8, 2026 UTC (October 7 Pacific). **Main generation has stopped
+for accounting review and the worker has been deleted after verified retrieval.**
+Four Gemini prompt blocks omitted output-token usage; all cost reservations are
+preserved. The [stop report](../artifacts/frontier/runs/2026-10-08-main/STOP-REPORT.md)
+records current counts, read-only recovery, and the next steps. The plan below
+preserves the authorized design and limits; it does not indicate a running job.
 
 ## Design and settings
 

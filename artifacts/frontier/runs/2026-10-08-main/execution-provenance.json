@@ -5,7 +5,8 @@
     "artifacts/frontier/runs/2026-10-08-main/operations/monitor.py": "255f547a53c8063bdc82c002c3193e2d86c12726f4f35437152e00063fcf3464",
     "artifacts/frontier/runs/2026-10-08-main/operations/launch.sh": "ca16e8cc0f3f196dec7384ea1ca1059066922c1146fff15b71e51cdeb2f225b2",
     "artifacts/frontier/runs/2026-10-08-main/operations/README.md": "37a935546c4fce487bb032e1cd261abba451981dc3e2fa7cbba521efb81e079c",
-    "artifacts/frontier/runs/2026-10-08-main/operations/export_public.py": "e9e0f2555e3a8d7ad2bf3a873a20e375808f40d362f4f57bbad399c506e4fc83"
+    "artifacts/frontier/runs/2026-10-08-main/operations/export_public.py": "90cb591701f64177afd0bcd53f4cc6e254cb75e482d0703a7618121a6ad26d7a",
+    "artifacts/frontier/runs/2026-10-08-main/operations/recover_existing.py": "48c634280a79847b5a34badabad5cad982d9ecf68007228d311f14adc2a93de9"
   },
   "initial_deployment": {
     "source_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
