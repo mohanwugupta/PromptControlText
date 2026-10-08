@@ -5,6 +5,9 @@ No inference calls or paid Runpod resources were created during preparation.
 The subsequent [live Runpod pilot](../artifacts/frontier/runs/2026-10-08-pilot/README.md)
 completed 50 OpenAI cases and stopped the other providers on billing errors.
 The worker was deleted after verified result retrieval; 100 cases remain unfinished.
+Three subsequent Anthropic retries also returned credit-balance errors; see the
+[latest pilot record](../artifacts/frontier/runs/2026-10-08-anthropic-billing-check/README.md)
+and the [overall revision status](revision-status-2026-10-07.md).
 API model-list checks confirmed access to the three candidate IDs below; they do
 not establish inference permissions, funded billing, or usable rate limits.
 

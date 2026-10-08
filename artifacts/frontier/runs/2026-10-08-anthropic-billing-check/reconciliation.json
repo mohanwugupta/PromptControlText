@@ -1,0 +1,48 @@
+[
+  {
+    "request_id": "e577f2a08c75140f3e8b0b46a9e0ff4b08ec15e6f3aa7277dde8f86a6797b5d7",
+    "attempt_number": 2,
+    "state": "needs_review",
+    "accounted_usd": 0.24576,
+    "result": {
+      "outcome": "http_error",
+      "http_status": 400,
+      "http_request_id": "req_011CfoycuL1aKCd8SaWcWg9E",
+      "error_diagnostic": {
+        "type": "invalid_request_error",
+        "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+      },
+      "block_origin": null,
+      "text": "",
+      "provider_refusal": false,
+      "cost_basis": "reserved_unknown"
+    },
+    "started_unix": 1791426314.1469502,
+    "ended_unix": 1791426314.548908,
+    "reconciled_unix": 1791426664.184931,
+    "retry_reason": "User requested another Anthropic attempt from the Claude Console billing page; one local pilot case tests billing before renting another Runpod worker."
+  },
+  {
+    "request_id": "e577f2a08c75140f3e8b0b46a9e0ff4b08ec15e6f3aa7277dde8f86a6797b5d7",
+    "attempt_number": 3,
+    "state": "needs_review",
+    "accounted_usd": 0.24576,
+    "result": {
+      "outcome": "http_error",
+      "http_status": 400,
+      "http_request_id": "req_011Cfoz4i1bv3xjKMoiSVL9e",
+      "error_diagnostic": {
+        "type": "invalid_request_error",
+        "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+      },
+      "block_origin": null,
+      "text": "",
+      "provider_refusal": false,
+      "cost_basis": "reserved_unknown"
+    },
+    "started_unix": 1791426664.1917272,
+    "ended_unix": 1791426664.6745422,
+    "reconciled_unix": 1791427160.0708768,
+    "retry_reason": "User explicitly reported adding money to the Anthropic account; retry one unchanged pilot case locally to verify API billing before another worker rental."
+  }
+]

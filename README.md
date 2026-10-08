@@ -299,6 +299,10 @@ The [October 8 Runpod pilot record](artifacts/frontier/runs/2026-10-08-pilot/REA
 contains 50 completed OpenAI cases and the billing blockers for Anthropic and
 Google. The worker was terminated; the full 150-case pilot is still incomplete.
 
+See the [latest Anthropic billing check](artifacts/frontier/runs/2026-10-08-anthropic-billing-check/README.md)
+and [revision status report](docs/revision-status-2026-10-07.md) for subsequent
+attempts, cumulative budget accounting, and the remaining work across all tasks.
+
 Git LFS is required for the large CSV artifacts.
 
 ```bash

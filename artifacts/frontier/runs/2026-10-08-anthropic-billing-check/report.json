@@ -1,0 +1,31 @@
+{
+  "expected_requests": 150,
+  "recorded_requests": 52,
+  "complete": false,
+  "accounted_pilot_usd": 7.505053,
+  "outcomes": {
+    "text": 40,
+    "http_error": 2,
+    "blocked": 10
+  },
+  "prior_attempts": 3,
+  "prior_attempt_accounted_usd": 0.73728,
+  "prior_unknown_cost_attempts": 3,
+  "prior_unknown_cost_reservations_usd": 0.73728,
+  "unknown_cost_requests": 12,
+  "unknown_cost_reservations_usd": 6.504448,
+  "completed_by_provider": {
+    "openai": 50,
+    "anthropic": 0,
+    "google": 0
+  },
+  "projected_main_accounting_usd_by_provider": {
+    "openai": 478.4023
+  },
+  "projected_main_usd_by_provider": {},
+  "projected_main_usd": null,
+  "projection_with_50_percent_headroom_usd": null,
+  "main_generation_allocation_usd": 160,
+  "projection_note": "Reweighted by main stratum counts. Includes full-token reservations wherever usage is missing; reconcile them before treating this as expected spend. Five pilot conditions may not predict all 73; 50% headroom is a planning heuristic, not a confidence bound.",
+  "next_step": "Review cost, truncations, provider blocks, settings and Runpod spend before creating main-run configuration"
+}
