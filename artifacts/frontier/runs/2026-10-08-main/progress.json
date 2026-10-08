@@ -1,25 +1,25 @@
 {
-  "as_of_utc": "2026-10-08T05:30:21.201244+00:00",
+  "as_of_utc": "2026-10-08T05:45:05.876771+00:00",
   "phase": "running",
-  "checkpoint_sha256": "602c513fccf5510349f33d4def0d544e1927ab7097763d1317721c39517bcc1c",
+  "checkpoint_sha256": "227757e725e1a8447f14a8d91bf393090cc9b4dc99ec13653e6245b41d55fe8b",
   "main": {
     "expected_requests": 10950,
-    "submitted_or_reserved": 4015,
+    "submitted_or_reserved": 5015,
     "complete": false,
     "done_by_provider": {
-      "openai": 1405,
-      "anthropic": 805,
-      "google": 1205
+      "openai": 1805,
+      "anthropic": 1005,
+      "google": 1605
     },
     "outcomes": {
-      "text": 3298,
-      "blocked": 117,
+      "text": 4261,
+      "blocked": 154,
       "pending": 600
     },
-    "main_accounted_usd": 111.138677,
+    "main_accounted_usd": 115.108008,
     "prior_pilot_accounted_usd": 9.402844,
     "main_runpod_reserved_usd": 5,
-    "study_accounted_including_reserved_usd": 125.541521,
+    "study_accounted_including_reserved_usd": 129.510852,
     "main_generation_cap_usd": 160,
     "judge_allocation_usd": 30,
     "batches": [
@@ -179,10 +179,10 @@
       {
         "batch_key": "anthropic-a24d8f95e4b00694f08b09590bad2a51",
         "provider": "anthropic",
-        "state": "active",
+        "state": "done",
         "remote_id": "msgbatch_018aiC8UrQZsikHEtBKgFY2w",
         "created": 1791436770.4236898,
-        "updated": 1791437397.3213305,
+        "updated": 1791438143.6679223,
         "error": null
       },
       {
@@ -215,19 +215,64 @@
       {
         "batch_key": "openai-aa12c0f4fbff0c8aad679d75d5b4e67a",
         "provider": "openai",
-        "state": "active",
+        "state": "done",
         "remote_id": "batch_6ac7295cdc6481909ee9264fecf988f0",
         "created": 1791437148.381578,
-        "updated": 1791437397.4495897,
+        "updated": 1791437520.4224777,
         "error": null
       },
       {
         "batch_key": "google-6ad30deab855c8ccff06014381c77ae4",
         "provider": "google",
-        "state": "active",
+        "state": "done",
         "remote_id": "batches/amwa8hbtegrvsg11sjjxa047m69r0a55ajqs",
         "created": 1791437333.1023016,
-        "updated": 1791437397.6058426,
+        "updated": 1791437583.1087542,
+        "error": null
+      },
+      {
+        "batch_key": "openai-deb0a6fde7f5a268ff2793e59ebf8149",
+        "provider": "openai",
+        "state": "done",
+        "remote_id": "batch_6ac72ad17b088190a087a28c0117d09b",
+        "created": 1791437520.6355963,
+        "updated": 1791437709.0193675,
+        "error": null
+      },
+      {
+        "batch_key": "google-2399d3aa139fbbeafc008c310904540a",
+        "provider": "google",
+        "state": "done",
+        "remote_id": "batches/jiiyvmne1lz9hvqmuh85d29bf1y2ynxq6etm",
+        "created": 1791437583.3120816,
+        "updated": 1791437955.6562495,
+        "error": null
+      },
+      {
+        "batch_key": "openai-8b3ef7f07f619e38503480ed683e66de",
+        "provider": "openai",
+        "state": "active",
+        "remote_id": "batch_6ac72b8dbf2c8190aeb9b72ad5ed7625",
+        "created": 1791437709.2667441,
+        "updated": 1791438267.3834822,
+        "error": null
+      },
+      {
+        "batch_key": "google-33e6e21bfd1c7a1edd20f2869a6e2146",
+        "provider": "google",
+        "state": "active",
+        "remote_id": "batches/k4m69ulaesxy6n84lgg7v1ot5kzm3137jnsk",
+        "created": 1791437955.9817483,
+        "updated": 1791438267.5738866,
+        "error": null
+      },
+      {
+        "batch_key": "anthropic-2561d94f3b8249dfc8b61def1e80505e",
+        "provider": "anthropic",
+        "state": "active",
+        "remote_id": "msgbatch_01D69qDMCEN2PRkHxnaZNzVG",
+        "created": 1791438144.5156267,
+        "updated": 1791438267.8950274,
         "error": null
       }
     ]
@@ -237,8 +282,8 @@
     "updated_epoch": 1791436273.3494456,
     "deadline_epoch": 1791604350.4713228
   },
-  "published_full_response_records": 3415,
-  "published_original_provider_records_in_this_export": 3415,
+  "published_full_response_records": 4415,
+  "published_original_provider_records_in_this_export": 4415,
   "generation_complete": false,
   "judging_started": false,
   "raw_publication_authorization": "User explicitly approved publishing all records from the 10,950-case main study as they finish, including benchmark prompts, answers and synthetic IHEval test codes. API credentials/private configuration are excluded.",
@@ -247,15 +292,15 @@
     "unique_request_ids": true,
     "sqlite_matches_checkpoint_summary": true,
     "original_provider_rows_match_normalized_results": true,
-    "exported_request_records": 4015,
+    "exported_request_records": 5015,
     "secret_scan_passed": true
   },
   "source_commit": "a17c796acf48a295ad38bdb2982215057f7ac326",
   "continuation_commit": "e17b1398a09a96785664838ffcef259e16d8c211",
   "worker_terminated": false,
-  "completed_cases": 3415,
+  "completed_cases": 4415,
   "review_cases": 0,
-  "unsubmitted_cases": 6935,
+  "unsubmitted_cases": 5935,
   "read_only_recovery": null,
   "terminal_block_resolution": {
     "resolved_epoch": 1791435786.48601,
@@ -279,8 +324,8 @@
   "initial_generator_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
   "current_worker_id": "2x588ujuurvi58",
   "budget_breakdown_usd": {
-    "usage_estimates": 13.023093,
-    "retained_unknown_usage_reservations": 0.630784,
+    "usage_estimates": 16.705704,
+    "retained_unknown_usage_reservations": 0.917504,
     "pending_reservations": 97.4848
   }
 }
