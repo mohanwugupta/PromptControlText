@@ -1,25 +1,25 @@
 {
-  "as_of_utc": "2026-10-08T07:29:40.263049+00:00",
+  "as_of_utc": "2026-10-08T07:44:43.083345+00:00",
   "phase": "running",
-  "checkpoint_sha256": "a90822dadecfdb4ea08ccb680af40b277b13e9a485f8d917773846e7ef72295b",
+  "checkpoint_sha256": "368d1c7fdf7780fdd5765af139201c0e4798463e5462a38f55c5b3011a536694",
   "main": {
     "expected_requests": 10950,
-    "submitted_or_reserved": 9260,
+    "submitted_or_reserved": 9705,
     "complete": false,
     "done_by_provider": {
       "openai": 3650,
-      "anthropic": 2005,
-      "google": 3205
+      "anthropic": 2205,
+      "google": 3650
     },
     "outcomes": {
-      "text": 8565,
-      "blocked": 295,
-      "pending": 400
+      "text": 9181,
+      "blocked": 324,
+      "pending": 200
     },
-    "main_accounted_usd": 71.309331,
+    "main_accounted_usd": 62.701298,
     "prior_pilot_accounted_usd": 9.402844,
     "main_runpod_reserved_usd": 5,
-    "study_accounted_including_reserved_usd": 85.712175,
+    "study_accounted_including_reserved_usd": 77.104142,
     "main_generation_cap_usd": 160,
     "judge_allocation_usd": 30,
     "batches": [
@@ -377,10 +377,10 @@
       {
         "batch_key": "anthropic-8b1d2d73aa443dca8f53a27fb94d5f55",
         "provider": "anthropic",
-        "state": "active",
+        "state": "done",
         "remote_id": "msgbatch_01A4zeVifKApvJ3AkEXxPkQz",
         "created": 1791439705.1075082,
-        "updated": 1791444530.8296974,
+        "updated": 1791445472.1048865,
         "error": null
       },
       {
@@ -467,10 +467,37 @@
       {
         "batch_key": "google-e1a012ed08688ecbff9e0f499af2373c",
         "provider": "google",
-        "state": "active",
+        "state": "done",
         "remote_id": "batches/6quu0omobfgcbgusxaygeqjixlrr0512hhnh",
         "created": 1791444531.6136737,
-        "updated": 1791444534.3750663,
+        "updated": 1791444845.2478745,
+        "error": null
+      },
+      {
+        "batch_key": "google-763cf0e5d04a508482122f6209462c97",
+        "provider": "google",
+        "state": "done",
+        "remote_id": "batches/nfmbgbvd2mastb3qfphdk9rwtlo5jsdk5btw",
+        "created": 1791444845.3848174,
+        "updated": 1791445097.012123,
+        "error": null
+      },
+      {
+        "batch_key": "google-249f38b058fe80dbf5f3bb2fb8c8459f",
+        "provider": "google",
+        "state": "done",
+        "remote_id": "batches/saxa916j2y7mzyykpy7th5onu6fcsq40chrl",
+        "created": 1791445097.1352146,
+        "updated": 1791445472.5776439,
+        "error": null
+      },
+      {
+        "batch_key": "anthropic-74ea0de7559ba73995f10bcb85a8952a",
+        "provider": "anthropic",
+        "state": "active",
+        "remote_id": "msgbatch_013f6MkeoVY6kqvBsdoFX4rx",
+        "created": 1791445472.6891701,
+        "updated": 1791445473.2383976,
         "error": null
       }
     ]
@@ -481,8 +508,8 @@
     "deadline_epoch": 1791604350.4713228,
     "session_minutes": 120
   },
-  "published_full_response_records": 8860,
-  "published_original_provider_records_in_this_export": 8860,
+  "published_full_response_records": 9505,
+  "published_original_provider_records_in_this_export": 9505,
   "generation_complete": false,
   "judging_started": false,
   "raw_publication_authorization": "User explicitly approved publishing all records from the 10,950-case main study as they finish, including benchmark prompts, answers and synthetic IHEval test codes. API credentials/private configuration are excluded.",
@@ -491,15 +518,15 @@
     "unique_request_ids": true,
     "sqlite_matches_checkpoint_summary": true,
     "original_provider_rows_match_normalized_results": true,
-    "exported_request_records": 9260,
+    "exported_request_records": 9705,
     "secret_scan_passed": true
   },
   "source_commit": "a17c796acf48a295ad38bdb2982215057f7ac326",
   "continuation_commit": "e17b1398a09a96785664838ffcef259e16d8c211",
   "worker_terminated": false,
-  "completed_cases": 8860,
+  "completed_cases": 9505,
   "review_cases": 0,
-  "unsubmitted_cases": 1690,
+  "unsubmitted_cases": 1245,
   "read_only_recovery": null,
   "terminal_block_resolution": {
     "resolved_epoch": 1791435786.48601,
@@ -523,8 +550,8 @@
   "initial_generator_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
   "current_worker_id": "2x588ujuurvi58",
   "budget_breakdown_usd": {
-    "usage_estimates": 33.429523,
-    "retained_unknown_usage_reservations": 1.835008,
-    "pending_reservations": 36.0448
+    "usage_estimates": 35.774194,
+    "retained_unknown_usage_reservations": 2.351104,
+    "pending_reservations": 24.576
   }
 }
