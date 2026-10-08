@@ -3,8 +3,21 @@
 **Main generation has started.** All three providers accepted their initial
 five-case Batch jobs on October 8 UTC (October 7 Pacific). The target remains
 50 fixed items × 73 conditions × three generators = **10,950 cases**.
-The [launch snapshot](launch.json) records batch IDs, progress, budget accounting
-and the verified local checkpoint. It is a timestamped snapshot, not live status.
+The [latest published progress](progress.json) records batch IDs, completion
+counts, budget accounting and checkpoint verification. The [launch snapshot](launch.json)
+preserves the earlier starting state. Both are timestamped snapshots, not live status.
+
+Fifteen complete generated records (five per provider) are verified locally.
+Their public release is pending explicit main-study approval after automatic
+approval review rejected it; the earlier raw-data approval covered the pilot.
+Generation continues while that publication request is pending.
+[requests.jsonl](requests.jsonl) accounts for all
+615 cases submitted or reserved at this snapshot, including 600 still pending.
+Each finished response is linked to its frozen item, condition and request hash.
+[operations/](operations/) archives the actual deployment and backup scripts;
+[execution-provenance.json](execution-provenance.json) records their hashes.
+Credentials, SSH keys, private account/workspace configuration, temporary bundles
+and duplicate local database backups remain excluded from the public repo.
 
 The user explicitly approved transferring the three provider keys and Anthropic
 workspace ID to worker `43dht91rp868ts`. Transfer succeeded over encrypted SSH,
