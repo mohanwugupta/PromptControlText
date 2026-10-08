@@ -1,11 +1,12 @@
 # Main frontier extension — frozen execution plan
 
-Prepared October 8, 2026 UTC (October 7 Pacific). **Main generation has stopped
-for accounting review and the worker has been deleted after verified retrieval.**
-Four Gemini prompt blocks omitted output-token usage; all cost reservations are
-preserved. The [stop report](../artifacts/frontier/runs/2026-10-08-main/STOP-REPORT.md)
-records current counts, read-only recovery, and the next steps. The plan below
-preserves the authorized design and limits; it does not indicate a running job.
+Prepared October 8, 2026 UTC (October 7 Pacific). **The accounting stop has been
+resolved and continuation is being prepared on the existing ledger.** All 1,615
+submitted cases have been retrieved; 9,335 frozen cases remain. Terminal Gemini
+prompt blocks retain their full unknown-cost reservations while counting as
+completed outcomes. See the [resume record](../artifacts/frontier/runs/2026-10-08-main/RESUME.md)
+and [timestamped progress](../artifacts/frontier/runs/2026-10-08-main/progress.json)
+for execution status. The earlier stop report is historical evidence.
 
 ## Design and settings
 
@@ -84,7 +85,9 @@ on model behavior. Batch turnaround can be up to 24 hours per wave.
 
 Each submission is recorded durably before the network call. An ambiguous POST,
 validation/server error, missing/duplicate result identity, unexpected usage,
-or unexplained empty answer stops new submissions for review. Completed cases
+or unexplained empty answer stops new submissions for review. Explicit terminal
+Gemini prompt blocks with missing output usage count as completed while retaining
+their full reservation; no zero usage is invented and they are never resent. Completed cases
 and explicit safety blocks are never automatically resent. Failed read-only
 polls may be retried. Results join by custom ID, never their returned order.
 Final results, raw provider records, SQLite backups and status are checkpointed.

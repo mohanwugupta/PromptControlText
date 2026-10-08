@@ -5,7 +5,7 @@ from datetime import datetime,timezone
 from pathlib import Path
 sys.path.insert(0,str(Path.cwd()))
 from dotenv import dotenv_values
-from frontier.main_run import MainLedger,main_cases
+from frontier.main_run import MainLedger,main_cases,reserved_terminal_block
 from frontier.batch_api import result_row
 root=Path.cwd();local=root/'.local/frontier/main-20261008';dest=root/'artifacts/frontier/runs/2026-10-08-main'
 checkpoint=json.loads((local/'latest-checkpoint.json').read_text());src=Path(checkpoint['path']);manifest=json.load(open(root/'artifacts/frontier/manifest.json'));config=json.load(open(root/'configs/frontier-main.json'))
@@ -27,7 +27,20 @@ for r in rows:
  if result is not None:completed[r['batch_key']].append(r)
 raw_count=0
 for key,rr in completed.items():
- write(dest/'responses'/f'{key}.jsonl',''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in rr),True)
+ response_path=dest/'responses'/f'{key}.jsonl'
+ content=''.join(json.dumps(r,ensure_ascii=False)+'\n' for r in rr)
+ if response_path.exists() and response_path.read_text()!=content:
+  # Published batches remain immutable. Only the reviewed completion-state
+  # correction may differ; current state lives in requests.jsonl.
+  old={r['request_id']:r for r in map(json.loads,response_path.read_text().splitlines())}
+  assert set(old)=={r['request_id'] for r in rr}
+  for row in rr:
+   prior=old[row['request_id']]
+   if prior!=row:
+    assert prior['state']=='needs_review' and row['state']=='done'
+    assert {**prior,'state':'done'}==row and reserved_terminal_block(row['case'],row['result'])
+  content=response_path.read_text()
+ write(response_path,content,True)
  raw=src/'provider-results'/f'{key}.jsonl'
  if not raw.exists():raw=dest/'provider-results'/f'{key}.jsonl'
  if raw.exists():
@@ -41,6 +54,7 @@ write(dest/'requests.jsonl',''.join(json.dumps(r,ensure_ascii=False)+'\n' for r 
 summary=checkpoint['summary'];count=sum(map(len,completed.values()));supervisor=json.loads((src/'supervisor-status.json').read_text())
 control=json.loads((local/'control-state.json').read_text())
 phase='complete' if summary['complete'] else ('stopped_'+supervisor['state'] if supervisor['state'] in ('needs_review','budget_stopped','deadline') or control.get('terminated') else 'running')
+if supervisor['state']=='prepared_to_resume':phase='prepared_to_resume'
 record={'as_of_utc':datetime.fromtimestamp(checkpoint['retrieved_epoch'],timezone.utc).isoformat(),'phase':'complete' if summary['complete'] else 'running','checkpoint_sha256':checkpoint['sha256'],'main':summary,'supervisor':supervisor,'published_full_response_records':count,'published_original_provider_records_in_this_export':raw_count,'generation_complete':summary['complete'],'judging_started':False,'raw_publication_authorization':'User explicitly approved publishing all records from the 10,950-case main study as they finish, including benchmark prompts, answers and synthetic IHEval test codes. API credentials/private configuration are excluded.','verification':{'frozen_case_mapping':True,'unique_request_ids':True,'sqlite_matches_checkpoint_summary':True,'original_provider_rows_match_normalized_results':True,'exported_request_records':len(rows),'secret_scan_passed':True},'source_commit':'8db7bdd680c36b5f434b7cc6b5f564c96b22c88a','continuation_commit':'e17b1398a09a96785664838ffcef259e16d8c211'}
 record['phase']=phase
 record['worker_terminated']=bool(control.get('terminated'))
@@ -48,11 +62,14 @@ record['completed_cases']=sum(summary['done_by_provider'].values())
 record['review_cases']=sum(r['state']=='needs_review' for r in rows)
 record['unsubmitted_cases']=summary['expected_requests']-len(rows)
 record['read_only_recovery']=checkpoint.get('recovery')
+record['terminal_block_resolution']=checkpoint.get('resolution')
 record['budget_breakdown_usd']={
  'usage_estimates':round(sum(r['cost'] for r in rows if r['result'] and r['result'].get('cost_basis')=='usage_at_conservative_batch_rates'),6),
  'retained_unknown_usage_reservations':round(sum(r['cost'] for r in rows if r['result'] and r['result'].get('cost_basis')=='reserved_unknown'),6),
  'pending_reservations':round(sum(r['cost'] for r in rows if r['result'] is None),6)}
 write(dest/'progress.json',json.dumps(record,indent=2)+'\n')
+if checkpoint.get('resolution'):
+ write(dest/'resume-resolution.json',json.dumps(checkpoint['resolution'],indent=2)+'\n',True)
 cleanup=json.loads((local/'cleanup.json').read_text()) if (local/'cleanup.json').exists() else None
 if cleanup:
  public_cleanup={k:v for k,v in cleanup.items() if k!='checkpoint_path'}
