@@ -1,25 +1,25 @@
 {
-  "as_of_utc": "2026-10-08T06:59:55.314663+00:00",
+  "as_of_utc": "2026-10-08T07:14:56.972666+00:00",
   "phase": "running",
-  "checkpoint_sha256": "55b52373a8a7c0c982b28a7fb8eb41fd62535e1ecb446777d2b8569786c77e17",
+  "checkpoint_sha256": "a1ee70b8bb7d686653db5d91bea74061fe50e0015d4ab788fd5954181ad161d9",
   "main": {
     "expected_requests": 10950,
-    "submitted_or_reserved": 8660,
+    "submitted_or_reserved": 9060,
     "complete": false,
     "done_by_provider": {
       "openai": 3650,
       "anthropic": 2005,
-      "google": 2605
+      "google": 3005
     },
     "outcomes": {
-      "text": 7969,
-      "blocked": 291,
+      "text": 8367,
+      "blocked": 293,
       "pending": 400
     },
-    "main_accounted_usd": 69.019722,
+    "main_accounted_usd": 70.484477,
     "prior_pilot_accounted_usd": 9.402844,
     "main_runpod_reserved_usd": 5,
-    "study_accounted_including_reserved_usd": 83.422566,
+    "study_accounted_including_reserved_usd": 84.887321,
     "main_generation_cap_usd": 160,
     "judge_allocation_usd": 30,
     "batches": [
@@ -380,7 +380,7 @@
         "state": "active",
         "remote_id": "msgbatch_01A4zeVifKApvJ3AkEXxPkQz",
         "created": 1791439705.1075082,
-        "updated": 1791442754.5163784,
+        "updated": 1791443663.6337395,
         "error": null
       },
       {
@@ -440,21 +440,40 @@
       {
         "batch_key": "google-ad1bc1ef19106a319b534cb489783c53",
         "provider": "google",
-        "state": "active",
+        "state": "done",
         "remote_id": "batches/e1a8yrljftptymtrrcdhmduc4trm7awo9ifd",
         "created": 1791442133.3281577,
-        "updated": 1791442754.6937885,
+        "updated": 1791442879.0296931,
+        "error": null
+      },
+      {
+        "batch_key": "google-597780486f8acf4cad6817cbdef82415",
+        "provider": "google",
+        "state": "done",
+        "remote_id": "batches/ijqo5hq7v4r25lkt3g4ho8q08k6lojicwzvk",
+        "created": 1791442879.1408768,
+        "updated": 1791443599.3127463,
+        "error": null
+      },
+      {
+        "batch_key": "google-74ef9b7d49bafe36bb71e705a49673a5",
+        "provider": "google",
+        "state": "active",
+        "remote_id": "batches/m1ljaezdh0sqx0rsi4t1g20u2fmb4ld55vks",
+        "created": 1791443599.4310594,
+        "updated": 1791443663.800763,
         "error": null
       }
     ]
   },
   "supervisor": {
-    "state": "waiting_for_initial_session",
-    "updated_epoch": 1791436273.3494456,
-    "deadline_epoch": 1791604350.4713228
+    "state": "running",
+    "updated_epoch": 1791443473.392151,
+    "deadline_epoch": 1791604350.4713228,
+    "session_minutes": 120
   },
-  "published_full_response_records": 8260,
-  "published_original_provider_records_in_this_export": 8260,
+  "published_full_response_records": 8660,
+  "published_original_provider_records_in_this_export": 8660,
   "generation_complete": false,
   "judging_started": false,
   "raw_publication_authorization": "User explicitly approved publishing all records from the 10,950-case main study as they finish, including benchmark prompts, answers and synthetic IHEval test codes. API credentials/private configuration are excluded.",
@@ -463,15 +482,15 @@
     "unique_request_ids": true,
     "sqlite_matches_checkpoint_summary": true,
     "original_provider_rows_match_normalized_results": true,
-    "exported_request_records": 8660,
+    "exported_request_records": 9060,
     "secret_scan_passed": true
   },
   "source_commit": "a17c796acf48a295ad38bdb2982215057f7ac326",
   "continuation_commit": "e17b1398a09a96785664838ffcef259e16d8c211",
   "worker_terminated": false,
-  "completed_cases": 8260,
+  "completed_cases": 8660,
   "review_cases": 0,
-  "unsubmitted_cases": 2290,
+  "unsubmitted_cases": 1890,
   "read_only_recovery": null,
   "terminal_block_resolution": {
     "resolved_epoch": 1791435786.48601,
@@ -495,8 +514,8 @@
   "initial_generator_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
   "current_worker_id": "2x588ujuurvi58",
   "budget_breakdown_usd": {
-    "usage_estimates": 31.36929,
-    "retained_unknown_usage_reservations": 1.605632,
+    "usage_estimates": 32.719357,
+    "retained_unknown_usage_reservations": 1.72032,
     "pending_reservations": 36.0448
   }
 }
