@@ -1,10 +1,12 @@
 import json
+import io
+import urllib.error
 from collections import Counter
 
 import pytest
 
 from frontier.prepare import ROOT, digest, render_messages, sample, validate_manifest
-from frontier.providers import normalize, request_spec
+from frontier.providers import generate, normalize, request_spec
 from frontier.report import report
 from frontier.run import Ledger, accounted_cost, cases, execute, reservation, validate_config
 
@@ -231,3 +233,69 @@ def test_partial_pilot_has_no_full_cost_projection(manifest, config):
     assert not summary["complete"]
     assert summary["projected_main_usd"] is None
     assert summary["outcomes"] == {"unresolved": 1}
+
+
+def test_infrastructure_is_inside_pilot_cap(config):
+    config.update(pilot_ceiling_usd=10, runpod_reserve_usd=1, total_pilot_ceiling_usd=10)
+    with pytest.raises(ValueError, match="infrastructure"):
+        validate_config(config)
+
+
+def test_blocked_provider_does_not_prevent_other_providers(tmp_path, manifest, config, capsys):
+    requests = list(cases(manifest, config, "pilot"))
+    ledger = Ledger(tmp_path / "ledger.sqlite", manifest, config)
+    anthropic = next(c for c in requests if c["model"]["provider"] == "anthropic")
+    ledger.reserve(anthropic, reservation(anthropic["model"], config), config["pilot_ceiling_usd"])
+    ledger.finish(anthropic, {"outcome": "http_error", "http_status": 400}, config)
+    others = [c for c in requests if c["model"]["provider"] != "anthropic"]
+    fake = lambda *args: {"outcome": "text", "text": "mock", "input_tokens": 10, "output_tokens": 10}
+    assert execute(others, ledger, config, {}, fake) == "complete"
+    assert list(ledger.states().values()).count("done") == 100
+    assert ledger.states()[anthropic["request_id"]] == "needs_review"
+    assert ledger.total() >= reservation(anthropic["model"], config)
+
+
+def test_http_diagnostic_redacts_key(monkeypatch, config):
+    secret = "test-secret-not-a-real-key"
+
+    class FailingOpener:
+        def open(self, request, timeout):
+            body = json.dumps({"error": {"type": "invalid_request_error", "message": "Rejected " + secret}}).encode()
+            raise urllib.error.HTTPError(request.full_url, 400, "error", {}, io.BytesIO(body))
+
+    monkeypatch.setattr("frontier.providers.urllib.request.build_opener", lambda *args: FailingOpener())
+    result = generate(config["models"][0], [{"role": "user", "content": "test"}], config,
+                      {"OPENAI_API_KEY": secret})
+    assert result["http_status"] == 400
+    assert secret not in json.dumps(result)
+    assert result["error_diagnostic"]["message"] == "Rejected [REDACTED]"
+
+
+def test_partial_provider_report_does_not_invent_other_costs(manifest, config):
+    records = [{"request_id": case["request_id"], "state": "done", "accounted_usd": 0.01,
+                "result": {"outcome": "text"}}
+               for case in cases(manifest, config, "pilot") if case["model"]["provider"] == "openai"]
+    result = report(records, manifest, config)
+    assert not result["complete"] and result["projected_main_usd"] is None
+    assert result["completed_by_provider"] == {"openai": 50, "anthropic": 0, "google": 0}
+    assert result["projected_main_usd_by_provider"] == {"openai": 36.5}
+    records[0]["result"]["cost_basis"] = "reserved_unknown"
+    result = report(records, manifest, config)
+    assert result["projected_main_usd_by_provider"] == {}
+    assert result["projected_main_accounting_usd_by_provider"] == {"openai": 36.5}
+
+
+def test_known_http_policy_block_keeps_cost_and_continues(tmp_path, manifest, config, capsys):
+    requests = [c for c in cases(manifest, config, "pilot") if c["model"]["provider"] == "openai"][:2]
+    ledger = Ledger(tmp_path / "ledger.sqlite", manifest, config)
+    calls = []
+
+    def fake(*args):
+        calls.append(1)
+        if len(calls) == 1:
+            return {"outcome": "blocked", "block_origin": "provider_http", "error_diagnostic": {"code": "cyber_policy"}}
+        return {"outcome": "text", "text": "mock", "input_tokens": 10, "output_tokens": 10}
+
+    assert execute(requests, ledger, config, {}, fake) == "complete"
+    assert len(calls) == 2 and all(s == "done" for s in ledger.states().values())
+    assert ledger.total() >= reservation(requests[0]["model"], config)

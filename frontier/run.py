@@ -26,6 +26,11 @@ def validate_config(config):
         raise ValueError("Expected one model per provider")
     if not 0 < config["pilot_ceiling_usd"] <= 10 or config["study_ceiling_usd"] != 250:
         raise ValueError("Pilot must remain within its $10 cap and the $250 study ceiling")
+    infrastructure = config.get("runpod_reserve_usd", 0)
+    total_cap = config.get("total_pilot_ceiling_usd", 10)
+    if (not math.isfinite(infrastructure) or infrastructure < 0 or total_cap != 10
+            or config["pilot_ceiling_usd"] + infrastructure > total_cap):
+        raise ValueError("API cap plus infrastructure reserve must fit the $10 total cap")
     if not 1 <= config["max_output_tokens"] <= 4096 or config["input_token_reserve"] != 32768:
         raise ValueError("Unreviewed token limits")
     for model in config["models"]:
@@ -108,7 +113,9 @@ class Ledger:
         cost, basis = accounted_cost(result, case["model"], config)
         result["cost_basis"] = basis
         state = "done" if result["outcome"] in ("text", "blocked", "truncated") else "needs_review"
-        if basis == "reserved_unknown" or cost > reservation(case["model"], config):
+        known_http_block = (result["outcome"] == "blocked" and result.get("block_origin") == "provider_http"
+                            and (result.get("error_diagnostic") or {}).get("code") == "cyber_policy")
+        if (basis == "reserved_unknown" and not known_http_block) or cost > reservation(case["model"], config):
             state = "needs_review"
         with self.db:
             self.db.execute("UPDATE requests SET state=?, cost=?, result_json=?, ended=? WHERE request_id=?",
@@ -146,7 +153,8 @@ def run_lock(path):
 
 def execute(requests, ledger, config, environment, call=generate):
     states = ledger.states()
-    if any(s != "done" for s in states.values()):
+    selected_ids = {case["request_id"] for case in requests}
+    if any(s != "done" and key in selected_ids for key, s in states.items()):
         return "needs_review: unresolved attempt; retain reservation and reconcile before retrying"
     for case in requests:
         if case["request_id"] in states:
@@ -168,13 +176,16 @@ def main():
     parser.add_argument("--manifest", type=Path, default=ROOT / "artifacts/frontier/manifest.json")
     parser.add_argument("--config", type=Path, default=ROOT / "configs/frontier-pilot.json")
     parser.add_argument("--split", choices=("pilot", "main"), default="pilot")
+    parser.add_argument("--providers", nargs="+", choices=tuple(KEYS), default=list(KEYS),
+                        help="Run a provider subset using the same shared ledger and budget")
     parser.add_argument("--execute", action="store_true", help="Make paid PILOT calls; otherwise dry run")
     parser.add_argument("--ledger", type=Path, default=ROOT / ".local/frontier/pilot.sqlite")
     parser.add_argument("--export", type=Path, default=ROOT / ".local/frontier/pilot.jsonl")
     args = parser.parse_args()
     manifest = validate_manifest(json.loads(args.manifest.read_text()))
     config = validate_config(json.loads(args.config.read_text()))
-    requests = list(cases(manifest, config, args.split))
+    requests = [case for case in cases(manifest, config, args.split)
+                if case["model"]["provider"] in args.providers]
     if not args.execute:
         print(json.dumps({"status": "dry_run", "split": args.split, "requests": len(requests),
                           "unique_request_ids": len({r["request_id"] for r in requests}),
@@ -186,7 +197,7 @@ def main():
     if args.split != "pilot":
         raise SystemExit("Main generation is gated on pilot cost/completeness review; no calls made")
     environment = credential_environment(ROOT / ".env")
-    if any(not environment.get(key) for key in KEYS.values()):
+    if any(not environment.get(KEYS[provider]) for provider in args.providers):
         raise SystemExit("Missing provider credentials; use scripts/credentials.py status")
     with run_lock(args.ledger.with_suffix(".lock")):
         ledger = Ledger(args.ledger, manifest, config)

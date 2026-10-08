@@ -1,0 +1,56 @@
+{"request_id": "246d5cfb2f3acdf497dd177c752d19a790329ed2ba71a2777e145710cbce7af5", "provider": "openai", "outcome": "text", "accounted_usd": 0.001613}
+{"request_id": "e577f2a08c75140f3e8b0b46a9e0ff4b08ec15e6f3aa7277dde8f86a6797b5d7", "provider": "anthropic", "outcome": "http_error", "accounted_usd": 0.247372}
+{"status": "needs_review: provider error, missing usage, or unexpected billing", "states": {"done": 1, "needs_review": 1}, "accounted_usd": 0.247372, "target_requests": 150}
+{"request_id": "0eec74855968964cee418dbd5fa1d4b1211aa0eacc4e3087bc4ec3e6217b1498", "provider": "google", "outcome": "http_error", "accounted_usd": 0.362061}
+{"status": "needs_review: provider error, missing usage, or unexpected billing", "states": {"done": 1, "needs_review": 2}, "accounted_usd": 0.362061, "target_requests": 100}
+{"request_id": "10f286791cb60a002a4114a3199882bc68b9df45cbb99a1d20b4d03c6f2c3fc0", "provider": "openai", "outcome": "http_error", "accounted_usd": 0.97646}
+{"status": "needs_review: provider error, missing usage, or unexpected billing", "states": {"done": 1, "needs_review": 3}, "accounted_usd": 0.97646, "target_requests": 50}
+{"request_id": "b4e359388e75b25c0d01aae6fc48a4bb813dfe0df175084e976f5a4e1489df13", "provider": "openai", "outcome": "text", "accounted_usd": 0.991798}
+{"request_id": "32f2b19da63203f8f934a63811aeb1b044f85f28f873983bcfbe6794934c8499", "provider": "openai", "outcome": "text", "accounted_usd": 1.00831}
+{"request_id": "1830a742cfb5a3cbc2301b384c8b47f613436083175f1f71bda470756e773dd3", "provider": "openai", "outcome": "blocked", "accounted_usd": 1.62271}
+{"request_id": "ce49cfddd931ac7b63f97e214862aa7133ba961da06962050bb2b5b05f8f54d4", "provider": "openai", "outcome": "text", "accounted_usd": 1.626585}
+{"request_id": "c3b594911ae629523a2fefc3024785563c7d8b6288ad7bd2b64c6be700b834d4", "provider": "openai", "outcome": "text", "accounted_usd": 1.630298}
+{"request_id": "9c41cff5ec3b1b26bf4b7c99743fdc5ac75e220bbeec99763250985207540f6f", "provider": "openai", "outcome": "text", "accounted_usd": 1.631573}
+{"request_id": "76a8475bf98c037e34ed594565deb58e760172770493363e8123a842637c7802", "provider": "openai", "outcome": "text", "accounted_usd": 1.647123}
+{"request_id": "9560618ff422123d08eb7305765d5bd201f8f80ed73e2eb2e724e7020d239485", "provider": "openai", "outcome": "text", "accounted_usd": 1.66936}
+{"request_id": "a26b38abe2e857fe5e10b0eea6b8527fd61cd82f4d665309559e952db6da807d", "provider": "openai", "outcome": "text", "accounted_usd": 1.671535}
+{"request_id": "1e458a9e12bd24c06b9695fa9e14076d35254738be2f15c67eb5b3d4375188c5", "provider": "openai", "outcome": "text", "accounted_usd": 1.687723}
+{"request_id": "12354f4680060e73208dd92dd778eced4897dee71304c38935de500b28cee75d", "provider": "openai", "outcome": "blocked", "accounted_usd": 2.302123}
+{"request_id": "ba9fe92d73e4be393daa7cf8ddce2150aa61e58a1583a8bcf87317df97ae36b6", "provider": "openai", "outcome": "text", "accounted_usd": 2.303973}
+{"request_id": "cde98e9fecac7af2135ee474c0fbba21b64241640ccf2dc2047109d80e05082d", "provider": "openai", "outcome": "text", "accounted_usd": 2.32061}
+{"request_id": "35ab6dd251a1524d2133a204b0d096126094b5a21b3c905dc8ca4d6ee729544b", "provider": "openai", "outcome": "text", "accounted_usd": 2.324698}
+{"request_id": "d058dc6477f29ce21cf41ad6edf2fce5cd3fb9b45437a93cb05c9c114471605c", "provider": "openai", "outcome": "text", "accounted_usd": 2.326323}
+{"request_id": "49d287ac1a742cc9e62e95ab98d0c44109052a0b12ff05e72bba78dfe03dd02a", "provider": "openai", "outcome": "blocked", "accounted_usd": 2.940723}
+{"request_id": "68bc4a0a9fb268a98564894fb952285b65d2846739050a4c112470714a2affa4", "provider": "openai", "outcome": "text", "accounted_usd": 2.956023}
+{"request_id": "055dd5639218b6e70dbc1e50cf84feb3d1e88201c392e33172dff572a74dd563", "provider": "openai", "outcome": "text", "accounted_usd": 2.974873}
+{"request_id": "677afc55f64ac8c6aac2da4bfe3d869fe62c2ae61509d77bcce2b1691fc5f2fd", "provider": "openai", "outcome": "text", "accounted_usd": 2.97651}
+{"request_id": "8cab7647e56f7d10b59381fef568edc750e452ad617b408a1d1ef3ac6e144878", "provider": "openai", "outcome": "text", "accounted_usd": 2.980185}
+{"request_id": "b6c37df90fe54aa891eab52713dfcb833aa43ccfa58faedd84b3096de11fc435", "provider": "openai", "outcome": "text", "accounted_usd": 2.984635}
+{"request_id": "7a0e037f8f738343da41435f45ec94ddf2df13600e85d1eec1186965174d262f", "provider": "openai", "outcome": "blocked", "accounted_usd": 3.599035}
+{"request_id": "cb92032dd6b4ebf200eac90067f91a33efe2259cb6ace2475cf261a03db21011", "provider": "openai", "outcome": "text", "accounted_usd": 3.600773}
+{"request_id": "c6a4a69e929f5e573715c651584db734462224b3189b5344760fe4df01dd6616", "provider": "openai", "outcome": "text", "accounted_usd": 3.602298}
+{"request_id": "9314ed7268b602d88966cb0b1570956dd1b93f803daff5dc6f225d1abd01e6ac", "provider": "openai", "outcome": "text", "accounted_usd": 3.603735}
+{"request_id": "686e1998b2f9b8332e3f5f3ec5066ac9a8588c4bcd94ed57cd0dba16476ef960", "provider": "openai", "outcome": "text", "accounted_usd": 3.605673}
+{"request_id": "7bf35df11c7a050d48e7b9d268b943f0df144ec5436d68bead5a13e2f0f4c2ae", "provider": "openai", "outcome": "text", "accounted_usd": 3.609523}
+{"request_id": "fb7fa92a77b655b0be5a339661aa557ec14db55e4035b63fc7b8fb6e21db25ab", "provider": "openai", "outcome": "blocked", "accounted_usd": 4.223923}
+{"request_id": "ffc005797ebe36337e5b03402e605e1627dba1511363891d3fe94683d90cb5fa", "provider": "openai", "outcome": "text", "accounted_usd": 4.227798}
+{"request_id": "0329efcd1c056d7a970701d54ee82074035cd3aaa2fef092301d65a49165537c", "provider": "openai", "outcome": "text", "accounted_usd": 4.246048}
+{"request_id": "26146872f59a83440746e2f758e108031fccedc25bbe62df70c685327a6a1791", "provider": "openai", "outcome": "text", "accounted_usd": 4.251673}
+{"request_id": "94e73a616b03b353d2295b77b7a1432516148fade40568480aecd86f721b964c", "provider": "openai", "outcome": "text", "accounted_usd": 4.253598}
+{"request_id": "959bae3262bf3fe2605f7d22b5bb3ca0535f66cdc50511e497fc8852de80e986", "provider": "openai", "outcome": "blocked", "accounted_usd": 4.867998}
+{"request_id": "ceaece057a81d92cb6482bc31648e448c2cf511d99520a7181a160978b362425", "provider": "openai", "outcome": "text", "accounted_usd": 4.871298}
+{"request_id": "b1f061e35151aac332fa852d969c94a62e34b81d414745342bb93ea5e9714b89", "provider": "openai", "outcome": "text", "accounted_usd": 4.87566}
+{"request_id": "8e8d5bf7850f742048852a43debd0ae24cd62bf980a5b1a2ff8d614e508c64c3", "provider": "openai", "outcome": "text", "accounted_usd": 4.877798}
+{"request_id": "81629a69fe6489d7e24f88c5604a58953cdc6ab5d361becb56978cc9b4f005f4", "provider": "openai", "outcome": "text", "accounted_usd": 4.894723}
+{"request_id": "09d5918bdd2ea2e394cc40702988605f692e2ae444c53a0f29f7de9d25dd985f", "provider": "openai", "outcome": "text", "accounted_usd": 4.899923}
+{"request_id": "3991d6ad52272b4183a8fc2d11b0bcdd79c426b5cd8453a993a1db1600aec922", "provider": "openai", "outcome": "text", "accounted_usd": 4.90171}
+{"request_id": "3dd626308a32f5a139b3b7d0c53c2200c9b36bbcfe9aaad702f9c4e9e27e42bf", "provider": "openai", "outcome": "text", "accounted_usd": 4.906223}
+{"request_id": "413267c4af3a4cdfe28d9d9bbd61865a69ad4a56541e41c1866bdc25549833fc", "provider": "openai", "outcome": "blocked", "accounted_usd": 5.520623}
+{"request_id": "e4e30e4e621eac47c0e54643225acfe8f630fe9072239a1dc38dbca0a601de7c", "provider": "openai", "outcome": "blocked", "accounted_usd": 6.135023}
+{"request_id": "e2e0240ee676581464e5ac6ef538a0aa638869cf1c0bb6eacb09fdf77d36e8ad", "provider": "openai", "outcome": "text", "accounted_usd": 6.13666}
+{"request_id": "de5969e16acef3f4b03e448d8466c66890035fa77b131fb5e987ee244642015e", "provider": "openai", "outcome": "text", "accounted_usd": 6.14041}
+{"request_id": "064b4d1a512981f11cab4e41cc02029d566f15e6d004b30076abe42b72059289", "provider": "openai", "outcome": "text", "accounted_usd": 6.144373}
+{"request_id": "218082ff65030c629bad88d1d814284f6d30cf5257531d0a8810fc359e93b523", "provider": "openai", "outcome": "blocked", "accounted_usd": 6.758773}
+{"request_id": "e91777b895808d620c6e68f056f17423a71aecb055f3af37d6d12674425a70ff", "provider": "openai", "outcome": "text", "accounted_usd": 6.76311}
+{"request_id": "ee202db72f1ad77f949308cbcc8d252cab9613d58df8395519ff5160b008a422", "provider": "openai", "outcome": "text", "accounted_usd": 6.767773}
+{"status": "complete", "states": {"done": 50, "needs_review": 2}, "accounted_usd": 6.767773, "target_requests": 50}

@@ -114,7 +114,19 @@ def generate(model, messages, config, environment):
             result["http_request_id"] = response.headers.get("x-request-id") or response.headers.get("request-id")
             return result
     except urllib.error.HTTPError as error:
-        return {"outcome": "http_error", "http_status": error.code,
-                "http_request_id": error.headers.get("x-request-id") or error.headers.get("request-id")}
+        diagnostic = {}
+        try:
+            payload = json.loads(error.read()).get("error", {})
+            if isinstance(payload, dict):
+                diagnostic = {name: str(payload[name]).replace(key, "[REDACTED]")[:1000]
+                              for name in ("type", "code", "status", "message") if name in payload}
+        except (ValueError, OSError, AttributeError):
+            pass
+        policy_block = provider == "openai" and error.code == 400 and diagnostic.get("code") == "cyber_policy"
+        return {"outcome": "blocked" if policy_block else "http_error", "http_status": error.code,
+                "http_request_id": error.headers.get("x-request-id") or error.headers.get("request-id"),
+                "error_diagnostic": diagnostic,
+                "block_origin": "provider_http" if policy_block else None,
+                "text": "", "provider_refusal": False}
     except (OSError, ValueError, KeyError, TypeError):
         return {"outcome": "transport_or_parse_error"}

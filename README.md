@@ -295,6 +295,10 @@ documents the frozen 50-item design, corrected benchmark context, three-provider
 pilot, budget accounting, and Runpod execution steps. Use
 `python -m frontier.run` for a free dry run; paid pilot calls require `--execute`.
 
+The [October 8 Runpod pilot record](artifacts/frontier/runs/2026-10-08-pilot/README.md)
+contains 50 completed OpenAI cases and the billing blockers for Anthropic and
+Google. The worker was terminated; the full 150-case pilot is still incomplete.
+
 Git LFS is required for the large CSV artifacts.
 
 ```bash

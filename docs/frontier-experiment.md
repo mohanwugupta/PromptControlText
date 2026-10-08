@@ -1,7 +1,10 @@
 # Frontier extension: preparation and execution record
 
-Status (October 7, 2026, Los Angeles): **offline preparation validated; live pilot not started**.
-No inference calls or paid Runpod resources were created during this preparation.
+Preparation status (October 7, 2026, Los Angeles): **offline preparation validated**.
+No inference calls or paid Runpod resources were created during preparation.
+The subsequent [live Runpod pilot](../artifacts/frontier/runs/2026-10-08-pilot/README.md)
+completed 50 OpenAI cases and stopped the other providers on billing errors.
+The worker was deleted after verified result retrieval; 100 cases remain unfinished.
 API model-list checks confirmed access to the three candidate IDs below; they do
 not establish inference permissions, funded billing, or usable rate limits.
 
@@ -126,7 +129,15 @@ timed-out request. If an interruption leaves a reservation, first recover the
 provider's response/usage or record the possible charge before a separate,
 explicitly documented retry implementation.
 
-The pilot has a $10 **accounting cap**, part of the $60 setup/contingency allocation.
+An observed OpenAI HTTP `cyber_policy` block is recorded as `blocked`, with an
+empty assistant answer and its full cost reservation retained. It is not retried
+or labeled as a textual refusal. `--providers openai` (or another explicit subset)
+can continue unaffected providers in the same ledger; unresolved costs from all
+providers still count toward the shared cap. This does not make a partial pilot
+complete. Billing failures remain blocked until the account state changes.
+
+The live pilot has a **$10 total cap**: $9 for API accounting and $1 reserved for
+Runpod infrastructure, part of the $60 setup/contingency allocation.
 Each call reserves 32,768 input tokens plus its maximum output at conservative
 rates. Oversized request bodies are rejected before calls. Actual returned usage
 releases unused reservation. This is conservative software accounting, not a
@@ -136,13 +147,13 @@ Record those separately against the overall $250 ceiling. The remaining planned
 allocations are $160 generation and $30 judging; these are allocations, not
 measured estimates. A cap stop may leave the pilot incomplete.
 
-Runpod deployment is the next operational step. Use a small CPU pod to call the
+Runpod deployment uses a small CPU pod to call the
 three hosted APIs; a GPU does not accelerate those calls. Before launch:
 
 1. Inspect current CPU pricing/capacity and the installed CLI's live help.
 2. Register a project SSH public key before pod creation. Keep its private key
    local and ignored. Provision a current official Python-capable image with
-   persistent results storage and an enforced cleanup deadline.
+   checkpoint storage and a cleanup deadline.
 3. Check out the exact preparation commit, install the lightweight requirements,
    and transfer only the three provider keys over SSH into a mode-600 `.env`.
    The worker does not need the Runpod control key or HF token.
@@ -153,10 +164,15 @@ three hosted APIs; a GPU does not accelerate those calls. Before launch:
    keys, private SSH files, and raw environment dumps out of Git.
 
 Runpod CLI 2.14.0's observed `pod create --help` does **not** expose the
-`--terminate-after` option mentioned in the plugin's generic guide. Resolve a
-supported termination mechanism before provisioning; do not assume that flag
-works. No pod was launched during preparation, and this deployment procedure
-has not yet been verified on a live worker.
+`--terminate-after` option mentioned in the plugin's generic guide. The legacy
+GraphQL creation method rejected the CPU request with `gpuTypeId is required`.
+The live pilot therefore uses the supported REST CPU creation fields and a local
+three-hour API deletion watchdog (`frontier/runpod_watchdog.py`), with host idle
+sleep inhibited. This is a local safeguard, not a claimed server-side schedule.
+The selected worker has 2 vCPUs, 4 GB RAM, a 10 GB container disk, no network
+volume, and a $0.06/hour compute rate. SQLite-consistent checkpoints are copied
+to the local host during execution and all results are retrieved before deletion.
+Only SSH is exposed. No web inference service is deployed.
 
 ## Readiness and remaining scientific work
 
