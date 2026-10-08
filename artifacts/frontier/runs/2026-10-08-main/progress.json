@@ -1,25 +1,25 @@
 {
-  "as_of_utc": "2026-10-08T05:11:49.724672+00:00",
+  "as_of_utc": "2026-10-08T05:30:21.201244+00:00",
   "phase": "running",
-  "checkpoint_sha256": "f18e0f5e0e790623a3cb15973df1b89b0b1f05b4e8b079ed7676deaa3bb2f089",
+  "checkpoint_sha256": "602c513fccf5510349f33d4def0d544e1927ab7097763d1317721c39517bcc1c",
   "main": {
     "expected_requests": 10950,
-    "submitted_or_reserved": 2215,
+    "submitted_or_reserved": 4015,
     "complete": false,
     "done_by_provider": {
-      "openai": 805,
-      "anthropic": 605,
-      "google": 205
+      "openai": 1405,
+      "anthropic": 805,
+      "google": 1205
     },
     "outcomes": {
-      "text": 1529,
-      "blocked": 86,
+      "text": 3298,
+      "blocked": 117,
       "pending": 600
     },
-    "main_accounted_usd": 104.234224,
+    "main_accounted_usd": 111.138677,
     "prior_pilot_accounted_usd": 9.402844,
     "main_runpod_reserved_usd": 5,
-    "study_accounted_including_reserved_usd": 118.637068,
+    "study_accounted_including_reserved_usd": 125.541521,
     "main_generation_cap_usd": 160,
     "judge_allocation_usd": 30,
     "batches": [
@@ -125,28 +125,109 @@
       {
         "batch_key": "openai-a45599d8ba81ee948cdb42747102022c",
         "provider": "openai",
-        "state": "active",
+        "state": "done",
         "remote_id": "batch_6ac725e6fce48190bdbe0e7229c0d91f",
         "created": 1791436261.4414594,
-        "updated": 1791436263.524532,
+        "updated": 1791436451.4394362,
         "error": null
       },
       {
         "batch_key": "anthropic-bb93a20780e59fbb0d095e93c61298b0",
         "provider": "anthropic",
-        "state": "active",
+        "state": "done",
         "remote_id": "msgbatch_01YEuJJmYVvhc5UKbi3HbEaS",
         "created": 1791436263.5433779,
-        "updated": 1791436264.42135,
+        "updated": 1791436769.9093828,
         "error": null
       },
       {
         "batch_key": "google-8d9b2ab2b35a30f2b4b7b27ce22a0491",
         "provider": "google",
-        "state": "active",
+        "state": "done",
         "remote_id": "batches/bqraz5bq4m11fjoummspa8560l2hauu2pkp5",
         "created": 1791436264.4380527,
-        "updated": 1791436267.7318492,
+        "updated": 1791436452.735962,
+        "error": null
+      },
+      {
+        "batch_key": "openai-292372b2175cd1ba4efcf5abe0ad21cb",
+        "provider": "openai",
+        "state": "done",
+        "remote_id": "batch_6ac726a5d0c08190b750c31a96581a4d",
+        "created": 1791436452.7742329,
+        "updated": 1791437019.992494,
+        "error": null
+      },
+      {
+        "batch_key": "google-c6f385fb7955a9e3e328f888e1cab378",
+        "provider": "google",
+        "state": "done",
+        "remote_id": "batches/nj8bs9tctsabdt1c5ysocwdf5aphbfyquqpm",
+        "created": 1791436453.9665048,
+        "updated": 1791436642.703611,
+        "error": null
+      },
+      {
+        "batch_key": "google-b1de8c0b51f847d22c1fe05a357fdfff",
+        "provider": "google",
+        "state": "done",
+        "remote_id": "batches/09pgr08y57vvccwezjrhq8an5d71hwpw90j7",
+        "created": 1791436642.7443407,
+        "updated": 1791436832.3111844,
+        "error": null
+      },
+      {
+        "batch_key": "anthropic-a24d8f95e4b00694f08b09590bad2a51",
+        "provider": "anthropic",
+        "state": "active",
+        "remote_id": "msgbatch_018aiC8UrQZsikHEtBKgFY2w",
+        "created": 1791436770.4236898,
+        "updated": 1791437397.3213305,
+        "error": null
+      },
+      {
+        "batch_key": "google-17e47eeaa3b6664ee00accd7bf5aa407",
+        "provider": "google",
+        "state": "done",
+        "remote_id": "batches/cho5gjr2v2j6irz06kf8b89jiwgy77st50g2",
+        "created": 1791436832.6999438,
+        "updated": 1791437082.5616927,
+        "error": null
+      },
+      {
+        "batch_key": "openai-bcdf4545b73a4fa869a97bc6f35b1074",
+        "provider": "openai",
+        "state": "done",
+        "remote_id": "batch_6ac728dcf8748190afb690a8390e5a6c",
+        "created": 1791437020.5457556,
+        "updated": 1791437148.1847308,
+        "error": null
+      },
+      {
+        "batch_key": "google-14fece8e67775f39abfa0d9ece744ad9",
+        "provider": "google",
+        "state": "done",
+        "remote_id": "batches/u93p4e9qexfprmve9zlqgb7ixoprncy50cga",
+        "created": 1791437082.7356105,
+        "updated": 1791437332.9091778,
+        "error": null
+      },
+      {
+        "batch_key": "openai-aa12c0f4fbff0c8aad679d75d5b4e67a",
+        "provider": "openai",
+        "state": "active",
+        "remote_id": "batch_6ac7295cdc6481909ee9264fecf988f0",
+        "created": 1791437148.381578,
+        "updated": 1791437397.4495897,
+        "error": null
+      },
+      {
+        "batch_key": "google-6ad30deab855c8ccff06014381c77ae4",
+        "provider": "google",
+        "state": "active",
+        "remote_id": "batches/amwa8hbtegrvsg11sjjxa047m69r0a55ajqs",
+        "created": 1791437333.1023016,
+        "updated": 1791437397.6058426,
         "error": null
       }
     ]
@@ -156,8 +237,8 @@
     "updated_epoch": 1791436273.3494456,
     "deadline_epoch": 1791604350.4713228
   },
-  "published_full_response_records": 1615,
-  "published_original_provider_records_in_this_export": 1615,
+  "published_full_response_records": 3415,
+  "published_original_provider_records_in_this_export": 3415,
   "generation_complete": false,
   "judging_started": false,
   "raw_publication_authorization": "User explicitly approved publishing all records from the 10,950-case main study as they finish, including benchmark prompts, answers and synthetic IHEval test codes. API credentials/private configuration are excluded.",
@@ -166,15 +247,15 @@
     "unique_request_ids": true,
     "sqlite_matches_checkpoint_summary": true,
     "original_provider_rows_match_normalized_results": true,
-    "exported_request_records": 2215,
+    "exported_request_records": 4015,
     "secret_scan_passed": true
   },
   "source_commit": "a17c796acf48a295ad38bdb2982215057f7ac326",
   "continuation_commit": "e17b1398a09a96785664838ffcef259e16d8c211",
   "worker_terminated": false,
-  "completed_cases": 1615,
+  "completed_cases": 3415,
   "review_cases": 0,
-  "unsubmitted_cases": 8735,
+  "unsubmitted_cases": 6935,
   "read_only_recovery": null,
   "terminal_block_resolution": {
     "resolved_epoch": 1791435786.48601,
@@ -198,8 +279,8 @@
   "initial_generator_commit": "8db7bdd680c36b5f434b7cc6b5f564c96b22c88a",
   "current_worker_id": "2x588ujuurvi58",
   "budget_breakdown_usd": {
-    "usage_estimates": 6.520049,
-    "retained_unknown_usage_reservations": 0.229376,
+    "usage_estimates": 13.023093,
+    "retained_unknown_usage_reservations": 0.630784,
     "pending_reservations": 97.4848
   }
 }

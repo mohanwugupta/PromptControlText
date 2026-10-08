@@ -84,6 +84,19 @@ if checkpoint.get('recovery'):
  write(dest/'operations/recover_existing.py',(local/'recover_existing.py').read_text())
 write(dest/'operations/export_public.py',Path(__file__).read_text())
 readme=(dest/'README.md').read_text();start=readme.index('Fifteen complete generated records') if 'Fifteen complete generated records' in readme else readme.index('Full generated records available at this checkpoint');end=readme.index('The user explicitly approved transferring')
+heading=readme[:readme.index('\n\n')+2]
+state_text={'running':'Main generation is running.','complete':'Main generation is complete.',
+ 'prepared_to_resume':'Main generation is prepared to resume.',
+ 'stopped_needs_review':'Main generation has stopped for review.',
+ 'stopped_deadline':'Main generation stopped at its cleanup deadline.',
+ 'stopped_budget_stopped':'Main generation stopped at its budget limit.'}.get(phase,'Main generation status: '+phase+'.')
+intro=f'''**{state_text}** Snapshot: {record['as_of_utc']}.
+The [latest progress](progress.json) and [current metadata](requests.jsonl) report
+the verified state at this checkpoint, not a live dashboard. The
+[resume launch](resume-launch.json) and [stop report](STOP-REPORT.md) preserve
+earlier events. The target remains **10,950 frozen cases**. Judging has not started.
+
+'''
 section=f'''Full generated records available at this checkpoint are in [responses/](responses/):
 **{count:,} records**. The user explicitly approved public release of all main-study
 records as they finish, including the synthetic test codes from the public IHEval
@@ -100,7 +113,7 @@ Credentials, SSH keys, private account/workspace configuration, temporary bundle
 and duplicate local database backups remain excluded from the public repo.
 
 '''
-write(dest/'README.md',readme[:start]+section+readme[end:])
+write(dest/'README.md',heading+intro+section+readme[end:])
 prov_path=dest/'execution-provenance.json';prov=json.loads(prov_path.read_text())
 for script_path in files:
  if '/operations/' in script_path and script_path.endswith('.py'):
