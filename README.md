@@ -210,6 +210,11 @@ The original analysis is preserved in `analysis/analysis.Rmd`. It reads
 notebook also loads `lme4`, `emmeans`, `broom.mixed`, `scales`, and `patchwork`
 for its exploratory and plotting sections.
 
+To rebuild the combined CSV with all original, new open-model, and frontier
+judgments, run `python -m scoring.compile_results` from the repository root.
+The [compilation runbook](docs/compiling-results.md) explains the 13-model file,
+per-run validation summary, and `PROMPT_CONTROL_STUDY` selection in the notebook.
+
 Render it from the repository root with:
 
 ```bash

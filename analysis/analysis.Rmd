@@ -25,7 +25,11 @@ if (length(data_candidates) == 0) {
   stop("Could not find phase1_results_combined_labeled.csv. Set PROMPT_CONTROL_RESULTS or run from the repository root.")
 }
 data_path <- data_candidates[[1]]
-all_data <- read_csv(data_path)
+loader_candidates <- c("analysis/load_combined_results.R", "load_combined_results.R")
+loader_candidates <- loader_candidates[file.exists(loader_candidates)]
+if (!length(loader_candidates)) stop("Could not find load_combined_results.R.")
+source(loader_candidates[[1]])
+all_data <- load_combined_results(data_path)
 ```
 
 ```{r, echo=FALSE}
@@ -208,7 +212,7 @@ clarity_short = factor(
 ),
     model_name = factor(
       model_name,
-      levels = c("Llama-3.1-8B", "Llama-3.3-70B", "Qwen-2-7B", "Qwen-2.5-72B")
+      levels = union(c("Llama-3.1-8B", "Llama-3.3-70B", "Qwen-2-7B", "Qwen-2.5-72B"), unique(model_name))
     )
   )
 
@@ -344,7 +348,7 @@ boundary_df <- analysis_df %>%
   )
 
 shape_vals <- setNames(
-  c(16, 17, 15, 18, 8, 3, 4, 7, 9, 10)[seq_along(levels(analysis_df$model_name))],
+  rep(c(16, 17, 15, 18, 8, 3, 4, 7, 9, 10), length.out = nlevels(analysis_df$model_name)),
   levels(analysis_df$model_name)
 )
 
@@ -852,7 +856,7 @@ p_policy_clarity
 # 0. Load and clean
 # ------------------------------------------------------------
 
-df <- read_csv(data_path, show_col_types = FALSE) %>%
+df <- all_data %>%
   mutate(
     prompt_family = if_else(
       is.na(prompt_family) | prompt_family == "",
