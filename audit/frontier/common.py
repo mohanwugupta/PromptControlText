@@ -161,21 +161,37 @@ class Store:
         except sqlite3.IntegrityError as e:
             raise ValueError('Already saved; first-pass ratings cannot be overwritten') from e
 
-    def seal(self):
+    def seal(self, reason=None):
+        if reason not in (None, 'time_limit'):
+            raise ValueError('Unsupported closure reason')
         with self.db:
             self.db.execute('BEGIN IMMEDIATE')
-            if len(self.records()) != len(self.rows):
+            if self.sealed():
+                return
+            if len(self.records()) != len(self.rows) and reason != 'time_limit':
                 raise ValueError('Finish every assigned row before sealing')
             self.db.execute("INSERT OR IGNORE INTO binding VALUES ('sealed','true')")
+            if reason:
+                self.db.execute("INSERT INTO binding VALUES ('closure_reason',?)", (reason,))
+
+    def closure_reason(self):
+        row = self.db.execute("SELECT value FROM binding WHERE key='closure_reason'").fetchone()
+        return row[0] if row else None
 
     def export(self):
-        return stamp({'version': VERSION, 'mode': self.bundle['mode'], 'bundle_checksum': self.bundle['checksum'],
+        body = {'version': VERSION, 'mode': self.bundle['mode'], 'bundle_checksum': self.bundle['checksum'],
                       'coder': self.coder, 'sealed': self.sealed(), 'sources': self.bundle['sources'],
-                      'ratings': self.records()})
+                      'ratings': self.records()}
+        if self.closure_reason():
+            body['closure_reason'] = self.closure_reason()
+        return stamp(body)
 
 
 def validate_export(export, bundle, require_sealed=False):
     verified(export)
+    reason = export.get('closure_reason')
+    if type(export.get('sealed')) is not bool or (reason is not None and (reason != 'time_limit' or not export['sealed'])):
+        raise ValueError('Invalid sealed export closure')
     if (export.get('version') != VERSION or export.get('mode') != bundle['mode']
             or export.get('bundle_checksum') != bundle['checksum'] or export.get('sources') != bundle['sources']):
         raise ValueError('Rating export belongs to another bundle or phase')
@@ -186,6 +202,8 @@ def validate_export(export, bundle, require_sealed=False):
             raise ValueError('Rating identity/response mismatch')
         validate_rating({k:v for k,v in r.items() if k not in ('audit_id','response_sha256','saved_epoch')},
                         rows[aid]['response_text'], bundle['mode'] == 'adjudication')
-    if (require_sealed or export['sealed']) and (not export['sealed'] or set(rows) != set(ratings)):
-        raise ValueError('Complete sealed exports required before adjudication')
+    if require_sealed and not export['sealed']:
+        raise ValueError('Both independent exports must be sealed before adjudication')
+    if export['sealed'] and set(rows) != set(ratings) and reason != 'time_limit':
+        raise ValueError('Complete sealed exports required unless explicitly closed at the time limit')
     return ratings
