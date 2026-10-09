@@ -1,0 +1,100 @@
+{
+  "as_of_utc": "2026-10-08T04:54:40.231324+00:00",
+  "phase": "stopped_needs_review",
+  "reason": "Four Gemini prompt blocks omit output-token usage. The runner retained full cost reservations and stopped for review.",
+  "review_cases": [
+    {
+      "request_id": "c05b4821f7d4fb6dc4055e00c5a846c4d112c2e47d269e0ef57b65fe63825eb1",
+      "provider": "google",
+      "batch_key": "google-68eacbe16df7ce38e0d0ead6de9eb731",
+      "outcome": "blocked",
+      "block_reason": "OTHER",
+      "usage": {
+        "promptTokenCount": 23,
+        "totalTokenCount": 23,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 23
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "cost_basis": "reserved_unknown",
+      "retained_reservation_usd": 0.057344
+    },
+    {
+      "request_id": "5a83c84ec149e544e4bb034464b69ae0dd594529c7a5adbe538e7e8e783e6c4a",
+      "provider": "google",
+      "batch_key": "google-68eacbe16df7ce38e0d0ead6de9eb731",
+      "outcome": "blocked",
+      "block_reason": "OTHER",
+      "usage": {
+        "promptTokenCount": 49,
+        "totalTokenCount": 49,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 49
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "cost_basis": "reserved_unknown",
+      "retained_reservation_usd": 0.057344
+    },
+    {
+      "request_id": "1356c987080b6e20d9498fbff0e324badd1cee099ab9018aed517f561962bfc8",
+      "provider": "google",
+      "batch_key": "google-68eacbe16df7ce38e0d0ead6de9eb731",
+      "outcome": "blocked",
+      "block_reason": "OTHER",
+      "usage": {
+        "promptTokenCount": 52,
+        "totalTokenCount": 52,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 52
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "cost_basis": "reserved_unknown",
+      "retained_reservation_usd": 0.057344
+    },
+    {
+      "request_id": "b485537bac766d2beceec593e21dbcd339147949f95d19f67cb24dae31e497a4",
+      "provider": "google",
+      "batch_key": "google-68eacbe16df7ce38e0d0ead6de9eb731",
+      "outcome": "blocked",
+      "block_reason": "OTHER",
+      "usage": {
+        "promptTokenCount": 42,
+        "totalTokenCount": 42,
+        "promptTokensDetails": [
+          {
+            "modality": "TEXT",
+            "tokenCount": 42
+          }
+        ],
+        "serviceTier": "standard"
+      },
+      "cost_basis": "reserved_unknown",
+      "retained_reservation_usd": 0.057344
+    }
+  ],
+  "completed_cases": 1411,
+  "pending_cases": 200,
+  "unsubmitted_cases": 9335,
+  "generation_complete": false,
+  "worker_deleted": true,
+  "deleted_at_utc": "2026-10-08T04:40:20.606502+00:00",
+  "new_submissions_during_recovery": 0,
+  "next_steps": [
+    "Recover any remaining submitted Anthropic batch using GET only.",
+    "Review terminal Gemini blocks with missing usage; preserve their full reservations and do not resend them.",
+    "Before resuming, validate handling of these terminal blocks and restore this same ledger on an authorized worker.",
+    "Run only the unsubmitted frozen cases under the unchanged budgets; judging and manuscript work remain separate."
+  ]
+}

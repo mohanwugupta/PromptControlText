@@ -1,0 +1,16 @@
+{
+  "kind": "read_only_provider_recovery",
+  "source_checkpoint_sha256": "30c5b50c24babc51007266dddcd70098f08e2fd50dac1f5ba3151f51d50f0a9b",
+  "source_retrieved_epoch": 1791435133.766407,
+  "recovered_epoch": 1791435280.231324,
+  "http_calls": [
+    {
+      "provider": "anthropic",
+      "path": "/messages/batches/msgbatch_01W5JhKJA6ekW35c1wJywFnG",
+      "method": "GET"
+    }
+  ],
+  "new_submissions": 0,
+  "original_worker_supervisor_preserved": true,
+  "result": "needs_review"
+}

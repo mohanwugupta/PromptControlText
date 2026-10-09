@@ -77,6 +77,24 @@ def cost_result(case, result, config):
             / 1e6 * config["batch_discount"], "usage_at_conservative_batch_rates")
 
 
+def reserved_terminal_block(case, result):
+    """A Gemini prompt block is final even when its charge remains unknown.
+
+    Do not invent zero output usage or release its full reservation. Other
+    missing-usage outcomes and provider errors still require review.
+    """
+    return (case["model"]["provider"] == "google"
+            and result.get("outcome") == "blocked" and result.get("text") == ""
+            and (result.get("prompt_feedback") or {}).get("blockReason")
+            in {"SAFETY", "OTHER", "BLOCKLIST", "PROHIBITED_CONTENT"}
+            and result.get("finish_reason") is None
+            and result.get("output_tokens") is None
+            and result.get("reasoning_tokens") is None
+            and isinstance(result.get("input_tokens"), int)
+            and not isinstance(result.get("input_tokens"), bool)
+            and result["input_tokens"] >= 0)
+
+
 class MainLedger:
     def __init__(self, path, manifest, config):
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -150,7 +168,8 @@ class MainLedger:
             cost, basis = cost_result(case, result, self.config)
             result["cost_basis"] = basis
             state = "done" if result["outcome"] in ("text", "blocked", "truncated") else "needs_review"
-            if (basis == "reserved_unknown" or not math.isfinite(cost) or cost > record["reserve"] + 1e-9
+            if ((basis == "reserved_unknown" and not reserved_terminal_block(case, result))
+                    or not math.isfinite(cost) or cost > record["reserve"] + 1e-9
                     or (isinstance(result.get("input_tokens"), int)
                         and result["input_tokens"] > self.config["input_token_reserve"])
                     or (isinstance(result.get("output_tokens"), int)
@@ -162,6 +181,29 @@ class MainLedger:
             self.db.executemany("UPDATE requests SET state=?,cost=?,result_json=? WHERE request_id=?", updates)
             self.db.execute("UPDATE batches SET state=?,updated=? WHERE batch_key=?",
                             ("done" if set(states) == {"done"} else "needs_review", time.time(), batch["batch_key"]))
+
+    def reconcile_terminal_blocks(self):
+        """Resolve only reviewed terminal blocks; preserve costs and results exactly."""
+        resolved, affected_batches = [], set()
+        with self.db:
+            for row in self.db.execute("SELECT * FROM requests WHERE state='needs_review'").fetchall():
+                case, result = json.loads(row["case_json"]), json.loads(row["result_json"] or "null")
+                if (result is None or not reserved_terminal_block(case, result)
+                        or result.get("cost_basis") != "reserved_unknown"
+                        or result["input_tokens"] > self.config["input_token_reserve"]
+                        or row["cost"] != row["reserve"]):
+                    continue
+                self.db.execute("UPDATE requests SET state='done' WHERE request_id=?", (row["request_id"],))
+                resolved.append(row["request_id"])
+                affected_batches.add(row["batch_key"])
+            # Batch-level parsing/identity errors are never cleared by this review.
+            for batch in self.db.execute("SELECT * FROM batches WHERE state='needs_review' AND error IS NULL").fetchall():
+                if batch["batch_key"] not in affected_batches:
+                    continue
+                states = {r[0] for r in self.db.execute("SELECT state FROM requests WHERE batch_key=?", (batch["batch_key"],))}
+                if states == {"done"}:
+                    self.db.execute("UPDATE batches SET state='done',updated=? WHERE batch_key=?", (time.time(), batch["batch_key"]))
+        return resolved
 
     def summary(self, expected=10950):
         rows = self.db.execute("SELECT provider,state,result_json FROM requests").fetchall()

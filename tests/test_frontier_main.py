@@ -170,6 +170,64 @@ def test_google_rest_response_identity_and_thinking_accounting():
         client.results("google", "batches/test", {"done": True, "error": {}})
 
 
+def google_prompt_block(key):
+    return {"metadata": {"key": key}, "response": {
+        "promptFeedback": {"blockReason": "OTHER"},
+        "usageMetadata": {"promptTokenCount": 23, "totalTokenCount": 23}}}
+
+
+def test_terminal_google_block_retains_full_cost_without_resubmission(setup):
+    _, config, _, requests, ledger, path = setup
+    case = next(c for c in requests if c["model"]["provider"] == "google")
+    key = ledger.prepare("google", [case])
+    batch = dict(ledger.db.execute("SELECT * FROM batches").fetchone())
+    before = ledger.total()
+    ledger.ingest(batch, json.dumps(google_prompt_block(case["request_id"])).encode())
+    row = ledger.db.execute("SELECT * FROM requests").fetchone()
+    result = json.loads(row["result_json"])
+    assert row["state"] == "done" and ledger.total() == before == reserve_cost(case, config)
+    assert result["output_tokens"] is None and result["cost_basis"] == "reserved_unknown"
+    assert result["outcome"] == "blocked" and result["text"] == ""
+    client = FakeClient(ledger)
+    step(ledger, requests, client, path)
+    assert not any(provider == "google" for provider, _ in client.calls)
+
+
+@pytest.mark.parametrize("defect", ["text_without_usage", "unknown_block", "missing_input", "excess_input", "server_error"])
+def test_unknown_or_invalid_google_outcomes_still_stop(setup, defect):
+    *_, requests, ledger, path = setup
+    case = next(c for c in requests if c["model"]["provider"] == "google")
+    ledger.prepare("google", [case]); batch = dict(ledger.db.execute("SELECT * FROM batches").fetchone())
+    raw = google_prompt_block(case["request_id"])
+    if defect == "text_without_usage":
+        raw["response"] = {"candidates": [{"content": {"parts": [{"text": "answer"}]}, "finishReason": "STOP"}]}
+    if defect == "unknown_block": raw["response"]["promptFeedback"]["blockReason"] = "BLOCK_REASON_UNSPECIFIED"
+    if defect == "missing_input": raw["response"]["usageMetadata"] = {}
+    if defect == "excess_input": raw["response"]["usageMetadata"]["promptTokenCount"] = 32769
+    if defect == "server_error": raw = {"metadata": {"key": case["request_id"]}, "error": {"code": 500}}
+    before = ledger.total(); ledger.ingest(batch, json.dumps(raw).encode())
+    assert ledger.db.execute("SELECT state FROM requests").fetchone()[0] == "needs_review"
+    assert ledger.total() == before
+    assert ledger.reconcile_terminal_blocks() == []
+    client = FakeClient(ledger)
+    assert step(ledger, requests, client, path) == "needs_review" and not client.calls
+
+
+def test_reconcile_existing_terminal_block_changes_only_state(setup):
+    *_, requests, ledger, path = setup
+    case = next(c for c in requests if c["model"]["provider"] == "google")
+    ledger.prepare("google", [case]); batch = dict(ledger.db.execute("SELECT * FROM batches").fetchone())
+    ledger.ingest(batch, json.dumps(google_prompt_block(case["request_id"])).encode())
+    ledger.db.execute("UPDATE requests SET state='needs_review'")
+    ledger.db.execute("UPDATE batches SET state='needs_review'"); ledger.db.commit()
+    before = dict(ledger.db.execute("SELECT * FROM requests").fetchone())
+    assert ledger.reconcile_terminal_blocks() == [case["request_id"]]
+    after = dict(ledger.db.execute("SELECT * FROM requests").fetchone())
+    assert after == {**before, "state": "done"}
+    assert ledger.db.execute("SELECT state FROM batches").fetchone()[0] == "done"
+    assert ledger.reconcile_terminal_blocks() == []
+
+
 def test_poll_only_never_submits_and_get_failure_does_not_resubmit(setup):
     *_, requests, ledger, path = setup
     client = FakeClient(ledger)

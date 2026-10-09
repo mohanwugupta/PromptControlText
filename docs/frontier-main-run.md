@@ -1,9 +1,11 @@
 # Main frontier extension — frozen execution plan
 
-Prepared October 8, 2026 UTC (October 7 Pacific). **Main generation has started; the initial
-five-case Batch jobs were accepted by all three providers.** The user authorized the
-main extension after the completed 150-case pilot. The [main run record](../artifacts/frontier/runs/2026-10-08-main/README.md)
-contains timestamped progress snapshots.
+Prepared October 8, 2026 UTC (October 7 Pacific). **Main generation has resumed
+from the existing ledger.** All 1,615 earlier cases were recovered, the four
+Gemini blocks retain their full cost reservations, and the next 600 cases were
+accepted. See the [resume launch](../artifacts/frontier/runs/2026-10-08-main/resume-launch.json)
+and [timestamped progress](../artifacts/frontier/runs/2026-10-08-main/progress.json).
+The original sample, model settings, budgets and cleanup deadline are unchanged.
 
 ## Design and settings
 
@@ -82,7 +84,9 @@ on model behavior. Batch turnaround can be up to 24 hours per wave.
 
 Each submission is recorded durably before the network call. An ambiguous POST,
 validation/server error, missing/duplicate result identity, unexpected usage,
-or unexplained empty answer stops new submissions for review. Completed cases
+or unexplained empty answer stops new submissions for review. Explicit terminal
+Gemini prompt blocks with missing output usage count as completed while retaining
+their full reservation; no zero usage is invented and they are never resent. Completed cases
 and explicit safety blocks are never automatically resent. Failed read-only
 polls may be retried. Results join by custom ID, never their returned order.
 Final results, raw provider records, SQLite backups and status are checkpointed.

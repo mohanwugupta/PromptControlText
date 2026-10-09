@@ -1,19 +1,20 @@
 # Main frontier run — launch record
 
-**Main generation has started.** All three providers accepted their initial
-five-case Batch jobs on October 8 UTC (October 7 Pacific). The target remains
-50 fixed items × 73 conditions × three generators = **10,950 cases**.
-The [latest published progress](progress.json) records batch IDs, completion
-counts, budget accounting and checkpoint verification. The [launch snapshot](launch.json)
-preserves the earlier starting state. Both are timestamped snapshots, not live status.
+**Main generation is complete.** Snapshot: 2026-10-08T16:53:01.639369+00:00.
+The [latest progress](progress.json) and [current metadata](requests.jsonl) report
+the verified state at this checkpoint, not a live dashboard. The
+[resume launch](resume-launch.json) and [stop report](STOP-REPORT.md) preserve
+earlier events. The target remains **10,950 frozen cases**. Judging has not started.
 
 Full generated records available at this checkpoint are in [responses/](responses/):
-**815 records**. The user explicitly approved public release of all main-study
+**10,950 records**. The user explicitly approved public release of all main-study
 records as they finish, including the synthetic test codes from the public IHEval
-benchmark. [provider-results/](provider-results/) preserves 815 original
+benchmark. [provider-results/](provider-results/) preserves 10,950 original
 provider result rows verified against normalized records in this export.
-[requests.jsonl](requests.jsonl) accounts for all **1,415 cases** submitted or
-reserved at this snapshot, including 600 still pending.
+[requests.jsonl](requests.jsonl) accounts for all **10,950 cases** submitted or
+reserved at this snapshot: 10,950 completed,
+0 needing review, and 0 pending.
+Another 0 frozen cases have not been submitted.
 Each finished response maps to its frozen item, condition and request hash.
 [operations/](operations/) archives the deployment, backup and export scripts;
 [execution-provenance.json](execution-provenance.json) records execution hashes.
@@ -32,7 +33,8 @@ All 15 originally deployed files matched their hashes. The Runpod dry run verifi
 78 focused tests and changes scheduling only; model settings, prompts, request
 identities, sample and API cap remain fixed.
 
-Batch jobs may take up to 24 hours per wave. A supervisor resumes clean two-hour
+The stopped deployment was configured as follows. Batch jobs may take up to
+24 hours per wave. A supervisor resumes clean two-hour
 polling sessions using the same ledger. It stops on completion, review/budget
 errors, or the deadline; ambiguous submissions are never blindly retried.
 The worker lifetime is limited to 48 hours from creation, costing at most $2.88

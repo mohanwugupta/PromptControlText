@@ -1,0 +1,19 @@
+{
+  "resolved_epoch": 1791435786.48601,
+  "source_checkpoint_sha256": "0db6ef6b8ae27aa16b66789b901e9ff5af321252df8b583f16cc9e7407b00a0c",
+  "request_ids": [
+    "c05b4821f7d4fb6dc4055e00c5a846c4d112c2e47d269e0ef57b65fe63825eb1",
+    "5a83c84ec149e544e4bb034464b69ae0dd594529c7a5adbe538e7e8e783e6c4a",
+    "1356c987080b6e20d9498fbff0e324badd1cee099ab9018aed517f561962bfc8",
+    "b485537bac766d2beceec593e21dbcd339147949f95d19f67cb24dae31e497a4"
+  ],
+  "change": "needs_review to done for explicit terminal Gemini prompt blocks",
+  "request_count_before": 1615,
+  "request_count_after": 1615,
+  "main_accounted_usd_before": 6.749424,
+  "main_accounted_usd_after": 6.749424,
+  "result_records_changed": false,
+  "reservations_released": false,
+  "new_submissions": 0,
+  "reason": "Completion state and unknown billing are separate; full per-case reservations remain held."
+}

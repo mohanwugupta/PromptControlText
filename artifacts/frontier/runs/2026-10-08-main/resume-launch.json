@@ -1,0 +1,35 @@
+{
+  "as_of_utc": "2026-10-08T05:11:49.724672+00:00",
+  "phase": "running",
+  "worker_id": "2x588ujuurvi58",
+  "source_commit": "a17c796acf48a295ad38bdb2982215057f7ac326",
+  "restored_requests": 1615,
+  "new_submitted_requests": 600,
+  "remaining_unsubmitted": 8735,
+  "old_worker_id": "43dht91rp868ts",
+  "original_deadline_epoch": 1791604350.4713228,
+  "compute_usd_per_hour": 0.06,
+  "total_main_infrastructure_reserve_usd": 5,
+  "prior_main_compute_estimate_usd": 0.047836,
+  "three_provider_keys_and_workspace_transfer": "Explicitly approved by the user for this replacement worker; encrypted SSH transfer succeeded; mode 600 verified. Secret values are excluded.",
+  "restore_bundle_sha256": "63a62e222db43a03a7ed6051f2e480c2212499918f2b7de5b19b27c2f0b353ee",
+  "restored_ledger_sha256": "edac70b2ab03f50995ed3efa0cd1d62f7dc823d0112f6391aadfe7b8b5fef222",
+  "restore_verification": {
+    "restored_requests": 1615,
+    "completed": 1615,
+    "main_accounted_usd": 6.749424,
+    "frozen_case_mapping": true,
+    "paid_requests_submitted": 0
+  },
+  "supervisor": {
+    "deadline": 1791604350.4713228,
+    "source_commit": "a17c796acf48a295ad38bdb2982215057f7ac326",
+    "sha256": "e69429d25a1e825931f91f8447b374865ee6e8d87f301fb0540be1738e5636eb",
+    "pid": 139
+  },
+  "launch": {
+    "pid": 125,
+    "source_commit": "a17c796acf48a295ad38bdb2982215057f7ac326"
+  },
+  "publication_authorized": true
+}

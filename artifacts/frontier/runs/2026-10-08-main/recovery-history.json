@@ -1,0 +1,68 @@
+[
+  {
+    "kind": "read_only_provider_recovery",
+    "source_checkpoint_sha256": "0b9e2c64ccc70d6f40d0c7fe89d332bc6142bed6790e2c4f53328b834bd40433",
+    "source_retrieved_epoch": 1791434418.155796,
+    "recovered_epoch": 1791435133.766407,
+    "http_calls": [
+      {
+        "provider": "anthropic",
+        "path": "/messages/batches/msgbatch_01W5JhKJA6ekW35c1wJywFnG",
+        "method": "GET"
+      },
+      {
+        "provider": "openai",
+        "path": "/batches/batch_6ac71e1f00648190b4c677d305085d42",
+        "method": "GET"
+      },
+      {
+        "provider": "openai",
+        "path": "/files/file-3mNMZQ25oBLx8A6htyEsgt/content",
+        "method": "GET"
+      }
+    ],
+    "new_submissions": 0,
+    "original_worker_supervisor_preserved": true,
+    "result": "needs_review",
+    "checkpoint_sha256": "30c5b50c24babc51007266dddcd70098f08e2fd50dac1f5ba3151f51d50f0a9b"
+  },
+  {
+    "kind": "read_only_provider_recovery",
+    "source_checkpoint_sha256": "30c5b50c24babc51007266dddcd70098f08e2fd50dac1f5ba3151f51d50f0a9b",
+    "source_retrieved_epoch": 1791435133.766407,
+    "recovered_epoch": 1791435280.231324,
+    "http_calls": [
+      {
+        "provider": "anthropic",
+        "path": "/messages/batches/msgbatch_01W5JhKJA6ekW35c1wJywFnG",
+        "method": "GET"
+      }
+    ],
+    "new_submissions": 0,
+    "original_worker_supervisor_preserved": true,
+    "result": "needs_review",
+    "checkpoint_sha256": "08626844af3c80a89ddd3ad158df15082fa4768446b942dd56dc26ab2c3719da"
+  },
+  {
+    "kind": "read_only_provider_recovery",
+    "source_checkpoint_sha256": "08626844af3c80a89ddd3ad158df15082fa4768446b942dd56dc26ab2c3719da",
+    "source_retrieved_epoch": 1791435280.231324,
+    "recovered_epoch": 1791435689.123691,
+    "http_calls": [
+      {
+        "provider": "anthropic",
+        "path": "/messages/batches/msgbatch_01W5JhKJA6ekW35c1wJywFnG",
+        "method": "GET"
+      },
+      {
+        "provider": "anthropic",
+        "path": "/messages/batches/msgbatch_01W5JhKJA6ekW35c1wJywFnG/results",
+        "method": "GET"
+      }
+    ],
+    "new_submissions": 0,
+    "original_worker_supervisor_preserved": true,
+    "result": "needs_review",
+    "checkpoint_sha256": "0db6ef6b8ae27aa16b66789b901e9ff5af321252df8b583f16cc9e7407b00a0c"
+  }
+]

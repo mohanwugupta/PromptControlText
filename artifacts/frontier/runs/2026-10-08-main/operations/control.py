@@ -37,7 +37,8 @@ elif action=='status':
 elif action=='bundle':
  files=['configs/frontier-pilot.json','configs/frontier-main.json','artifacts/frontier/manifest.json','requirements-frontier.txt','scripts/credentials.py','prompts/registry.py']+[str(p) for p in Path('frontier').glob('*.py')]
  hashes={p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in files}
- provenance={'source_commit':'8db7bdd680c36b5f434b7cc6b5f564c96b22c88a','files':hashes}
+ provenance={'source_commit':subprocess.check_output(['git','rev-parse','HEAD']).decode().strip(),'files':hashes}
+ for name in files:assert subprocess.check_output(['git','show',provenance['source_commit']+':'+name])==Path(name).read_bytes(),'Uncommitted deployment source'
  (OUT/'provenance.json').write_text(json.dumps(provenance,indent=2)+'\n')
  with tarfile.open(OUT/'source.tar.gz','w:gz') as tar:
   for p in files:tar.add(p,arcname=p)
@@ -53,7 +54,7 @@ elif action=='credentials':
  remote="cd /workspace/PromptControlText && .venv/bin/python -c 'import json,os,sys; from pathlib import Path; d=json.load(sys.stdin); p=Path(\".env\"); fd=os.open(str(p),os.O_WRONLY|os.O_CREAT|os.O_TRUNC,0o600); os.fchmod(fd,0o600); os.write(fd,(\"\\n\".join(k+\"=\"+json.dumps(v) for k,v in d.items())+\"\\n\").encode()); os.close(fd); print(\"Provider credential file saved with mode 600\")'"
  r=ssh(s,remote,json.dumps(vals).encode());print(r.stdout.decode());print('SSH exit',r.returncode);raise SystemExit(r.returncode)
 elif action=='launch':
- s=json.loads(STATE.read_text());assert s['pod_id']=='43dht91rp868ts' and not s.get('terminated')
+ s=json.loads(STATE.read_text());assert s.get('purpose')=='frontier_main' and s.get('pod_name')=='PromptControlText-main-batch-resume-1' and not s.get('terminated')
  assert s['deadline_epoch']-time.time()>2*3600+600,'Insufficient time before cleanup deadline'
  remote="""import hashlib,json,os,subprocess,sys
 from pathlib import Path
@@ -124,13 +125,13 @@ print(json.dumps(record))
 """
  import shlex
  src=(ROOT/'frontier/main_watch.py').read_text()
- data={'source':src,'sha256':hashlib.sha256(src.encode()).hexdigest(),'deadline':s['deadline_epoch'],'source_commit':'e17b1398a09a96785664838ffcef259e16d8c211'}
+ data={'source':src,'sha256':hashlib.sha256(src.encode()).hexdigest(),'deadline':s['deadline_epoch'],'source_commit':s['source_commit']}
  r=ssh(s,'cd /workspace/PromptControlText && .venv/bin/python -c '+shlex.quote(remote),json.dumps(data).encode(),30)
  (OUT/'supervisor-launch.json').write_bytes(r.stdout);print(r.stdout.decode());print(r.stderr.decode());raise SystemExit(r.returncode)
 elif action=='delete':
- s=json.loads(STATE.read_text());assert s['pod_id']=='43dht91rp868ts'
+ s=json.loads(STATE.read_text());assert s.get('purpose')=='frontier_main' and s.get('pod_name')=='PromptControlText-main-batch-resume-1'
  r=json.load(open(OUT/'latest-checkpoint.json'));assert time.time()-r['retrieved_epoch']<120,'Fresh verified checkpoint required'
- p=api('/'+s['pod_id']);assert p['name']=='PromptControlText-main-batch'
+ p=api('/'+s['pod_id']);assert p['name']==s['pod_name']
  deleted=api('/'+s['pod_id'],method='DELETE')
  try:api('/'+s['pod_id']);raise RuntimeError('Pod still exists')
  except urllib.error.HTTPError as e:assert e.code==404

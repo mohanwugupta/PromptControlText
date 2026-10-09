@@ -15,3 +15,9 @@ account/workspace identifiers and environment files are excluded from Git.
 `monitor.py` backs up every three minutes and deletes only this study's worker
 after a verified checkpoint and completion/error/deadline. `extend_runtime.py`
 records the guarded transition to the existing $5 reserve's 48-hour limit.
+
+`recover_existing.py` copies and verifies the latest existing ledger and recovers
+submitted batches with GET-only requests. It cannot submit inference. The source
+checkpoint, immutable provider files and recovery ancestry are preserved.
+`export_public.py` verifies case identities, normalized results and private
+credential exclusion; it reports a stopped supervisor as stopped.
