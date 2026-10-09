@@ -1,4 +1,4 @@
-# Collaborator instructions — minimal exploratory audit
+# Annotator instructions — minimal exploratory audit
 
 Here are the revised annotation instructions.
 
