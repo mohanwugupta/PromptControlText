@@ -84,6 +84,15 @@ Each includes `labeled.csv`, `labels_only.csv`, `judge_votes.csv`, any
 an audit sample, and `manifest.json`. A job succeeds only when every judgeable
 answer has a valid policy label; parse failures must be retried.
 
+If every row was processed but `manifest.json` has `complete=false`, the job
+still contains invalid judgments. The merge reports the valid-label count
+separately from model, job-ID, or input-hash mismatches. Resubmission retries
+only requests without valid saved labels. An early validation bug rejected
+adjudications whose explanations exceeded 280 characters; explanatory text is
+now bounded before schema validation, while labels and other fields remain
+strictly validated. Pull the fix before retrying those cases. The original
+generation does not need to be repeated.
+
 After all three tasks succeed:
 
 ```bash

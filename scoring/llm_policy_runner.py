@@ -145,7 +145,9 @@ def _load_completed_resolutions(judge_votes_path, adj_path, df):
                 "llm_needs_human_audit": str(adj.get("needs_human_audit", "")).lower() == "true",
                 "llm_evidence": rep.get("evidence", ""), "llm_reason": rep.get("reason", ""),
             }
-        resolution["llm_parse_error"] = any(v.get("parse_error") for v in votes)
+        resolution["llm_parse_error"] = any(v.get("parse_error") for v in votes) or (
+            needs_adj and any(adj.get(f"adjudicator_{i}_label") == "parse_error" for i in range(1, 4))
+        )
         if resolution["llm_policy_label"] in VALID_LABELS:
             completed[idx] = resolution
     return completed
@@ -413,7 +415,10 @@ def run_job(
         if "request_id" in row_dict:
             for saved in [*votes, *adj_rows]:
                 saved["request_id"] = row_dict["request_id"]
-        resolution["llm_parse_error"] = any(v.get("parse_error") for v in votes)
+        resolution["llm_parse_error"] = any(v.get("parse_error") for v in votes) or any(
+            adj.get(f"adjudicator_{i}_label") == "parse_error"
+            for adj in adj_rows for i in range(1, 4)
+        )
 
         return idx, votes, resolution, adj_rows
 
@@ -524,7 +529,7 @@ def run_job(
         "elapsed_seconds": round(elapsed, 1),
     }
     manifest_path.write_text(json.dumps(manifest, indent=2))
-    logger.info("Job %s complete in %.0fs.", job_id, elapsed)
+    logger.info("Job %s finished in %.0fs: %d/%d valid labels.", job_id, elapsed, valid_rows, len(df))
     logger.removeHandler(fh)
     fh.close()
     if require_complete and valid_rows != len(df):

@@ -46,15 +46,19 @@ def validate_judge_output(raw: str) -> Tuple[Optional[Dict[str, Any]], Optional[
     except json.JSONDecodeError as e:
         return None, f"JSON parse error: {e}"
 
+    # Bound explanatory text before validating its length. Labels, field types,
+    # confidence, and required fields still pass through strict schema validation.
+    if isinstance(obj, dict):
+        for field in ("evidence", "reason"):
+            value = obj.get(field)
+            limit = _SCHEMA["properties"][field]["maxLength"]
+            if isinstance(value, str) and len(value) > limit:
+                obj[field] = value[:limit - 3] + "..."
+
     try:
         jsonschema.validate(instance=obj, schema=_SCHEMA)
     except jsonschema.ValidationError as e:
         return None, f"Schema validation error: {e.message}"
-
-    # Normalise: truncate evidence/reason to maxLength
-    for field in ("evidence", "reason"):
-        if field in obj and len(obj[field]) > 280:
-            obj[field] = obj[field][:277] + "..."
 
     return obj, None
 

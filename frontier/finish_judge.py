@@ -44,10 +44,22 @@ def finish(prepared_dir=ROOT / ".local/frontier/judge-main", output_path=None):
         validate_job_input(job)
         output = job["output_dir"]
         manifest = json.loads((output / "manifest.json").read_text())
-        if (not manifest.get("complete") or manifest.get("model") not in judge_models
-                or manifest.get("job_id") != job["job_id"]
-                or manifest.get("input_sha256") != job["input_sha256"]):
-            raise ValueError(f"{job['job_id']}: judge incomplete or provenance mismatch; resubmit with --resume")
+        problems = []
+        if not manifest.get("complete"):
+            problems.append(
+                f"judge incomplete: {manifest.get('valid_labeled_rows', '?')}/"
+                f"{manifest.get('total_rows', '?')} valid labels "
+                f"({manifest.get('processed_rows', '?')} rows processed); "
+                "resubmit with --resume to retry invalid or missing labels"
+            )
+        if manifest.get("model") not in judge_models:
+            problems.append(f"judge model mismatch: {manifest.get('model')!r}; expected {summary['judge']!r}")
+        if manifest.get("job_id") != job["job_id"]:
+            problems.append(f"job ID mismatch: {manifest.get('job_id')!r}")
+        if manifest.get("input_sha256") != job["input_sha256"]:
+            problems.append("input hash mismatch: saved judgments belong to different prepared input bytes")
+        if problems:
+            raise ValueError(f"{job['job_id']}: " + "; ".join(problems))
         expected = {row["request_id"]: row for row in _read(job["input"])}
         labeled = _read(output / "labeled.csv")
         seen = set()

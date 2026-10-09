@@ -356,3 +356,55 @@ def test_frontier_job_rejects_changed_input_and_duplicate_requests(upload):
     job["input_sha256"] = prep._sha(job["input"])
     with pytest.raises(ValueError, match="duplicate or empty request_id"):
         validate_job_input(job)
+
+
+def test_finish_reports_incomplete_counts_separately_from_hash_mismatch(upload):
+    upload["prepare"]()
+    registry = upload["out"] / "jobs.yaml"
+    jobs = yaml.safe_load(registry.read_text())["jobs"]
+    output = upload["out"] / "judge"
+    output.mkdir()
+    jobs[0]["output_dir"] = str(output)
+    registry.write_text(yaml.safe_dump({"jobs": jobs}))
+    manifest = {"complete": False, "valid_labeled_rows": 1, "total_rows": 2, "processed_rows": 2,
+                "model": "meta-llama--Llama-3.1-8B-Instruct", "job_id": jobs[0]["job_id"],
+                "input_sha256": jobs[0]["input_sha256"]}
+    path = output / "manifest.json"
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match=r"1/2 valid labels \(2 rows processed\)") as exc:
+        finish(upload["out"])
+    assert "mismatch" not in str(exc.value)
+    manifest.update(complete=True, valid_labeled_rows=2, input_sha256="changed")
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="input hash mismatch") as exc:
+        finish(upload["out"])
+    assert "incomplete" not in str(exc.value)
+
+
+def test_adjudication_parse_errors_are_flagged_and_only_failed_row_is_retried(tmp_path, monkeypatch):
+    input_path, output = tmp_path / "input.csv", tmp_path / "out"
+    pd.DataFrame({"request_id": ["done", "retry"], "model_output": ["answer", "split"]}).to_csv(input_path, index=False)
+    def divided_votes(**kwargs):
+        votes = fake_votes(**kwargs)
+        if kwargs["row_index"] == 1:
+            votes[2]["primary_label"] = "refusal"
+        return votes
+    votes = Mock(side_effect=divided_votes)
+    monkeypatch.setattr(runner, "judge_row", votes)
+    client = Mock()
+    client.generate.return_value = ("invalid JSON", {})
+    monkeypatch.setattr(runner, "VLLMClient", Mock(return_value=client))
+    with pytest.raises(RuntimeError, match="1/2 valid labels"):
+        run(input_path, output)
+    bad = read_csv(output / "labeled.csv")[1]
+    assert bad["llm_policy_label"] == "parse_error" and bad["llm_parse_error"] == "True"
+    record = {"primary_label": "refusal", "secondary_label": None, "confidence": 0.9,
+              "contains_answer": False, "contains_refusal": True, "contains_clarifying_question": False,
+              "contains_safe_redirect": False, "mentions_instruction_priority": False,
+              "treats_external_text_as_data": False, "evidence": "e", "reason": "explanation " * 50}
+    client.generate.return_value = (json.dumps(record), {})
+    votes.reset_mock()
+    run(input_path, output)
+    assert votes.call_count == 1
+    assert votes.call_args.kwargs["row_index"] == 1
+    assert [r["llm_policy_label"] for r in read_csv(output / "labeled.csv")] == ["compliance", "refusal"]

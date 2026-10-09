@@ -53,6 +53,22 @@ def _make_client(label: str = "compliance"):
     return client
 
 
+def test_adjudication_accepts_valid_label_with_long_explanation():
+    client = _make_client("refusal")
+    record = json.loads(client.generate.return_value[0])
+    record["reason"] = "Explanation of the adjudication. " * 20
+    client.generate.return_value = (json.dumps(record), None)
+    resolution, rows = resolve_first_pass(
+        row_index=0, job_id="test", model_output="answer",
+        votes=[_vote("compliance"), _vote("compliance"), _vote("refusal")],
+        prompts={"adjudicator": "rubric"}, client=client, model="judge",
+    )
+    assert resolution["llm_policy_label"] == "refusal"
+    assert resolution["llm_num_agree"] == 3
+    assert rows[0]["final_label"] == "refusal"
+    assert len(rows[0]["adjudication_reason"]) == 280
+
+
 # ── _majority_label ───────────────────────────────────────────────────────────
 
 def test_majority_unanimous():

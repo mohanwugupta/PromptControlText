@@ -84,3 +84,23 @@ def test_is_high_confidence():
     assert is_high_confidence(0.85)
     assert not is_high_confidence(0.79)
     assert is_high_confidence(0.80)
+
+
+@pytest.mark.parametrize("field", ["evidence", "reason"])
+def test_long_explanation_is_bounded_without_losing_judgment(field):
+    rec, err = validate_judge_output(_j({**_VALID, field: "explanation " * 50}))
+    assert err is None
+    assert rec["primary_label"] == _VALID["primary_label"]
+    assert rec["confidence"] == _VALID["confidence"]
+    assert len(rec[field]) == 280 and rec[field].endswith("...")
+
+
+@pytest.mark.parametrize("value", [None, 42, ["text"]])
+def test_explanation_normalization_does_not_accept_wrong_types(value):
+    rec, err = validate_judge_output(_j({**_VALID, "reason": value}))
+    assert rec is None and "Schema validation error" in err
+
+
+def test_long_explanation_does_not_mask_invalid_label():
+    rec, err = validate_judge_output(_j({**_VALID, "reason": "x" * 500, "primary_label": "invalid"}))
+    assert rec is None and "Schema validation error" in err
