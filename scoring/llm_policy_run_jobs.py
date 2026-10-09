@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
+import json
 import logging
 import os
 import pathlib
@@ -45,15 +47,25 @@ def validate_job_input(job: Dict[str, Any]) -> int | None:
     if expected is None:
         return None
     expected = int(expected)
+    if job.get("input_sha256") and hashlib.sha256(pathlib.Path(job["input"]).read_bytes()).hexdigest() != job["input_sha256"]:
+        raise ValueError(f"{job['job_id']}: input hash changed; prepare the judge inputs again")
     key_fields = ["benchmark", "item_id", "prompt_family", "clarity_level", "prompt_variant"]
     seen = set()
+    request_ids = set()
     count = empty = 0
     with pathlib.Path(job["input"]).open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         missing = set([*key_fields, "model_output"]) - set(reader.fieldnames or [])
+        if job.get("require_request_id") and "request_id" not in (reader.fieldnames or []):
+            missing.add("request_id")
         if missing:
             raise ValueError(f"{job['job_id']}: input is missing columns {sorted(missing)}")
         for row in reader:
+            if job.get("require_request_id"):
+                request_id = row["request_id"]
+                if not request_id or request_id in request_ids:
+                    raise ValueError(f"{job['job_id']}: duplicate or empty request_id")
+                request_ids.add(request_id)
             key = tuple(row[field] for field in key_fields)
             if key in seen:
                 raise ValueError(f"{job['job_id']}: duplicate generation condition {key}")
@@ -96,7 +108,7 @@ def combine_labeled_outputs(
     with temp_path.open("w", encoding="utf-8", newline="") as output_file:
         writer = csv.DictWriter(
             output_file,
-            fieldnames=["experiment_group", "source_run", *combined_fields],
+            fieldnames=["experiment_group", "source_run", *[f for f in combined_fields if f not in {"experiment_group", "source_run"}]],
         )
         writer.writeheader()
         for job, labeled_path in sources:
@@ -146,8 +158,13 @@ def run_all_jobs(
         manifest = output_dir / "manifest.json"
 
         if not force and manifest.exists():
-            logger.info("Job %s already complete (manifest found). Skipping.", job_id)
-            continue
+            saved = json.loads(manifest.read_text())
+            if (saved.get("complete", saved.get("processed_rows") == saved.get("total_rows"))
+                    and saved.get("model") == model
+                    and (not job.get("input_sha256") or saved.get("input_sha256") == job["input_sha256"])):
+                validate_job_input(job)
+                logger.info("Job %s already complete. Skipping.", job_id)
+                continue
 
         if not input_path.exists():
             logger.error("Job %s: input file not found: %s. Skipping.", job_id, input_path)
@@ -168,6 +185,7 @@ def run_all_jobs(
                 max_tokens=max_tokens,
                 max_workers=max_workers,
                 resume=resume,
+                require_complete=bool(job.get("require_request_id")),
             )
         except Exception as e:
             logger.error("Job %s FAILED: %s", job_id, e, exc_info=True)

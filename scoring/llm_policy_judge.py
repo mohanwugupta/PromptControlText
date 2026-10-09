@@ -10,6 +10,7 @@ import hashlib
 import logging
 from typing import Dict, List, Optional, Tuple
 
+from models.vllm_client import ServerUnavailableError
 from scoring.llm_policy_schema import validate_judge_output, load_schema
 from scoring.llm_policy_prompts import build_judge_user_message
 
@@ -54,6 +55,8 @@ def _call_once(
             max_tokens=max_tokens,
             response_format=_JUDGE_RESPONSE_FORMAT,
         )
+    except ServerUnavailableError:
+        raise
     except Exception as e:
         return None, f"LLM call error: {e}"
 

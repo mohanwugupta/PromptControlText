@@ -11,6 +11,7 @@ import logging
 from collections import Counter
 from typing import Dict, List, Optional, Tuple
 
+from models.vllm_client import ServerUnavailableError
 from scoring.llm_policy_schema import validate_judge_output, is_high_confidence
 from scoring.llm_policy_prompts import build_adjudicator_user_message
 
@@ -124,6 +125,8 @@ def adjudicate_row(
                 max_tokens=max_tokens,
             )
             record, err = validate_judge_output(raw)
+        except ServerUnavailableError:
+            raise
         except Exception as e:
             record, err = None, str(e)
 

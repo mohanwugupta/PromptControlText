@@ -68,91 +68,148 @@ def _load_completed_hashes(judge_votes_path: pathlib.Path) -> Set[str]:
         return set()
     try:
         df = pd.read_csv(judge_votes_path)
-        counts = df.groupby("row_hash")["judge_id"].count()
+        counts = df.groupby("row_hash")["judge_id"].nunique()
         return set(counts[counts >= 3].index.tolist())
     except Exception:
         return set()
 
 
-def _load_completed_resolutions(
-    judge_votes_path: pathlib.Path,
-    adj_path: pathlib.Path,
-    df: "pd.DataFrame",
-) -> "Dict[int, Dict]":
-    """
-    Re-derive resolutions for rows that are already complete in judge_votes.csv
-    so that resume mode doesn't leave those rows unlabeled in labeled.csv.
+def _identity(row, index):
+    request_id = row.get("request_id")
+    return "request:" + str(request_id) if request_id else "row:" + str(index)
 
-    Returns a dict of {original_df_index: resolution_dict}.
-    """
-    from scoring.llm_policy_adjudicate import resolve_first_pass
 
-    if not judge_votes_path.exists():
-        return {}
+def _saved_identity(row, use_request_ids):
+    if use_request_ids:
+        return "request:" + row["request_id"] if row.get("request_id") else None
+    return "row:" + str(row["row_index"]) if row.get("row_index") is not None else None
 
-    try:
-        votes_df = pd.read_csv(judge_votes_path)
-    except Exception:
-        return {}
 
-    # Build hash → original df index map
-    hash_to_idx: Dict[str, int] = {}
+def _csv_records(path):
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8") as stream:
+        return list(csv.DictReader(stream))
+
+
+def _load_completed_resolutions(judge_votes_path, adj_path, df):
+    """Restore each request's votes and saved adjudication without LLM calls."""
+    from collections import Counter, defaultdict
+    from scoring.llm_policy_adjudicate import _needs_adjudication
+    from scoring.llm_policy_schema import VALID_LABELS
+
+    use_ids = "request_id" in df.columns
+    groups, adjudications = defaultdict(list), defaultdict(list)
+    for vote in _csv_records(judge_votes_path):
+        key = (_saved_identity(vote, use_ids), vote.get("row_hash"))
+        groups[key].append(vote)
+    for row in _csv_records(adj_path):
+        key = (_saved_identity(row, use_ids), row.get("row_hash"))
+        adjudications[key].append(row)
+    completed = {}
     for idx, row in df.iterrows():
-        raw = str(row.get("model_output", "") or row.get("model_out", "") or "")
-        h = _row_hash(raw.strip())
-        if h not in hash_to_idx:
-            hash_to_idx[h] = idx
-
-    completed: Dict[int, Dict] = {}
-    for row_hash, group in votes_df.groupby("row_hash"):
-        if len(group) < 3:
-            continue
-        orig_idx = hash_to_idx.get(row_hash)
-        if orig_idx is None:
-            continue
-
-        # Reconstruct vote dicts from the saved CSV columns
-        votes = group.to_dict(orient="records")
-
-        row_dict = df.loc[orig_idx].to_dict()
-        model_output = str(row_dict.get("model_output") or row_dict.get("model_out") or "").strip()
-
         try:
+            text = get_model_output(row.to_dict())
+        except ValueError:
+            continue
+        key = (_identity(row, idx), _row_hash(text))
+        by_judge = {v["judge_id"]: v for v in groups[key] if v.get("judge_id") in {"A", "B", "C"}}
+        if set(by_judge) != {"A", "B", "C"}:
+            continue
+        votes = [dict(by_judge[jid]) for jid in "ABC"]
+        try:
+            for vote in votes:
+                vote["confidence"] = float(vote.get("confidence") or 0)
+                vote["secondary_label"] = vote.get("secondary_label") or None
+        except (TypeError, ValueError):
+            continue  # An interrupted CSV append is not a completed vote set.
+        needs_adj, _ = _needs_adjudication(votes)
+        if not needs_adj:
             resolution, _ = resolve_first_pass(
-                row_index=orig_idx,
-                job_id=group["job_id"].iloc[0] if "job_id" in group.columns else "",
-                model_output=model_output,
-                votes=votes,
-                prompts={},   # adjudication already done; won't be called again
-                client=None,  # won't be called
-                model="",
-                temperature=0.0,
-                max_tokens=0,
-                _skip_adjudication=True,  # sentinel to skip re-calling LLM
+                row_index=idx, job_id=votes[0].get("job_id", ""), model_output=text,
+                votes=votes, prompts={}, client=None, model="",
             )
-        except Exception:
-            # Fall back to simple majority from saved votes
-            from collections import Counter
-            labels = [v.get("primary_label") for v in votes if v.get("primary_label")]
-            if not labels:
-                continue
-            majority = Counter(labels).most_common(1)[0][0]
+        else:
+            labels = "|".join(v["primary_label"] for v in votes)
+            saved = [a for a in adjudications[key] if a.get("original_vote_labels") == labels]
+            if not saved:
+                continue  # The previous job stopped before adjudication finished.
+            adj = saved[-1]
+            label = adj["final_label"]
+            rep = next((v for v in votes if v["primary_label"] == label), votes[0])
+            panel = [adj.get(f"adjudicator_{i}_label") for i in range(1, 4)]
             resolution = {
-                "llm_policy_label": majority,
-                "llm_secondary_label": None,
-                "llm_confidence": float(group["confidence"].mean()) if "confidence" in group.columns else 0.0,
-                "llm_resolution_method": "resume_replay",
-                "llm_num_agree": labels.count(majority),
-                "llm_disagreement_type": "none" if len(set(labels)) == 1 else "minor",
-                "llm_needs_human_audit": False,
-                "llm_evidence": str(group["evidence"].iloc[0]) if "evidence" in group.columns else "",
-                "llm_reason": str(group["reason"].iloc[0]) if "reason" in group.columns else "",
-                "llm_parse_error": False,
+                "llm_policy_label": label, "llm_secondary_label": rep.get("secondary_label"),
+                "llm_confidence": rep["confidence"], "llm_resolution_method": "adjudication",
+                "llm_num_agree": Counter(panel)[label], "llm_disagreement_type": "adjudicated",
+                "llm_needs_human_audit": str(adj.get("needs_human_audit", "")).lower() == "true",
+                "llm_evidence": rep.get("evidence", ""), "llm_reason": rep.get("reason", ""),
             }
-
-        completed[orig_idx] = resolution
-
+        resolution["llm_parse_error"] = any(v.get("parse_error") for v in votes)
+        if resolution["llm_policy_label"] in VALID_LABELS:
+            completed[idx] = resolution
     return completed
+
+
+def _load_resolution_checkpoint(path, df):
+    """Replay exact saved resolutions using request identity AND answer hash."""
+    from scoring.llm_policy_schema import VALID_LABELS
+    if not path.exists():
+        return {}
+    saved = {}
+    lines = path.read_bytes().splitlines(keepends=True)
+    for number, line in enumerate(lines):
+        if not line.strip():
+            continue
+        try:
+            record = json.loads(line)
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            if number != len(lines) - 1:
+                raise ValueError("Corrupt resolution checkpoint; invalid interior record")
+            # A killed process can leave one unfinished append. Preserve all
+            # complete records and remove that tail before appending new ones.
+            with path.open("r+b") as stream:
+                stream.truncate(sum(len(part) for part in lines[:number]))
+            break
+        saved[(record["identity"], record["row_hash"])] = record["resolution"]
+        if number == len(lines) - 1 and not line.endswith(b"\n"):
+            # JSON may be complete even when the final newline was interrupted.
+            with path.open("ab") as stream:
+                stream.write(b"\n")
+    complete = {}
+    for idx, row in df.iterrows():
+        try:
+            text = get_model_output(row.to_dict())
+        except ValueError:
+            continue
+        resolution = saved.get((_identity(row, idx), _row_hash(text)))
+        if resolution and resolution.get("llm_policy_label") in VALID_LABELS:
+            complete[idx] = resolution
+    return complete
+
+
+def _exclusive_job(function):
+    import fcntl
+    from functools import wraps
+
+    @wraps(function)
+    def locked(**kwargs):
+        directory = pathlib.Path(kwargs["output_dir"])
+        directory.mkdir(parents=True, exist_ok=True)
+        with (directory / ".judge.lock").open("a") as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError as exc:
+                raise RuntimeError(f"Another judge job is already writing {directory}") from exc
+            handlers = set(logger.handlers)
+            try:
+                return function(**kwargs)
+            finally:
+                for handler in list(logger.handlers):
+                    if handler not in handlers:
+                        logger.removeHandler(handler)
+                        handler.close()
+    return locked
 
 
 def _append_rows(path: pathlib.Path, rows: List[Dict], fieldnames: List[str]) -> None:
@@ -186,6 +243,7 @@ def _build_audit_sample(labeled_df: pd.DataFrame, n_per_stratum: int = 50) -> pd
     return pd.concat(parts).drop_duplicates()
 
 
+@_exclusive_job
 def run_job(
     *,
     input_path: str | pathlib.Path,
@@ -205,6 +263,7 @@ def run_job(
     limit: Optional[int] = None,
     sample_strategy: Optional[str] = None,
     stratify_by: Optional[str] = None,
+    require_complete: bool = False,
 ) -> None:
     input_path = pathlib.Path(input_path)
     output_dir = pathlib.Path(output_dir)
@@ -221,6 +280,8 @@ def run_job(
     audit_path         = output_dir / "audit_sample.csv"
     summary_label_path = output_dir / "summary_by_label.csv"
     summary_dis_path   = output_dir / "summary_by_disagreement.csv"
+    resolutions_path  = output_dir / "resolutions.jsonl"
+    settings_path     = output_dir / "settings.json"
 
     # Add file handler to logger for this job
     fh = logging.FileHandler(log_path)
@@ -241,13 +302,32 @@ def run_job(
     if adjudicator_prompt:
         prompts["adjudicator"] = load_prompt(adjudicator_prompt)
 
+    settings = {
+        "job_id": job_id, "model": model, "temperature": temperature, "max_tokens": max_tokens,
+        "schema_version": SCHEMA_VERSION,
+        "prompt_sha256": {key: _row_hash(value) for key, value in prompts.items()},
+    }
+    if settings_path.exists() and json.loads(settings_path.read_text()) != settings:
+        raise ValueError("Judge model/settings/prompts changed; use a separate output directory")
+    if not settings_path.exists() and votes_path.exists():
+        if manifest_path.exists() and json.loads(manifest_path.read_text()).get("model") != model:
+            raise ValueError("Saved votes belong to a different judge model")
+        for key, filename in [("A", "judge_prompt_A.txt"), ("B", "judge_prompt_B.txt"),
+                              ("C", "judge_prompt_C.txt"), ("adjudicator", "adjudicator_prompt.txt")]:
+            previous = output_dir / filename
+            if previous.exists() and previous.read_text().strip() != prompts[key].strip():
+                raise ValueError("Saved judge prompts changed; use a separate output directory")
+    settings_path.write_text(json.dumps(settings, indent=2) + "\n")
+
     # Save prompt copies
     for key, fname in [("A", "judge_prompt_A.txt"), ("B", "judge_prompt_B.txt"),
                        ("C", "judge_prompt_C.txt"), ("adjudicator", "adjudicator_prompt.txt")]:
         (output_dir / fname).write_text(prompts[key])
 
     # ── Load input CSV ────────────────────────────────────────────────────
-    df = pd.read_csv(input_path)
+    df = pd.read_csv(input_path, keep_default_na=False, dtype={"request_id": str})
+    if "request_id" in df.columns and (df["request_id"].eq("").any() or df["request_id"].duplicated().any()):
+        raise ValueError("Judge input must have unique, nonempty request_id values")
     logger.info("Loaded %d rows from %s", len(df), input_path)
 
     # Sampling / limit
@@ -261,14 +341,12 @@ def run_job(
         df = df.head(limit)
 
     # Resume: skip completed rows and replay their resolutions into all_resolutions
-    completed_hashes: Set[str] = set()
     all_resolutions: Dict[int, Dict] = {}
+    checkpoints = _load_resolution_checkpoint(resolutions_path, df)
     if resume:
-        completed_hashes = _load_completed_hashes(votes_path)
-        logger.info("Resuming: %d rows already complete.", len(completed_hashes))
-        if completed_hashes:
-            all_resolutions = _load_completed_resolutions(votes_path, adj_path, df)
-            logger.info("Replayed %d completed resolutions.", len(all_resolutions))
+        all_resolutions = _load_completed_resolutions(votes_path, adj_path, df)
+        all_resolutions.update(checkpoints)
+        logger.info("Replayed %d completed request resolutions.", len(all_resolutions))
 
     # ── Client ────────────────────────────────────────────────────────────
     client = VLLMClient(
@@ -293,6 +371,9 @@ def run_job(
         "final_label", "final_confidence", "adjudication_reason", "needs_human_audit",
     ]
     parse_err_fields = ["job_id", "row_index", "row_hash", "judge_id", "parse_error", "model_output_snippet"]
+    if "request_id" in df.columns:
+        for fields in (vote_fields, adj_fields, parse_err_fields):
+            fields.append("request_id")
 
     # ── Per-row processor ─────────────────────────────────────────────────
     def process_row(idx_row):
@@ -304,8 +385,7 @@ def run_job(
             logger.warning("Row %d: skipped — %s", idx, e)
             return idx, None, None, None
 
-        rh = _row_hash(model_output)
-        if rh in completed_hashes:
+        if idx in all_resolutions:
             return idx, None, None, None  # already done
 
         votes = judge_row(
@@ -330,13 +410,15 @@ def run_job(
             temperature=temperature,
             max_tokens=max_tokens,
         )
+        if "request_id" in row_dict:
+            for saved in [*votes, *adj_rows]:
+                saved["request_id"] = row_dict["request_id"]
+        resolution["llm_parse_error"] = any(v.get("parse_error") for v in votes)
 
         return idx, votes, resolution, adj_rows
 
     # ── Main loop ─────────────────────────────────────────────────────────
-    rows_to_process = [(idx, row) for idx, row in df.iterrows()
-                       if _row_hash(str(row.get("model_output", "") or row.get("model_out", "")))
-                       not in completed_hashes]
+    rows_to_process = [(idx, row) for idx, row in df.iterrows() if idx not in all_resolutions]
     logger.info("%d rows to process.", len(rows_to_process))
 
     parse_error_rows: List[Dict] = []
@@ -345,7 +427,12 @@ def run_job(
         futures = {pool.submit(process_row, item): item[0] for item in rows_to_process}
         done = 0
         for fut in as_completed(futures):
-            idx, votes, resolution, adj_rows = fut.result()
+            try:
+                idx, votes, resolution, adj_rows = fut.result()
+            except Exception:
+                for pending in futures:
+                    pending.cancel()
+                raise
             done += 1
             if votes is None:
                 continue
@@ -364,9 +451,15 @@ def run_job(
                         "job_id": job_id, "row_index": idx,
                         "row_hash": v["row_hash"], "judge_id": v["judge_id"],
                         "parse_error": v["parse_error"], "model_output_snippet": snippet,
+                        **({"request_id": row_dict["request_id"]} if "request_id" in row_dict else {}),
                     })
 
             all_resolutions[idx] = resolution
+            with resolutions_path.open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps({
+                    "identity": _identity(df.loc[idx], idx), "row_hash": votes[0]["row_hash"],
+                    "resolution": resolution,
+                }) + "\n")
 
             if done % 500 == 0:
                 logger.info("Progress: %d / %d rows processed.", done, len(rows_to_process))
@@ -383,15 +476,13 @@ def run_job(
         result_df.at[idx, "llm_adjudicator_model"] = model
         result_df.at[idx, "llm_schema_version"] = SCHEMA_VERSION
         result_df.at[idx, "llm_prompt_set_version"] = PROMPT_SET_VERSION
-        result_df.at[idx, "llm_parse_error"] = any(
-            v.get("parse_error") for v in []  # parse errors already captured
-        )
+        result_df.at[idx, "llm_parse_error"] = res.get("llm_parse_error", False)
 
     result_df.to_csv(labeled_path, index=False)
     logger.info("Saved labeled.csv (%d rows).", len(result_df))
 
     # labels_only.csv
-    id_cols = [c for c in ["item_id", "row_index"] if c in result_df.columns]
+    id_cols = [c for c in ["request_id", "item_id", "condition_id", "provider", "row_index"] if c in result_df.columns]
     result_df[id_cols + LLM_COLS].to_csv(labels_only_path, index=False)
 
     # parse_errors.csv
@@ -414,6 +505,8 @@ def run_job(
 
     # manifest
     elapsed = time.time() - t0
+    from scoring.llm_policy_schema import VALID_LABELS
+    valid_rows = int(result_df["llm_policy_label"].isin(VALID_LABELS).sum())
     manifest = {
         "job_id": job_id,
         "input": str(input_path),
@@ -424,11 +517,18 @@ def run_job(
         "total_rows": len(df),
         "processed_rows": len(all_resolutions),
         "parse_errors": len(parse_error_rows),
+        "valid_labeled_rows": valid_rows,
+        "complete": valid_rows == len(df),
+        "input_sha256": hashlib.sha256(input_path.read_bytes()).hexdigest(),
+        "resume_identity": "request_id" if "request_id" in df.columns else "row_index_and_answer_hash",
         "elapsed_seconds": round(elapsed, 1),
     }
     manifest_path.write_text(json.dumps(manifest, indent=2))
     logger.info("Job %s complete in %.0fs.", job_id, elapsed)
     logger.removeHandler(fh)
+    fh.close()
+    if require_complete and valid_rows != len(df):
+        raise RuntimeError(f"Judge incomplete: {valid_rows}/{len(df)} valid labels; resubmit with --resume")
 
 
 # ── CLI ───────────────────────────────────────────────────────────────────
@@ -449,6 +549,7 @@ def _parse_args(argv=None):
     p.add_argument("--max-tokens", type=int, default=250)
     p.add_argument("--max-workers", type=int, default=16)
     p.add_argument("--resume", action="store_true")
+    p.add_argument("--require-complete", action="store_true", help="Fail if any input lacks a valid policy label")
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--sample-strategy", default=None)
     p.add_argument("--stratify-by", default=None)
@@ -472,6 +573,7 @@ if __name__ == "__main__":
         max_tokens=args.max_tokens,
         max_workers=args.max_workers,
         resume=args.resume,
+        require_complete=args.require_complete,
         limit=args.limit,
         sample_strategy=args.sample_strategy,
         stratify_by=args.stratify_by,

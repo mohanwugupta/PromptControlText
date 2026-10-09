@@ -298,7 +298,12 @@ pilot, budget accounting, and Runpod execution steps. Use
 The [completed three-provider pilot](artifacts/frontier/runs/2026-10-08-gemini-completion/README.md)
 contains 150 verified cases: 129 text responses and 21 provider blocks, with no
 recorded truncations. OpenAI, Anthropic, and Gemini each completed 50 cases.
-All four pilot workers are deleted. The main experiment and judging have not run.
+All four pilot workers are deleted. The main experiment is now uploaded under
+`artifacts/frontier/runs/2026-10-08-main/`, with all 10,950 cases present.
+The [frontier cluster judging runbook](docs/frontier-judging.md) explains how to
+prepare its 10,440 nonempty answers, submit the three-provider judge array,
+resume interrupted jobs, and rejoin all cases while retaining 510 empty provider
+blocks separately. Judging has not yet been submitted.
 
 See the [revision status report and checklist](docs/revision-status-2026-10-07.md)
 for completed work, budget accounting, missing inputs, and remaining tasks.

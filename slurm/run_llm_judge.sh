@@ -44,13 +44,14 @@ set -eo pipefail
 # 0. Array task
 # ------------------------------------------------------------------
 TASK=${SLURM_ARRAY_TASK_ID:-0}
-if ! [[ "$TASK" =~ ^[0-5]$ ]]; then
-    echo "ERROR: SLURM_ARRAY_TASK_ID must be between 0 and 5."
+if ! [[ "$TASK" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: SLURM_ARRAY_TASK_ID must be a nonnegative integer."
     exit 1
 fi
 
 # Each array task gets its own port so tasks can run on the same node if needed
-VLLM_PORT=$((8000 + TASK))
+VLLM_PORT=$((${JUDGE_PORT_BASE:-8000} + TASK))
+JUDGE_JOBS_CONFIG=${JUDGE_JOBS_CONFIG:-configs/llm_policy_jobs_new_models.yaml}
 
 # ------------------------------------------------------------------
 # 1. Configuration
@@ -66,7 +67,7 @@ GPU_MEMORY_UTILIZATION=0.90
 
 # Judge call settings
 BATCH_SIZE=512
-MAX_WORKERS=256
+MAX_WORKERS=${JUDGE_MAX_WORKERS:-256}
 TEMPERATURE=0.0
 MAX_TOKENS=250
 
@@ -89,16 +90,22 @@ fi
 export PYTHONPATH="$PROJECT_DIR${PYTHONPATH:+:$PYTHONPATH}"
 
 # Use the same job registry and completion check as the multi-job Python runner.
-JOB_CONFIG=$(python - "$TASK" <<'PY'
+JOB_CONFIG=$(python - "$TASK" "$JUDGE_JOBS_CONFIG" <<'PY'
 import sys
+from pathlib import Path
 from scoring.llm_policy_run_jobs import load_jobs, validate_job_input
 
-job = load_jobs("configs/llm_policy_jobs_new_models.yaml")[int(sys.argv[1])]
-validate_job_input(job)
-print("\t".join([job["job_id"], job["input"], job["output_dir"]]))
+jobs = load_jobs(sys.argv[2])
+task = int(sys.argv[1])
+if not 0 <= task < len(jobs):
+    raise ValueError(f"Task {task} is outside the {len(jobs)} configured jobs")
+job = jobs[task]
+rows = validate_job_input(job)
+print("\t".join([job["job_id"], str(Path(job["input"]).resolve()),
+                 str(Path(job["output_dir"]).resolve()), str(rows or 'validated')]))
 PY
 )
-IFS=$'\t' read -r JOB_ID INPUT_CSV OUTPUT_DIR <<< "$JOB_CONFIG"
+IFS=$'\t' read -r JOB_ID INPUT_CSV OUTPUT_DIR ROW_COUNT <<< "$JOB_CONFIG"
 
 echo "=========================================="
 echo " LLM Policy Judge — task ${TASK} / ${JOB_ID}"
@@ -108,7 +115,7 @@ echo "Array task:  $TASK"
 echo "Node:        $SLURMD_NODENAME"
 echo "Time:        $(date)"
 echo "GPUs:        $CUDA_VISIBLE_DEVICES"
-echo "Input:       $INPUT_CSV (242,640 complete responses)"
+echo "Input:       $INPUT_CSV ($ROW_COUNT responses)"
 echo "Output dir:  $OUTPUT_DIR"
 echo ""
 
@@ -152,14 +159,14 @@ else
     exit 1
 fi
 
-if [ -f "$PROJECT_DIR/$INPUT_CSV" ]; then
+if [ -f "$INPUT_CSV" ]; then
     echo "✅ Complete input CSV found: $INPUT_CSV"
 else
     echo "❌ ERROR: Input CSV not found: $PROJECT_DIR/$INPUT_CSV"
     exit 1
 fi
 
-mkdir -p "$PROJECT_DIR/logs" "$PROJECT_DIR/$OUTPUT_DIR"
+mkdir -p "$PROJECT_DIR/logs" "$OUTPUT_DIR"
 
 # ------------------------------------------------------------------
 # 6. Start vLLM server
@@ -207,7 +214,7 @@ while [ $ELAPSED -lt $MAX_WAIT ]; do
         echo "❌ ERROR: vLLM server exited unexpectedly"
         exit 1
     fi
-    if curl -fsS "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
+    if curl -fsS --max-time 10 "http://localhost:${VLLM_PORT}/health" > /dev/null 2>&1; then
         echo "✅ vLLM server ready after ${ELAPSED}s"
         break
     fi
@@ -231,10 +238,14 @@ echo " Output:    ${OUTPUT_DIR}"
 echo " Model:     ${SERVED_MODEL_NAME}"
 echo "=========================================="
 
+JUDGE_EXTRA_ARGS=()
+if [ "${JUDGE_REQUIRE_COMPLETE:-0}" = "1" ]; then
+    JUDGE_EXTRA_ARGS+=(--require-complete)
+fi
 python -m scoring.llm_policy_runner \
-    --input          "$PROJECT_DIR/$INPUT_CSV" \
+    --input          "$INPUT_CSV" \
     --job-id         "$JOB_ID" \
-    --output-dir     "$PROJECT_DIR/$OUTPUT_DIR" \
+    --output-dir     "$OUTPUT_DIR" \
     --model          "$SERVED_MODEL_NAME" \
     --base-url       "http://localhost:${VLLM_PORT}/v1" \
     --prompt-a       "$PROJECT_DIR/scoring/llm_policy_judge_prompt_A_v1.txt" \
@@ -245,7 +256,7 @@ python -m scoring.llm_policy_runner \
     --temperature    "$TEMPERATURE" \
     --max-tokens     "$MAX_TOKENS" \
     --max-workers    "$MAX_WORKERS" \
-    --resume
+    --resume "${JUDGE_EXTRA_ARGS[@]}"
 
 echo ""
 echo "✅ Task ${TASK} (${JOB_ID}) completed at $(date)"
