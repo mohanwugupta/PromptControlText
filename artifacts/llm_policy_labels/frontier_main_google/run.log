@@ -12,3 +12,10 @@
 2026-10-09 11:53:04,527 INFO: Saved labeled.csv (3609 rows).
 2026-10-09 11:53:04,607 INFO: Audit sample: 354 rows.
 2026-10-09 11:53:04,615 INFO: Job frontier_main_google complete in 931s.
+2026-10-09 13:27:43,625 INFO: Job frontier_main_google started.  Input: /scratch/gpfs/JORDANAT/mg9965/PromptControlText/.local/frontier/judge-main/google.csv
+2026-10-09 13:27:43,822 INFO: Loaded 3609 rows from /scratch/gpfs/JORDANAT/mg9965/PromptControlText/.local/frontier/judge-main/google.csv
+2026-10-09 13:27:44,653 INFO: Replayed 3604 completed request resolutions.
+2026-10-09 13:27:44,730 INFO: 5 rows to process.
+2026-10-09 13:28:00,521 INFO: Saved labeled.csv (3609 rows).
+2026-10-09 13:28:00,599 INFO: Audit sample: 354 rows.
+2026-10-09 13:28:00,608 INFO: Job frontier_main_google finished in 17s: 3609/3609 valid labels.

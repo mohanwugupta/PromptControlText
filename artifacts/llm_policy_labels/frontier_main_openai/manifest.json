@@ -8,9 +8,9 @@
   "total_rows": 3650,
   "processed_rows": 3650,
   "parse_errors": 0,
-  "valid_labeled_rows": 3645,
-  "complete": false,
+  "valid_labeled_rows": 3650,
+  "complete": true,
   "input_sha256": "7cd15443aeb8cb089602c8e98bfa9935361860dad92828eebfdc3ac596956770",
   "resume_identity": "request_id",
-  "elapsed_seconds": 996.6
+  "elapsed_seconds": 18.1
 }

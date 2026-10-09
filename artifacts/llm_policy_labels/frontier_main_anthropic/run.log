@@ -11,3 +11,10 @@
 2026-10-09 11:50:53,194 INFO: Saved labeled.csv (3181 rows).
 2026-10-09 11:50:53,281 INFO: Audit sample: 396 rows.
 2026-10-09 11:50:53,292 INFO: Job frontier_main_anthropic complete in 996s.
+2026-10-09 13:27:43,581 INFO: Job frontier_main_anthropic started.  Input: /scratch/gpfs/JORDANAT/mg9965/PromptControlText/.local/frontier/judge-main/anthropic.csv
+2026-10-09 13:27:43,823 INFO: Loaded 3181 rows from /scratch/gpfs/JORDANAT/mg9965/PromptControlText/.local/frontier/judge-main/anthropic.csv
+2026-10-09 13:27:44,554 INFO: Replayed 3174 completed request resolutions.
+2026-10-09 13:27:44,622 INFO: 7 rows to process.
+2026-10-09 13:28:00,466 INFO: Saved labeled.csv (3181 rows).
+2026-10-09 13:28:00,545 INFO: Audit sample: 389 rows.
+2026-10-09 13:28:00,556 INFO: Job frontier_main_anthropic finished in 17s: 3181/3181 valid labels.
