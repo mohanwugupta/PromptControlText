@@ -1,0 +1,13 @@
+2026-10-09 11:34:17,702 INFO: Job frontier_main_anthropic started.  Input: /scratch/gpfs/JORDANAT/mg9965/PromptControlText/.local/frontier/judge-main/anthropic.csv
+2026-10-09 11:34:17,882 INFO: Loaded 3181 rows from /scratch/gpfs/JORDANAT/mg9965/PromptControlText/.local/frontier/judge-main/anthropic.csv
+2026-10-09 11:34:18,162 INFO: Replayed 0 completed request resolutions.
+2026-10-09 11:34:18,236 INFO: 3181 rows to process.
+2026-10-09 11:37:00,901 INFO: Progress: 500 / 3181 rows processed.
+2026-10-09 11:39:34,075 INFO: Progress: 1000 / 3181 rows processed.
+2026-10-09 11:42:10,952 INFO: Progress: 1500 / 3181 rows processed.
+2026-10-09 11:44:49,693 INFO: Progress: 2000 / 3181 rows processed.
+2026-10-09 11:47:23,839 INFO: Progress: 2500 / 3181 rows processed.
+2026-10-09 11:49:54,872 INFO: Progress: 3000 / 3181 rows processed.
+2026-10-09 11:50:53,194 INFO: Saved labeled.csv (3181 rows).
+2026-10-09 11:50:53,281 INFO: Audit sample: 396 rows.
+2026-10-09 11:50:53,292 INFO: Job frontier_main_anthropic complete in 996s.

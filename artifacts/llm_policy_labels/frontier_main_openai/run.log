@@ -1,0 +1,14 @@
+2026-10-09 11:23:04,210 INFO: Job frontier_main_openai started.  Input: /scratch/gpfs/JORDANAT/mg9965/PromptControlText/.local/frontier/judge-main/openai.csv
+2026-10-09 11:23:04,380 INFO: Loaded 3650 rows from /scratch/gpfs/JORDANAT/mg9965/PromptControlText/.local/frontier/judge-main/openai.csv
+2026-10-09 11:23:04,703 INFO: Replayed 0 completed request resolutions.
+2026-10-09 11:23:04,784 INFO: 3650 rows to process.
+2026-10-09 11:25:27,363 INFO: Progress: 500 / 3650 rows processed.
+2026-10-09 11:27:50,040 INFO: Progress: 1000 / 3650 rows processed.
+2026-10-09 11:30:06,372 INFO: Progress: 1500 / 3650 rows processed.
+2026-10-09 11:32:20,997 INFO: Progress: 2000 / 3650 rows processed.
+2026-10-09 11:34:32,396 INFO: Progress: 2500 / 3650 rows processed.
+2026-10-09 11:36:46,893 INFO: Progress: 3000 / 3650 rows processed.
+2026-10-09 11:38:58,483 INFO: Progress: 3500 / 3650 rows processed.
+2026-10-09 11:39:40,751 INFO: Saved labeled.csv (3650 rows).
+2026-10-09 11:39:40,833 INFO: Audit sample: 401 rows.
+2026-10-09 11:39:40,842 INFO: Job frontier_main_openai complete in 997s.

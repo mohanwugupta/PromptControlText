@@ -1,0 +1,16 @@
+{
+  "job_id": "frontier_main_anthropic",
+  "input": "/scratch/gpfs/JORDANAT/mg9965/PromptControlText/.local/frontier/judge-main/anthropic.csv",
+  "output_dir": "/scratch/gpfs/JORDANAT/mg9965/PromptControlText/artifacts/llm_policy_labels/frontier_main_anthropic",
+  "model": "meta-llama--Llama-3.1-8B-Instruct",
+  "schema_version": "v1",
+  "prompt_set_version": "v1",
+  "total_rows": 3181,
+  "processed_rows": 3181,
+  "parse_errors": 1,
+  "valid_labeled_rows": 3174,
+  "complete": false,
+  "input_sha256": "7e25c3679f41c3eb47773223b805affed2895698da0ffd46220fa3333ea96f57",
+  "resume_identity": "request_id",
+  "elapsed_seconds": 995.6
+}
