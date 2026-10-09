@@ -1,6 +1,6 @@
 # Collaborator instructions — minimal exploratory audit
 
-@Mohan Gupta, here are the revised annotation instructions.
+Here are the revised annotation instructions.
 
 We will start with **10 practice responses**, then complete a separate **30-response scored packet** after calibration. Both annotators label the same cases independently. **The total time limit is three hours per annotator**, including setup, practice, calibration, scored annotation and export. There is no additional targeted packet. This is a small exploratory check of the criteria and judge errors, not strong validation of judge reliability or provider differences.
 
