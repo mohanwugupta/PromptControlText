@@ -1,10 +1,11 @@
-# Read the compiled CSV while keeping the two experiment designs separate.
+# Load the complete compiled table; select an analysis study separately.
 load_combined_results <- function(
     path,
-    study = Sys.getenv("PROMPT_CONTROL_STUDY", unset = "open_models"),
-    include_unjudged = TRUE) {
-  if (!study %in% c("open_models", "frontier_main")) {
-    stop("PROMPT_CONTROL_STUDY must be open_models or frontier_main.")
+    study = "all",
+    include_unjudged = TRUE,
+    include_provider_blocks = identical(study, "all")) {
+  if (!study %in% c("all", "open_models", "frontier_main")) {
+    stop("study must be all, open_models, or frontier_main.")
   }
   header <- names(readr::read_csv(path, n_max = 0, show_col_types = FALSE))
   types <- readr::cols(.default = readr::col_character())
@@ -24,12 +25,23 @@ load_combined_results <- function(
     types$cols[[column]] <- readr::col_skip()
   }
   data <- readr::read_csv(path, col_types = types, show_col_types = FALSE)
+  select_analysis_results(data, study, include_unjudged, include_provider_blocks)
+}
+
+select_analysis_results <- function(
+    data,
+    study = Sys.getenv("PROMPT_CONTROL_STUDY", unset = "open_models"),
+    include_unjudged = TRUE,
+    include_provider_blocks = FALSE) {
+  if (!study %in% c("all", "open_models", "frontier_main")) {
+    stop("study must be all, open_models, or frontier_main.")
+  }
   if (!"analysis_study" %in% names(data)) {
     data$analysis_study <- "open_models"
   }
-  data <- data[data$analysis_study == study, , drop = FALSE]
-  if (!nrow(data)) stop(paste("No rows for study", study, "in", path))
-  if ("judge_status" %in% names(data)) {
+  if (study != "all") data <- data[data$analysis_study == study, , drop = FALSE]
+  if (!nrow(data)) stop(paste("No rows for study", study))
+  if (!include_provider_blocks && "judge_status" %in% names(data)) {
     blocked <- data$judge_status %in% "not_applicable_empty_provider_block"
     message(sum(blocked), " empty provider blocks excluded from response analysis.")
     data <- data[!blocked, , drop = FALSE]

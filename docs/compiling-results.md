@@ -55,15 +55,18 @@ python -m scoring.compile_results --open-models-only --output .local/open_models
 
 ## Use in the analysis notebook
 
-`analysis/analysis.Rmd` reads the same combined CSV path as before. Its loader
-uses explicit numeric score types, skips unused long answer/metadata columns,
-and excludes empty provider blocks from response analysis. Legacy missing or
+`analysis/analysis.Rmd` reads the same combined CSV path as before. `all_data`
+contains all 13 models and all 2,450,830 rows, including empty provider blocks.
+The loader uses explicit numeric score types and skips unused long answer/metadata
+columns. Study selection happens separately in `analysis_data`, which excludes
+empty provider blocks from response analysis. Legacy missing or
 invalid judgments stay in the data, preserving the original heuristic safety-rate
 denominators; their policy labels remain unclassified. For a fully judged subset,
-use `load_combined_results(data_path, include_unjudged = FALSE)`.
+use `select_analysis_results(all_data, include_unjudged = FALSE)`.
 Its model factors now retain new models instead of converting them to `NA`.
 
-The default study is `open_models`, covering the ten open models. The frontier
+The default analysis study is `open_models`, covering the ten open models;
+`all_data` always remains complete. The frontier
 experiment uses a 50-item subset with repaired IHEval context, so analyze it
 separately. Before knitting, select it in R:
 
@@ -82,3 +85,11 @@ Sys.setenv(PROMPT_CONTROL_STUDY = "open_models")
 or custom cohorts directly, read the combined CSV and filter `analysis_study`,
 `model_cohort`, `experiment_group`, and `judge_status` explicitly. Native task
 correctness requires separate scoring against the stored references.
+
+To load everything interactively and inspect model coverage:
+
+```r
+all_data <- load_combined_results(data_path, study = "all")
+all_data %>% count(analysis_study, model_name)
+analysis_data <- select_analysis_results(all_data, study = "frontier_main")
+```

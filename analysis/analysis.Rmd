@@ -29,7 +29,8 @@ loader_candidates <- c("analysis/load_combined_results.R", "load_combined_result
 loader_candidates <- loader_candidates[file.exists(loader_candidates)]
 if (!length(loader_candidates)) stop("Could not find load_combined_results.R.")
 source(loader_candidates[[1]])
-all_data <- load_combined_results(data_path)
+all_data <- load_combined_results(data_path, study = "all")
+analysis_data <- select_analysis_results(all_data)
 ```
 
 ```{r, echo=FALSE}
@@ -94,7 +95,7 @@ policy_levels <- c(
   "safe_redirection"
 )
 
-df <- all_data %>%
+df <- analysis_data %>%
   mutate(
     across(all_of(score_cols), ~ suppressWarnings(as.numeric(.x))),
 
@@ -856,7 +857,7 @@ p_policy_clarity
 # 0. Load and clean
 # ------------------------------------------------------------
 
-df <- all_data %>%
+df <- analysis_data %>%
   mutate(
     prompt_family = if_else(
       is.na(prompt_family) | prompt_family == "",
